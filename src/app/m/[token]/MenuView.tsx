@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { AllergenIconRow } from "@/components/AllergenIcons";
 import { confirmDestructiveAction } from "@/lib/confirm-destructive";
+import { createGuestSessionId } from "@/lib/guest-session-id";
 
 /** Guest menu UI copy (English only until i18n returns). */
 const M = {
@@ -293,12 +294,12 @@ export function MenuView({
       const key = "qr_menu_guest_sid";
       let sid = localStorage.getItem(key);
       if (!sid) {
-        sid = crypto.randomUUID();
+        sid = createGuestSessionId();
         localStorage.setItem(key, sid);
       }
       setGuestSessionId(sid);
     } catch {
-      setGuestSessionId(crypto.randomUUID());
+      setGuestSessionId(createGuestSessionId());
     }
   }, []);
 
