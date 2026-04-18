@@ -380,6 +380,24 @@ export function MenuView({
     };
   }, [orderHistoryOpen, tableToken, guestSessionId, ui]);
 
+  useEffect(() => {
+    if (!searchMenuOpen) return;
+    const t = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [searchMenuOpen]);
+
+  useEffect(() => {
+    if (!searchMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSearchMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchMenuOpen]);
+
   const totalCents = cart.reduce(
     (sum, i) => sum + (i.price + (i.optionPriceModifier ?? 0)) * i.quantity,
     0
@@ -648,24 +666,6 @@ export function MenuView({
     !optionsModalItem &&
     !imagePreviewItem &&
     !searchMenuOpen;
-
-  useEffect(() => {
-    if (!searchMenuOpen) return;
-    const t = window.setTimeout(() => {
-      searchInputRef.current?.focus();
-      searchInputRef.current?.select();
-    }, 50);
-    return () => window.clearTimeout(t);
-  }, [searchMenuOpen]);
-
-  useEffect(() => {
-    if (!searchMenuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSearchMenuOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [searchMenuOpen]);
 
   const mainBottomPad =
     totalItems > 0

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { isStaffInviteRole } from "@/lib/dashboard-roles";
 import { JoinStaffForm } from "./JoinStaffForm";
@@ -32,12 +33,12 @@ export default async function JoinStaffPage({
             This invite may have expired, already been used, or the link is incorrect. Ask your manager for a
             new invite from Office.
           </p>
-          <a
+          <Link
             href="/dashboard/login"
             className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-[#C15C2A] px-4 py-2.5 text-base font-semibold text-white hover:opacity-95 sm:min-h-0 sm:text-sm"
           >
             Go to sign in
-          </a>
+          </Link>
         </div>
       </main>
     );
