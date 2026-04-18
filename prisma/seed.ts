@@ -281,7 +281,6 @@ async function main() {
     choices: [
       { id: "pepper", label: "Πιπεράτη", priceCents: 200 },
       { id: "diana", label: "Νταϊάνα", priceCents: 200 },
-      { id: "garlic", label: "Σκόρδου", priceCents: 200 },
       { id: "cream", label: "Κρέμας", priceCents: 200 },
     ],
   };
@@ -290,7 +289,6 @@ async function main() {
     choices: [
       { id: "pepper", label: "Πιπεράτη", priceCents: 200 },
       { id: "diana", label: "Νταϊάνα", priceCents: 200 },
-      { id: "garlic", label: "Σκόρδου", priceCents: 200 },
     ],
   };
 

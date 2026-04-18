@@ -4,6 +4,7 @@ import nextDynamic from "next/dynamic";
 import { getDashboardServerSession } from "@/lib/auth-server";
 import { isDatabaseConnectionError } from "@/lib/database-connection-error";
 import { prisma } from "@/lib/prisma";
+import { tenantDashboardBase, tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import { defaultDashboardHome, resolveDashboardAccess } from "@/lib/staff-permissions";
 import { staffJoinUrl } from "@/lib/staff-invite-url";
 
@@ -46,7 +47,7 @@ function employeeDisplayName(u: {
   return n || u.email;
 }
 
-function OfficeDatabaseUnavailable() {
+function OfficeDatabaseUnavailable({ overviewHref }: { overviewHref: string }) {
   return (
     <div className="mx-auto max-w-lg space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm">
       <h1 className="text-xl font-bold text-ink">Office</h1>
@@ -67,7 +68,7 @@ function OfficeDatabaseUnavailable() {
         <li>Restart <code className="text-xs">npm run dev</code> after changing <code className="text-xs">.env</code>.</li>
       </ul>
       <p className="text-sm text-ink-muted">
-        <Link href="/dashboard" className="font-semibold text-primary hover:underline">
+        <Link href={overviewHref} className="font-semibold text-primary hover:underline">
           Back to overview
         </Link>
       </p>
@@ -231,7 +232,13 @@ async function loadOfficePageData(
   };
 }
 
-export default async function OfficePage() {
+export default async function OfficePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const base = tenantDashboardBase(slug);
   const session = await getDashboardServerSession();
   if (!session?.user?.restaurantId) redirect("/dashboard/login");
   const uid = (session.user as { id?: string }).id;
@@ -245,7 +252,7 @@ export default async function OfficePage() {
     selfRow ?? { role: session.user.role ?? "", permissions: null }
   );
   if (!selfAccess.office && !selfAccess.isTrueOwner) {
-    redirect(defaultDashboardHome(selfAccess));
+    redirect(defaultDashboardHome(selfAccess, base));
   }
 
   const restaurantId = session.user.restaurantId;
@@ -261,7 +268,7 @@ export default async function OfficePage() {
     data = await loadOfficePageData(restaurantId, todayStart, d7, d30);
   } catch (e) {
     if (isDatabaseConnectionError(e)) {
-      return <OfficeDatabaseUnavailable />;
+      return <OfficeDatabaseUnavailable overviewHref={base} />;
     }
     throw e;
   }
@@ -383,7 +390,7 @@ export default async function OfficePage() {
       <section>
         <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
           <h2 className="text-sm font-bold uppercase tracking-wide text-ink-muted">Recent</h2>
-          <Link href="/dashboard/orders" className="text-sm font-semibold text-primary hover:underline">
+          <Link href={tenantDashboardHref(slug, "/orders")} className="text-sm font-semibold text-primary hover:underline">
             All orders
           </Link>
         </div>

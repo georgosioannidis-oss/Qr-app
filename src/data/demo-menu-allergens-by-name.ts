@@ -10,44 +10,43 @@ function e(names: string[], codes: string[]): Record<string, string[]> {
   return Object.fromEntries(names.map((n) => [n, [...codes]]));
 }
 
-const S = ["sulphites"];
 const A = ["alcohol"];
 const G = ["gluten"];
 
 export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
   // —— Κρύα ορεκτικά ——
   Ταραμοσαλάτα: ["fish", "eggs", "gluten", "soy"],
-  Ταχίνι: ["sesame", "garlic"],
-  Παντζαροσαλάτα: ["vegetarian"],
-  Τζατζίκι: ["milk", "garlic"],
-  Χούμους: ["vegetarian", "sesame"],
+  Ταχίνι: ["sesame"],
+  Παντζαροσαλάτα: [],
+  Τζατζίκι: ["milk"],
+  Χούμους: ["sesame"],
   Τυροκαυτερή: ["milk", "mustard"],
-  Ελιές: ["vegetarian", "sulphites"],
+  Ελιές: [],
   Γιαούρτι: ["milk"],
   Φέτα: ["milk"],
   "Γαρίδες κοκτέιλ": ["crustaceans", "eggs", "mustard"],
   "Αβοκάντο με γαρίδες": ["crustaceans", "eggs", "mustard"],
-  Πίτα: ["gluten", "vegetarian"],
+  Πίτα: ["gluten"],
 
   // —— Ζεστά ορεκτικά ——
-  Λουκάνικο: ["sulphites"],
-  "Μανιτάρια με σάλτσα σκόρδου": ["milk", "gluten", "garlic", "mushroom"],
+  Λουκάνικο: ["alcohol"],
+  "Μανιτάρια με σάλτσα σκόρδου": ["milk", "gluten", "mushroom"],
   Χαλλούμι: ["milk"],
   "Σαγανάκι με μέλι": ["milk", "gluten", "eggs"],
   Λούντζα: [],
   "Γαρίδες σαγανάκι": ["crustaceans", "milk"],
   Κουπέπια: [],
   Μύδια: ["molluscs", "milk"],
-  "Κολοκύθια με αυγά": ["eggs", "vegetarian"],
-  Σκορδόψωμο: ["gluten", "vegetarian", "garlic"],
-  Τουρλού: ["vegetarian"],
+  "Κολοκύθια με αυγά": ["eggs"],
+  Σκορδόψωμο: ["gluten"],
+  Τουρλού: [],
   "Μύδια σαγανάκι": ["molluscs", "milk"],
   "Καλαμάρι τηγανιτό": ["molluscs", "gluten"],
   "Σούπα της ημέρας": [],
-  "Μελιτζάνες με σκόρδο": ["vegetarian", "garlic", "milk"],
+  "Μελιτζάνες με σκόρδο": ["milk"],
 
   // —— Ψάρια —— (second Μύδια / Καλαμάρι share same names as warm section)
-  Ψαρομεζέδες: ["gluten", "eggs", "crustaceans", "molluscs", "fish", "peanuts", "soy", "milk", "sulphites"],
+  Ψαρομεζέδες: ["gluten", "eggs", "crustaceans", "molluscs", "fish", "peanuts", "soy", "milk", "alcohol"],
   "Τσιπούρα σχάρας": ["fish"],
   Λαυράκι: ["fish"],
   "Ξιφίας σχάρας": ["fish"],
@@ -57,9 +56,9 @@ export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
   Οχταπόδι: ["molluscs"],
 
   // —— Στη σχάρα ——
-  "Μεζές κρεατικών": ["gluten", "eggs", "crustaceans", "fish", "peanuts", "soy", "milk", "sulphites"],
+  "Μεζές κρεατικών": ["gluten", "eggs", "crustaceans", "fish", "peanuts", "soy", "milk", "alcohol"],
   Σεφταλιές: ["gluten"],
-  "Διάφορα σχάρας": ["gluten", "milk", "sulphites"],
+  "Διάφορα σχάρας": ["gluten", "milk", "alcohol"],
   "Σουβλάκι κοτόπουλο": [],
   "Σουβλάκι χοιρινό": [],
   "Μπριζόλα χοιρινή": [],
@@ -68,7 +67,7 @@ export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
   "Αρνίσιο συκώτι": [],
 
   // —— Μακαρονάδες / πίτσες / παιδικό ——
-  "Μακαρόνια ναπολιτάνα": ["gluten", "vegetarian"],
+  "Μακαρόνια ναπολιτάνα": ["gluten"],
   "Μακαρόνια μπολωνέζ": ["gluten"],
   "Μακαρόνια καρμπονάρα": ["gluten", "milk", "mushroom"],
   "Μακαρόνια με θαλασσινά": ["gluten", "milk", "crustaceans", "molluscs"],
@@ -82,14 +81,14 @@ export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
   "Donald Duck": [],
 
   // —— Κοκτέιλ ——
-  "Gin Fizz": ["sulphites", "alcohol"],
+  "Gin Fizz": ["alcohol"],
   "Sex on the Beach": ["alcohol"],
   "Pina Colada": ["milk", "alcohol"],
   "Long Island Iced Tea": ["alcohol"],
   "Blue Lagoon": ["alcohol"],
-  "Aperol Spritz": ["sulphites", "alcohol"],
+  "Aperol Spritz": ["alcohol"],
   Screwdriver: ["alcohol"],
-  "Brandy Sour": ["alcohol", "sulphites"],
+  "Brandy Sour": ["alcohol"],
   "Ouzo Special": ["alcohol"],
   "Tequila Sunrise": ["alcohol"],
   "Bloody Mary": ["celery", "alcohol", "soy"],
@@ -119,14 +118,14 @@ export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
   "Κρέμα καραμελέ": ["milk", "alcohol"],
 
   // —— Φιλέτα / κοτόπουλο ——
-  "Στέικ μοσχαρίσιο πιπεράτο": ["gluten", "milk", "celery", "mustard", "sulphites", "garlic"],
+  "Στέικ μοσχαρίσιο πιπεράτο": ["gluten", "milk", "celery", "mustard", "alcohol"],
   "Στέικ μοσχαρίσιο Νταϊάνα": ["mustard", "alcohol", "gluten", "soy", "milk", "eggs"],
-  "Στέικ μοσχαρίσιο με σάλτσα σκόρδου": ["garlic", "milk", "gluten"],
+  "Στέικ μοσχαρίσιο με σάλτσα σκόρδου": ["milk", "gluten"],
   "Γκάμον στέικ": ["eggs"],
   "Κοτόπουλο πιπεράτο": ["gluten", "mustard", "soy", "milk", "alcohol", "eggs", "celery"],
   "Κοτόπουλο Νταϊάνα": ["gluten", "mustard", "soy", "milk", "alcohol", "eggs", "celery"],
-  "Κοτόπουλο με σάλτσα σκόρδου": ["milk", "garlic", "gluten"],
-  "Κοτόπουλο Κιέβου": ["gluten", "eggs", "milk", "garlic"],
+  "Κοτόπουλο με σάλτσα σκόρδου": ["milk", "gluten"],
+  "Κοτόπουλο Κιέβου": ["gluten", "eggs", "milk"],
   "Κοτόπουλο κάρρυ": ["milk"],
   "Κοτόπουλο «Μουστάκαλλης»": ["gluten", "milk"],
   "Στέικ μοσχαρίσιο φιλέτο": [],
@@ -136,18 +135,18 @@ export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
   // —— Κυπριακά / χορτοφαγικά / σαλάτες ——
   Κλέφτικο: ["milk", "celery", "mustard", "gluten", "soy"],
   Μουσακάς: ["milk", "eggs", "gluten"],
-  Στιφάδο: ["sulphites"],
-  Αφέλια: ["sulphites", "gluten"],
+  Στιφάδο: ["alcohol"],
+  Αφέλια: ["alcohol", "gluten"],
   Γεμιστά: ["milk"],
   "Φασολάκι κοκκινιστό με αρνί": [],
-  "Μουσακάς για χορτοφάγους": ["milk", "eggs", "gluten", "vegetarian"],
-  Φασολάκι: ["vegetarian"],
-  Φακές: ["vegetarian"],
-  Λουβί: ["vegetarian"],
-  "Ελληνική σαλάτα": ["milk", "vegetarian"],
-  "Χωριάτικη σαλάτα": ["milk", "vegetarian"],
-  "Ντομάτα και κρεμμύδι": ["vegetarian"],
-  "Πράσινη σαλάτα": ["vegetarian"],
+  "Μουσακάς για χορτοφάγους": ["milk", "eggs", "gluten"],
+  Φασολάκι: [],
+  Φακές: [],
+  Λουβί: [],
+  "Ελληνική σαλάτα": ["milk"],
+  "Χωριάτικη σαλάτα": ["milk"],
+  "Ντομάτα και κρεμμύδι": [],
+  "Πράσινη σαλάτα": [],
   Οχταποδοσαλάτα: ["molluscs", "fish", "eggs", "mustard"],
   Τονοσαλάτα: ["fish", "eggs", "mustard"],
   "Σαλάτα με θαλασσινά": ["crustaceans", "fish", "molluscs", "mustard"],
@@ -161,7 +160,7 @@ export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
       "Κρασί του σπιτιού (καράφα 0.5L)",
       "Κρασί του σπιτιού (καράφα 1L)",
     ],
-    S
+    A
   ),
 
   ...e(
@@ -169,7 +168,7 @@ export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
       "Strongbow",
       "Kopparberg",
     ],
-    ["sulphites", "gluten"]
+    ["alcohol", "gluten"]
   ),
 
   ...e(
@@ -278,7 +277,7 @@ export const DEMO_MENU_ALLERGENS_BY_NAME: Record<string, string[]> = {
       "Maschio Prosecco NV",
       "Henkell Trocken",
     ],
-    S
+    A
   ),
 
   "Milk shake": ["milk", "nuts"],

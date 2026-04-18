@@ -137,56 +137,60 @@ export function resolveDashboardAccess(user: {
   };
 }
 
-/** First path the user may open when hitting /dashboard. */
-export function defaultDashboardHome(access: ResolvedDashboardAccess): string {
-  if (access.isTrueOwner) return "/dashboard";
-  if (access.overview) return "/dashboard";
-  if (access.waitStaff) return "/dashboard/wait-staff";
-  if (access.orders) return "/dashboard/orders";
-  if (access.menu) return "/dashboard/menu";
-  if (access.tables) return "/dashboard/tables";
-  if (access.office || access.branding) return "/dashboard/office";
-  return "/dashboard/orders";
+/** `basePath` = `/{slug}/dashboard` — first path the user may open for that restaurant. */
+export function defaultDashboardHome(
+  access: ResolvedDashboardAccess,
+  basePath: string
+): string {
+  if (access.isTrueOwner) return basePath;
+  if (access.overview) return basePath;
+  if (access.waitStaff) return `${basePath}/wait-staff`;
+  if (access.orders) return `${basePath}/orders`;
+  if (access.menu) return `${basePath}/menu`;
+  if (access.tables) return `${basePath}/tables`;
+  if (access.office || access.branding) return `${basePath}/office`;
+  return `${basePath}/orders`;
 }
 
 /** Path guard: returns redirect target if `pathname` is not allowed. */
 export function pathNotAllowedRedirect(
   pathname: string,
-  access: ResolvedDashboardAccess
+  access: ResolvedDashboardAccess,
+  basePath: string
 ): string | null {
   if (access.isTrueOwner) return null;
 
-  const on = (prefix: string) =>
-    pathname === prefix || (prefix !== "/dashboard" && pathname.startsWith(prefix + "/"));
+  const on = (sectionBase: string) =>
+    pathname === sectionBase || pathname.startsWith(`${sectionBase}/`);
 
-  /** Must run before `on("/dashboard/orders")` — print URLs live under `/dashboard/orders/`. */
-  if (pathname.startsWith("/dashboard/orders/print/")) {
-    if (!access.orders && !access.waitStaff) return defaultDashboardHome(access);
+  /** Must run before `on(.../orders)` — print URLs live under `.../orders/print`. */
+  if (pathname.startsWith(`${basePath}/orders/print/`)) {
+    if (!access.orders && !access.waitStaff) return defaultDashboardHome(access, basePath);
     return null;
   }
 
-  if (on("/dashboard/menu") && !access.menu) return defaultDashboardHome(access);
-  if (on("/dashboard/tables") && !access.tables) return defaultDashboardHome(access);
-  if (on("/dashboard/stations") && !access.stations) return defaultDashboardHome(access);
-  if (on("/dashboard/orders") && !access.orders) return defaultDashboardHome(access);
-  if (on("/dashboard/wait-staff") && !access.waitStaff) return defaultDashboardHome(access);
-  if (on("/dashboard/office") && !access.office) return defaultDashboardHome(access);
-  if (on("/dashboard/branding") && !access.branding) return defaultDashboardHome(access);
-  if (pathname === "/dashboard" || pathname === "/dashboard/") {
-    if (!access.overview) return defaultDashboardHome(access);
+  if (on(`${basePath}/menu`) && !access.menu) return defaultDashboardHome(access, basePath);
+  if (on(`${basePath}/tables`) && !access.tables) return defaultDashboardHome(access, basePath);
+  if (on(`${basePath}/stations`) && !access.stations) return defaultDashboardHome(access, basePath);
+  if (on(`${basePath}/orders`) && !access.orders) return defaultDashboardHome(access, basePath);
+  if (on(`${basePath}/wait-staff`) && !access.waitStaff) return defaultDashboardHome(access, basePath);
+  if (on(`${basePath}/office`) && !access.office) return defaultDashboardHome(access, basePath);
+  if (on(`${basePath}/branding`) && !access.branding) return defaultDashboardHome(access, basePath);
+  if (pathname === basePath || pathname === `${basePath}/`) {
+    if (!access.overview) return defaultDashboardHome(access, basePath);
     return null;
   }
 
-  if (on("/dashboard/menu") && access.menu) return null;
-  if (on("/dashboard/tables") && access.tables) return null;
-  if (on("/dashboard/stations") && access.stations) return null;
-  if (on("/dashboard/orders") && access.orders) return null;
-  if (on("/dashboard/wait-staff") && access.waitStaff) return null;
-  if (on("/dashboard/office") && access.office) return null;
-  if (on("/dashboard/branding") && access.branding) return null;
+  if (on(`${basePath}/menu`) && access.menu) return null;
+  if (on(`${basePath}/tables`) && access.tables) return null;
+  if (on(`${basePath}/stations`) && access.stations) return null;
+  if (on(`${basePath}/orders`) && access.orders) return null;
+  if (on(`${basePath}/wait-staff`) && access.waitStaff) return null;
+  if (on(`${basePath}/office`) && access.office) return null;
+  if (on(`${basePath}/branding`) && access.branding) return null;
 
-  if (pathname.startsWith("/dashboard")) {
-    return defaultDashboardHome(access);
+  if (pathname.startsWith(basePath)) {
+    return defaultDashboardHome(access, basePath);
   }
 
   return null;

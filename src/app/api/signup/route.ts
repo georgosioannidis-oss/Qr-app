@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
+import { TENANT_SLUG_DENYLIST } from "@/lib/dashboard-tenant-paths";
 import { prisma } from "@/lib/prisma";
 
 /** Turn restaurant name into a URL-friendly unique slug (e.g. "Bella Italia" → "bella-italia") */
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
     }
 
     let slug = slugFromName(restaurantName);
+    while (TENANT_SLUG_DENYLIST.has(slug)) {
+      slug = `${slug}-place`;
+    }
     const existingSlug = await prisma.restaurant.findUnique({ where: { slug } });
     if (existingSlug) {
       slug = `${slug}-${Date.now().toString(36).slice(-6)}`;

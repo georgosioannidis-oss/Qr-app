@@ -7,6 +7,7 @@ import {
   hasWaitStaffAccess,
   STAFF_GRANULAR_ROLE,
 } from "@/lib/dashboard-roles";
+import { tenantDashboardBase } from "@/lib/dashboard-tenant-paths";
 import { resolveDashboardAccess, defaultDashboardHome } from "@/lib/staff-permissions";
 
 const STAFF_LOCKED_MSG =
@@ -118,5 +119,14 @@ export async function ensureStaffMayEditMenuTablesOrRedirect(session: Session | 
   if (!legacyStaff) return;
   if (row.restaurant?.staffMayEditMenuTables === true) return;
 
-  redirect(defaultDashboardHome(access));
+  const slug =
+    (session.user as { restaurantSlug?: string }).restaurantSlug?.trim() ||
+    (
+      await prisma.restaurant.findUnique({
+        where: { id: session.user.restaurantId },
+        select: { slug: true },
+      })
+    )?.slug;
+  if (!slug) return;
+  redirect(defaultDashboardHome(access, tenantDashboardBase(slug)));
 }

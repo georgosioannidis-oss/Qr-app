@@ -14,6 +14,7 @@ const sharedCallbacks: NextAuthOptions["callbacks"] = {
     if (user) {
       token.email = user.email ?? undefined;
       token.restaurantId = user.restaurantId;
+      token.restaurantSlug = (user as { restaurantSlug?: string }).restaurantSlug;
       token.restaurantName = (user as { restaurantName?: string }).restaurantName;
       token.role = (user as { role?: string }).role;
       token.permissions = (user as { permissions?: unknown }).permissions ?? undefined;
@@ -30,6 +31,7 @@ const sharedCallbacks: NextAuthOptions["callbacks"] = {
             firstName: true,
             lastName: true,
             email: true,
+            restaurant: { select: { slug: true } },
           },
         });
         if (dbUser && !dbUser.disabled) {
@@ -38,6 +40,7 @@ const sharedCallbacks: NextAuthOptions["callbacks"] = {
           token.firstName = dbUser.firstName;
           token.lastName = dbUser.lastName;
           token.email = dbUser.email;
+          token.restaurantSlug = dbUser.restaurant.slug;
         }
       } catch {
         /* keep existing token.role */
@@ -50,6 +53,9 @@ const sharedCallbacks: NextAuthOptions["callbacks"] = {
         (session.user as { id?: string }).id = token.sub!;
         if (token.email) session.user.email = token.email as string;
         (session.user as { restaurantId?: string }).restaurantId = token.restaurantId as string;
+        (session.user as { restaurantSlug?: string }).restaurantSlug = token.restaurantSlug as
+          | string
+          | undefined;
         (session.user as { restaurantName?: string }).restaurantName = token.restaurantName as string;
         (session.user as { role?: string }).role = token.role as string | undefined;
         (session.user as { permissions?: unknown }).permissions = token.permissions;
@@ -103,6 +109,7 @@ export const authOptionsOwner: NextAuthOptions = {
           id: user.id,
           email: user.email,
           restaurantId: user.restaurantId,
+          restaurantSlug: user.restaurant.slug,
           restaurantName: user.restaurant.name,
           role: user.role,
           permissions: user.permissions ?? undefined,
@@ -148,6 +155,7 @@ export const authOptionsStaff: NextAuthOptions = {
           id: user.id,
           email: user.email,
           restaurantId: user.restaurantId,
+          restaurantSlug: user.restaurant.slug,
           restaurantName: user.restaurant.name,
           role: user.role,
           permissions: user.permissions ?? undefined,

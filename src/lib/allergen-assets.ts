@@ -1,21 +1,23 @@
 /**
- * Raster allergen icons (restaurant-provided PNGs) under `/public/allergens/*.png`.
- * Codes without a file fall back to inline SVG in `AllergenIcons.tsx`.
+ * Raster allergen marks shipped under `/public/allergens/{code}.png`.
+ * When a file exists for a code, `AllergenIconRow` shows that image; otherwise it falls back to inline SVG.
  */
-const PHOTO_CODES = new Set([
-  "alcohol",
-  "celery",
+
+const PHOTO_CODES = new Set<string>([
+  "gluten",
   "crustaceans",
   "eggs",
   "fish",
-  "gluten",
-  "milk",
-  "molluscs",
-  "mustard",
   "peanuts",
-  "sesame",
   "soy",
-  "sulphites",
+  "milk",
+  "nuts",
+  "celery",
+  "mustard",
+  "sesame",
+  "lupin",
+  "molluscs",
+  "alcohol",
 ]);
 
 export function allergenHasPhotoAsset(code: string): boolean {
@@ -23,5 +25,5 @@ export function allergenHasPhotoAsset(code: string): boolean {
 }
 
 export function allergenPhotoSrc(code: string): string | null {
-  return allergenHasPhotoAsset(code) ? `/allergens/${code}.png` : null;
+  return PHOTO_CODES.has(code) ? `/allergens/${code}.png` : null;
 }

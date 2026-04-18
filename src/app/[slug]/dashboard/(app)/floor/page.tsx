@@ -1,12 +1,18 @@
 import { redirect } from "next/navigation";
 import { getDashboardServerSession } from "@/lib/auth-server";
 import { isPureKitchenRole } from "@/lib/dashboard-roles";
+import { tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import { FloorQueue } from "./FloorQueue";
 
-export default async function FloorPage() {
+export default async function FloorPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   const session = await getDashboardServerSession();
   if (!session?.user?.restaurantId) redirect("/dashboard/login");
-  if (isPureKitchenRole(session.user.role)) redirect("/dashboard/orders");
+  if (isPureKitchenRole(session.user.role)) redirect(tenantDashboardHref(slug, "/orders"));
 
   return (
     <div className="space-y-6">

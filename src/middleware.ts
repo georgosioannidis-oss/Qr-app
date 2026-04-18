@@ -1,16 +1,21 @@
 /**
- * Protects dashboard routes: unauthenticated users are sent to /dashboard/login.
- * Owner and staff sessions use separate cookies; we pick the active JWT per path so two tabs can differ.
+ * Guest menu: `/m/…`. Staff dashboard: `/{restaurantSlug}/dashboard/…` (legacy `/dashboard/…` redirects here).
  */
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { sessionTokenCookieName, shouldUseSecureAuthCookies } from "@/lib/auth-cookies";
 import { pickDashboardSession, resolveDashboardPathnameForApi } from "@/lib/dashboard-session-pick";
+import {
+  parseTenantDashboardPath,
+  tenantDashboardHref,
+  virtualDashboardPathForCookies,
+} from "@/lib/dashboard-tenant-paths";
 import { CUSTOMER_PATHNAME_HEADER } from "@/lib/load-customer-table";
 
 const DASHBOARD_PATH_HEADER = "x-dashboard-path";
 const DASHBOARD_SESSION_PATH_HEADER = "x-dashboard-session-path";
+
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
 
@@ -24,7 +29,7 @@ export async function middleware(req: NextRequest) {
 
   if (path.startsWith("/api/dashboard")) {
     const ref = req.headers.get("referer") ?? "";
-    let sessionPath = resolveDashboardPathnameForApi(ref);
+    const sessionPath = resolveDashboardPathnameForApi(ref);
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set(DASHBOARD_SESSION_PATH_HEADER, sessionPath);
     return NextResponse.next({
@@ -32,39 +37,123 @@ export async function middleware(req: NextRequest) {
     });
   }
 
-  if (path === "/dashboard/floor" || path.startsWith("/dashboard/floor/")) {
+  const tenantFloor = parseTenantDashboardPath(path);
+  if (
+    tenantFloor &&
+    (tenantFloor.rest === "/floor" || tenantFloor.rest.startsWith("/floor/"))
+  ) {
     const u = req.nextUrl.clone();
-    u.pathname = "/dashboard/wait-staff" + path.slice("/dashboard/floor".length);
+    u.pathname = tenantDashboardHref(
+      tenantFloor.slug,
+      "/wait-staff" + tenantFloor.rest.slice("/floor".length)
+    );
     return NextResponse.redirect(u);
   }
 
-  if (path.startsWith("/dashboard") && !path.startsWith("/dashboard/login")) {
-    const secret = process.env.NEXTAUTH_SECRET;
-    if (!secret) {
-      const login = new URL("/dashboard/login", req.url);
-      login.searchParams.set("callbackUrl", path);
-      return NextResponse.redirect(login);
+  const tenant = parseTenantDashboardPath(path);
+  const flatDashboardProtected =
+    path.startsWith("/dashboard") &&
+    !path.startsWith("/dashboard/login") &&
+    path !== "/dashboard" &&
+    path !== "/dashboard/";
+  const flatDashboardRoot = path === "/dashboard" || path === "/dashboard/";
+  const needsAuth = tenant !== null || flatDashboardProtected || flatDashboardRoot;
+
+  if (!needsAuth) {
+    return NextResponse.next();
+  }
+
+  const secret = process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    const login = new URL("/dashboard/login", req.url);
+    login.searchParams.set("callbackUrl", path);
+    return NextResponse.redirect(login);
+  }
+
+  const secureCookie = shouldUseSecureAuthCookies();
+  const [owner, staff] = await Promise.all([
+    getToken({
+      req,
+      secret,
+      cookieName: sessionTokenCookieName("owner"),
+      secureCookie,
+    }),
+    getToken({
+      req,
+      secret,
+      cookieName: sessionTokenCookieName("staff"),
+      secureCookie,
+    }),
+  ]);
+
+  const virtualPick = (p: string) => pickDashboardSession(virtualDashboardPathForCookies(p), owner, staff);
+
+  if (path === "/dashboard/floor" || path.startsWith("/dashboard/floor/")) {
+    const { jwt } = virtualPick(path);
+    const slug = typeof jwt?.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    if (slug) {
+      const u = req.nextUrl.clone();
+      const after = path.slice("/dashboard/floor".length);
+      u.pathname = tenantDashboardHref(slug, "/wait-staff" + after);
+      return NextResponse.redirect(u);
     }
-    const secureCookie = shouldUseSecureAuthCookies();
-    const [owner, staff] = await Promise.all([
-      getToken({
-        req,
-        secret,
-        cookieName: sessionTokenCookieName("owner"),
-        secureCookie,
-      }),
-      getToken({
-        req,
-        secret,
-        cookieName: sessionTokenCookieName("staff"),
-        secureCookie,
-      }),
-    ]);
-    const { jwt } = pickDashboardSession(path, owner, staff);
+    const login = new URL("/dashboard/login", req.url);
+    login.searchParams.set("callbackUrl", path);
+    return NextResponse.redirect(login);
+  }
+
+  if (flatDashboardProtected) {
+    const { jwt } = virtualPick(path);
     if (!jwt) {
       const login = new URL("/dashboard/login", req.url);
       login.searchParams.set("callbackUrl", path);
       return NextResponse.redirect(login);
+    }
+    const slug = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    if (!slug) {
+      const login = new URL("/dashboard/login", req.url);
+      login.searchParams.set("callbackUrl", path);
+      return NextResponse.redirect(login);
+    }
+    const tail = path.slice("/dashboard".length);
+    const u = req.nextUrl.clone();
+    u.pathname = tenantDashboardHref(slug, tail && tail !== "/" ? tail : "");
+    return NextResponse.redirect(u);
+  }
+
+  if (flatDashboardRoot) {
+    const { jwt } = virtualPick("/dashboard");
+    if (!jwt) {
+      const login = new URL("/dashboard/login", req.url);
+      return NextResponse.redirect(login);
+    }
+    const slug = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    if (!slug) {
+      const login = new URL("/dashboard/login", req.url);
+      return NextResponse.redirect(login);
+    }
+    const u = req.nextUrl.clone();
+    u.pathname = tenantDashboardHref(slug, "");
+    return NextResponse.redirect(u);
+  }
+
+  if (tenant) {
+    const { jwt } = virtualPick(path);
+    if (!jwt) {
+      const login = new URL("/dashboard/login", req.url);
+      login.searchParams.set("callbackUrl", path);
+      return NextResponse.redirect(login);
+    }
+    const rs = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    if (!rs) {
+      const login = new URL("/dashboard/login", req.url);
+      login.searchParams.set("callbackUrl", path);
+      return NextResponse.redirect(login);
+    }
+    if (tenant.slug !== rs) {
+      const u = req.nextUrl.clone();
+      u.pathname = tenantDashboardHref(rs, tenant.rest || "");
+      return NextResponse.redirect(u);
     }
 
     const requestHeaders = new Headers(req.headers);
@@ -78,5 +167,12 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/api/dashboard/:path*", "/m/:path*"],
+  matcher: [
+    "/m/:path*",
+    "/api/dashboard/:path*",
+    "/dashboard",
+    "/dashboard/:path*",
+    "/:slug/dashboard",
+    "/:slug/dashboard/:path*",
+  ],
 };

@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import { StationsManager } from "./StationsManager";
 
-export default function StationsPage() {
+export default async function StationsPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
   return (
     <div className="space-y-8">
       <div>
@@ -9,7 +15,7 @@ export default function StationsPage() {
         <p className="max-w-3xl text-ink-muted">
           Create preparation stations (e.g. Bar, Kitchen, Cold Kitchen) and assign them to menu categories or
           individual items. For the split prep screens under{" "}
-          <Link href="/dashboard/orders" className="font-semibold text-primary underline">
+          <Link href={tenantDashboardHref(slug, "/orders")} className="font-semibold text-primary underline">
             Orders
           </Link>
           , use station names <strong>Bar</strong>, <strong>Kitchen</strong>, and <strong>Cold Kitchen</strong>{" "}

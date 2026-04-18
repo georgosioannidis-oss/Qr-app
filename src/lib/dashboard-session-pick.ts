@@ -1,5 +1,6 @@
 import type { JWT } from "next-auth/jwt";
 import { isOwnerRole } from "./dashboard-roles";
+import { parseTenantDashboardPath, virtualDashboardPathForCookies } from "./dashboard-tenant-paths";
 
 function jwtRole(j: JWT | null): string | undefined {
   return typeof j?.role === "string" ? j.role : undefined;
@@ -29,19 +30,20 @@ export function pickDashboardSession(
   owner: JWT | null,
   staff: JWT | null
 ): { jwt: JWT | null; channel: DashboardAuthChannel | null } {
+  const path = virtualDashboardPathForCookies(pathname);
   if (!owner && !staff) return { jwt: null, channel: null };
   if (owner && !staff) return { jwt: owner, channel: "owner" };
   if (!owner && staff) return { jwt: staff, channel: "staff" };
 
   const staffFirst =
-    pathname.startsWith("/dashboard/wait-staff") || pathname.startsWith("/dashboard/orders/print");
+    path.startsWith("/dashboard/wait-staff") || path.startsWith("/dashboard/orders/print");
   if (staffFirst) {
     const jwt = staff ?? owner;
     return { jwt, channel: channelForPickedJwt(jwt, owner, staff) };
   }
 
   const ownerFirst =
-    pathname.startsWith("/dashboard/office") || pathname.startsWith("/dashboard/branding");
+    path.startsWith("/dashboard/office") || path.startsWith("/dashboard/branding");
   if (ownerFirst) {
     const jwt = owner ?? staff;
     return { jwt, channel: channelForPickedJwt(jwt, owner, staff) };
@@ -62,6 +64,7 @@ export function resolveDashboardPathnameForApi(
   if (!referer) return fallback;
   try {
     const p = new URL(referer).pathname;
+    if (parseTenantDashboardPath(p)) return p;
     if (p.startsWith("/dashboard")) return p;
   } catch {
     /* ignore */

@@ -1,36 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { dashboardPathRedirect } from "./dashboard-path-guard";
 
+const base = "/moustakalis/dashboard";
+
 describe("dashboardPathRedirect", () => {
   it("allows owner on any dashboard path", () => {
-    expect(dashboardPathRedirect("/dashboard/office", "owner")).toBeNull();
-    expect(dashboardPathRedirect("/dashboard/menu", "owner")).toBeNull();
+    expect(dashboardPathRedirect(`${base}/office`, "owner")).toBeNull();
+    expect(dashboardPathRedirect(`${base}/menu`, "owner")).toBeNull();
   });
 
   it("redirects kitchen-only from office to orders", () => {
-    expect(dashboardPathRedirect("/dashboard/office", "kitchen")).toBe("/dashboard/orders");
-    expect(dashboardPathRedirect("/dashboard/orders", "kitchen")).toBeNull();
+    expect(dashboardPathRedirect(`${base}/office`, "kitchen")).toBe(`${base}/orders`);
+    expect(dashboardPathRedirect(`${base}/orders`, "kitchen")).toBeNull();
   });
 
-  it("redirects kitchen from menu and tables (path guard; menu API may still allow when Office enables staff edit)", () => {
-    expect(dashboardPathRedirect("/dashboard/menu", "kitchen")).toBe("/dashboard/orders");
-    expect(dashboardPathRedirect("/dashboard/tables", "kitchen")).toBe("/dashboard/orders");
+  it("redirects kitchen from menu and tables", () => {
+    expect(dashboardPathRedirect(`${base}/menu`, "kitchen")).toBe(`${base}/orders`);
+    expect(dashboardPathRedirect(`${base}/tables`, "kitchen")).toBe(`${base}/orders`);
   });
 
   it("redirects waiter from orders to wait-staff", () => {
-    expect(dashboardPathRedirect("/dashboard/orders", "waiter")).toBe("/dashboard/wait-staff");
-    expect(dashboardPathRedirect("/dashboard/wait-staff", "waiter")).toBeNull();
+    expect(dashboardPathRedirect(`${base}/orders`, "waiter")).toBe(`${base}/wait-staff`);
+    expect(dashboardPathRedirect(`${base}/wait-staff`, "waiter")).toBeNull();
   });
 
   it("allows floor on orders, wait-staff; redirects from menu and office", () => {
-    expect(dashboardPathRedirect("/dashboard/orders", "floor")).toBeNull();
-    expect(dashboardPathRedirect("/dashboard/wait-staff", "floor")).toBeNull();
-    expect(dashboardPathRedirect("/dashboard/menu", "floor")).toBe("/dashboard/wait-staff");
-    expect(dashboardPathRedirect("/dashboard/office", "floor")).toBe("/dashboard/wait-staff");
+    expect(dashboardPathRedirect(`${base}/orders`, "floor")).toBeNull();
+    expect(dashboardPathRedirect(`${base}/wait-staff`, "floor")).toBeNull();
+    expect(dashboardPathRedirect(`${base}/menu`, "floor")).toBe(`${base}/wait-staff`);
+    expect(dashboardPathRedirect(`${base}/office`, "floor")).toBe(`${base}/wait-staff`);
   });
 
   it("allows print route for waiter", () => {
-    expect(dashboardPathRedirect("/dashboard/orders/print/abc", "waiter")).toBeNull();
+    expect(dashboardPathRedirect(`${base}/orders/print/abc`, "waiter")).toBeNull();
   });
 
   it("respects granular staff permissions", () => {
@@ -43,7 +45,7 @@ describe("dashboardPathRedirect", () => {
       office: false,
       branding: false,
     };
-    expect(dashboardPathRedirect("/dashboard/menu", "staff", p)).toBeNull();
-    expect(dashboardPathRedirect("/dashboard/office", "staff", p)).toBe("/dashboard/menu");
+    expect(dashboardPathRedirect(`${base}/menu`, "staff", p)).toBeNull();
+    expect(dashboardPathRedirect(`${base}/office`, "staff", p)).toBe(`${base}/menu`);
   });
 });

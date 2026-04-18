@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { DashboardAccountMenu } from "@/components/DashboardAccountMenu";
 import { useDashboardSession } from "@/components/DashboardSessionProvider";
+import { tenantDashboardBase, tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import {
   hasKitchenQueueAccess,
   hasWaitStaffAccess,
@@ -17,16 +18,20 @@ import {
 
 type NavLink = { href: string; label: string; section: DashboardSectionId };
 
-function buildLinks(labelOrders: string, labelGuest: string): NavLink[] {
+function buildLinks(
+  slug: string,
+  labelOrders: string,
+  labelGuest: string
+): NavLink[] {
   return [
-    { href: "/dashboard", label: "Overview", section: "overview" },
-    { href: "/dashboard/menu", label: "Menu", section: "menu" },
-    { href: "/dashboard/tables", label: "Tables", section: "tables" },
-    { href: "/dashboard/stations", label: "Stations", section: "stations" },
-    { href: "/dashboard/wait-staff", label: labelGuest, section: "waitStaff" },
-    { href: "/dashboard/orders", label: labelOrders, section: "orders" },
-    { href: "/dashboard/office", label: "Office", section: "office" },
-    { href: "/dashboard/branding", label: "Options", section: "branding" },
+    { href: tenantDashboardHref(slug, ""), label: "Overview", section: "overview" },
+    { href: tenantDashboardHref(slug, "/menu"), label: "Menu", section: "menu" },
+    { href: tenantDashboardHref(slug, "/tables"), label: "Tables", section: "tables" },
+    { href: tenantDashboardHref(slug, "/stations"), label: "Stations", section: "stations" },
+    { href: tenantDashboardHref(slug, "/wait-staff"), label: labelGuest, section: "waitStaff" },
+    { href: tenantDashboardHref(slug, "/orders"), label: labelOrders, section: "orders" },
+    { href: tenantDashboardHref(slug, "/office"), label: "Office", section: "office" },
+    { href: tenantDashboardHref(slug, "/branding"), label: "Options", section: "branding" },
   ];
 }
 
@@ -54,6 +59,8 @@ function useDashboardNavModel({
   sessionPermissions,
 }: DashboardNavProps) {
   const pathname = usePathname();
+  const params = useParams();
+  const slug = typeof params?.slug === "string" ? params.slug : "";
   const { session } = useDashboardSession();
   const role = sessionRole ?? session?.user?.role ?? "";
   const permissions = sessionPermissions ?? (session?.user as { permissions?: unknown })?.permissions;
@@ -64,8 +71,8 @@ function useDashboardNavModel({
     role !== STAFF_GRANULAR_ROLE;
 
   const links = useMemo(
-    () => buildLinks(navLabelOrders, navLabelGuestOrders),
-    [navLabelOrders, navLabelGuestOrders]
+    () => (slug ? buildLinks(slug, navLabelOrders, navLabelGuestOrders) : []),
+    [slug, navLabelOrders, navLabelGuestOrders]
   );
 
   const visible = useMemo(
@@ -91,16 +98,20 @@ function useDashboardNavModel({
     [access, legacyStaff, links, staffMayEditMenuTables]
   );
 
+  const home = slug ? tenantDashboardBase(slug) : "";
+  const office = slug ? tenantDashboardHref(slug, "/office") : "";
+  const wait = slug ? tenantDashboardHref(slug, "/wait-staff") : "";
+
   const linkActive = useCallback(
     (href: string) =>
       pathname === href ||
-      (href === "/dashboard/office" && pathname.startsWith("/dashboard/office")) ||
-      (href === "/dashboard/wait-staff" && pathname.startsWith("/dashboard/wait-staff")) ||
-      (href !== "/dashboard" &&
-        href !== "/dashboard/office" &&
-        href !== "/dashboard/wait-staff" &&
-        pathname.startsWith(href)),
-    [pathname]
+      (href === office && pathname.startsWith(office + "/")) ||
+      (href === wait && pathname.startsWith(wait + "/")) ||
+      (href !== home &&
+        href !== office &&
+        href !== wait &&
+        (pathname === href || pathname.startsWith(href + "/"))),
+    [pathname, home, office, wait]
   );
 
   return { visible, linkActive };

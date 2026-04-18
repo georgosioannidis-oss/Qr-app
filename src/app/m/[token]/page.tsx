@@ -7,6 +7,7 @@ import { loadCustomerTableWithMenuByToken } from "@/lib/load-customer-table";
 import { normalizePublicMediaUrl } from "@/lib/media-url";
 import { resolvedMenuItemAllergenCodes } from "@/lib/merge-menu-allergens";
 import { restaurantUsesStripeCheckout } from "@/lib/restaurant-checkout";
+import { isGuestQrOrderingBlocked } from "@/lib/guest-ordering-pause";
 import { MenuView } from "./MenuView";
 
 export const revalidate = 30;
@@ -80,6 +81,7 @@ export default async function TableMenuPage({
   return (
     <MenuView
         restaurantName={table.restaurant.name}
+        restaurantSlug={table.restaurant.slug}
         tableName={table.name}
         tableToken={token}
         tableLogoUrl={table.restaurant.logoUrl ?? undefined}
@@ -87,7 +89,11 @@ export default async function TableMenuPage({
         usesOnlineCheckout={usesOnlineCheckout}
         payAtTableCardEnabled={table.restaurant.payAtTableCardEnabled === true}
         payAtTableCashEnabled={table.restaurant.payAtTableCashEnabled === true}
-        guestOrderingPaused={table.restaurant.guestQrOrderingPaused === true}
+        guestOrderingPaused={isGuestQrOrderingBlocked({
+          restaurantPaused: table.restaurant.guestQrOrderingPaused === true,
+          sectionPaused: table.tableSection?.guestQrOrderingPaused === true,
+          tablePaused: table.guestQrOrderingPaused === true,
+        })}
         categories={menu.map((c) => ({
         id: c.id,
         name: c.name,

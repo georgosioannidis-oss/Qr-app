@@ -1,198 +1,237 @@
 "use client";
 
-import { allergenLabel } from "@/lib/allergens";
-import { allergenPhotoSrc } from "@/lib/allergen-assets";
+import { useState, type ReactNode } from "react";
 
-/** Guest menu: readable next to dish names */
+import { allergenPhotoSrc } from "@/lib/allergen-assets";
+import { allergenLabel } from "@/lib/allergens";
+
+/**
+ * EU-style allergen marks: solid colour disc + white silhouette
+ * (aligned with common “food allergen icons” chart layouts).
+ */
+const svgCls = "h-full w-full";
+
 const GUEST_BOX =
-  "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md ring-1 ring-black/10 sm:h-8 sm:w-8";
-/** Dashboard list rows: keep compact */
+  "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ring-1 ring-black/15 shadow-sm overflow-hidden sm:h-6 sm:w-6";
 const DENSE_BOX =
-  "inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] ring-1 ring-black/10";
+  "inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full ring-1 ring-black/12 overflow-hidden [&_svg]:!h-full [&_svg]:!w-full [&_img]:!h-full [&_img]:!w-full";
+
+function AllergenMark({ fill, children }: { fill: string; children: ReactNode }) {
+  return (
+    <svg viewBox="0 0 24 24" className={svgCls} aria-hidden>
+      <circle cx="12" cy="12" r="11" fill={fill} />
+      <g fill="#fff">{children}</g>
+    </svg>
+  );
+}
 
 function IconGluten() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path stroke="#a67c00" strokeWidth="1.1" strokeLinecap="round" d="M8 14V3.5" fill="none" />
-      <ellipse cx="5.8" cy="6.2" rx="1.2" ry="2" fill="#d4af37" transform="rotate(-28 5.8 6.2)" />
-      <ellipse cx="10.2" cy="7" rx="1.2" ry="2" fill="#d4af37" transform="rotate(28 10.2 7)" />
-      <ellipse cx="8" cy="4.3" rx="1.1" ry="1.7" fill="#e8c84a" />
-    </svg>
+    <AllergenMark fill="#f1c40f">
+      <rect x="11.1" y="5" width="1.8" height="15" rx="0.4" />
+      <ellipse cx="12" cy="4.2" rx="1.4" ry="1.6" />
+      <ellipse cx="9.2" cy="6.5" rx="1.5" ry="2" transform="rotate(-35 9.2 6.5)" />
+      <ellipse cx="14.8" cy="6.5" rx="1.5" ry="2" transform="rotate(35 14.8 6.5)" />
+      <ellipse cx="8.8" cy="9.2" rx="1.45" ry="2" transform="rotate(-38 8.8 9.2)" />
+      <ellipse cx="15.2" cy="9.2" rx="1.45" ry="2" transform="rotate(38 15.2 9.2)" />
+      <ellipse cx="8.6" cy="12.2" rx="1.4" ry="1.95" transform="rotate(-40 8.6 12.2)" />
+      <ellipse cx="15.4" cy="12.2" rx="1.4" ry="1.95" transform="rotate(40 15.4 12.2)" />
+      <ellipse cx="9" cy="15" rx="1.35" ry="1.85" transform="rotate(-42 9 15)" />
+      <ellipse cx="15" cy="15" rx="1.35" ry="1.85" transform="rotate(42 15 15)" />
+      <ellipse cx="9.6" cy="17.6" rx="1.25" ry="1.7" transform="rotate(-44 9.6 17.6)" />
+      <ellipse cx="14.4" cy="17.6" rx="1.25" ry="1.7" transform="rotate(44 14.4 17.6)" />
+    </AllergenMark>
   );
 }
 
 function IconMilk() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path
-        fill="#6eb5e8"
-        d="M5 2h6v1.2L10 6v7.5c0 .8-.7 1.5-1.5 1.5h-1C6.7 15 6 14.3 6 13.5V6L5 3.2V2zm1.2 2L7 6.2V13h2V6.2L9.8 4H6.2z"
-      />
-    </svg>
+    <AllergenMark fill="#3949ab">
+      <path d="M5.2 8.8h4V6.9L8.6 5.2H6.5L5.6 7v1.8zm1.1 1.2h1.8v9.8a1 1 0 01-1 1H7.3a1 1 0 01-1-1V10z" />
+      <path d="M14.5 9.8h5v9a1.3 1.3 0 01-1.3 1.3h-2.4a1.3 1.3 0 01-1.3-1.3V9.8z" />
+      <path d="M14.5 9.8c0-1.7 1.1-3 2.5-3s2.5 1.3 2.5 3h-5z" />
+    </AllergenMark>
   );
 }
 
 function IconEggs() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <ellipse cx="8" cy="8.5" rx="3.2" ry="4.2" fill="#f5d76e" />
-    </svg>
+    <AllergenMark fill="#ff9800">
+      <ellipse cx="12" cy="14" rx="7.2" ry="5.2" />
+      <circle cx="12" cy="12.2" r="3.3" />
+    </AllergenMark>
   );
 }
 
 function IconFish() {
+  const bg = "#42a5f5";
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path
-        fill="#4a90c9"
-        d="M2 8c2-1.5 4-2 6-2v1.2l2-1.5v2.6L8 6.8V8c-2 0-4 .5-6 2z"
-      />
-      <circle cx="4.5" cy="7.3" r="0.6" fill="#1a3a52" />
-    </svg>
+    <AllergenMark fill={bg}>
+      {/* Tail left → head right; then mirror to match chart (head left): flip x */}
+      <g transform="translate(24 0) scale(-1 1)">
+        <path d="M3 12L7.5 7v3H14c4.2 0 7 1.8 7 2s-2.8 2-7 2H7.5v3L3 12z" />
+        <path d="M14.5 7.5L16.5 5l1 3.5h-3z" />
+        <path d="M14.5 16.5L16.5 19l1-3.5h-3z" />
+        <path
+          fill="none"
+          stroke="#fff"
+          strokeWidth="0.85"
+          strokeLinecap="round"
+          d="M10.5 12.3c0.9-1.1 2.1-1.6 3.3-1.4"
+        />
+        <circle cx="7.9" cy="12" r="1.25" fill={bg} />
+        <circle cx="7.75" cy="12" r="0.6" fill="#fff" />
+      </g>
+    </AllergenMark>
   );
 }
 
 function IconCrustaceans() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
+    <AllergenMark fill="#ec407a">
+      <ellipse cx="12" cy="14.5" rx="5.2" ry="3.6" />
+      <path d="M7.5 6.5c-1.8 1-3 2.8-3.2 4.8l2.4 0.6c0.4-1.4 1.3-2.6 2.5-3.4l-1.7-2zm9 0l1.7-2c1.2 0.8 2.1 2 2.5 3.4l2.4-0.6C22.5 9.3 21.3 7.5 19.5 6.5l-1.7 2z" />
+      <circle cx="10" cy="13" r="0.85" />
+      <circle cx="14" cy="13" r="0.85" />
       <path
-        fill="#e07a5f"
-        d="M11 3.5c.8.3 1.4 1 1.6 1.8-.5-.1-1 .1-1.4.4.6.5 1 1.2 1.1 2-.4-.3-.9-.4-1.4-.3.3.7.3 1.5 0 2.2l-.9-.6c.2-.5.2-1 0-1.5-.5.4-1.1.6-1.8.5v1.5H8v-1.5c-.7 0-1.3-.2-1.8-.5-.2.5-.2 1 0 1.5l-.9.6c-.3-.7-.3-1.5 0-2.2-.5-.1-1 .1-1.4.3.1-.8.5-1.5 1.1-2-.4-.3-.9-.5-1.4-.4.2-.8.8-1.5 1.6-1.8.3.5.8.9 1.4 1-.1.8.1 1.6.6 2.2.6-.4 1.3-.6 2.1-.6s1.5.2 2.1.6c.5-.6.7-1.4.6-2.2.6-.1 1.1-.5 1.4-1z"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="1"
+        strokeLinecap="round"
+        d="M6.8 16.2l-2.2 2.8M8 17.8l-1.4 3M9.6 18.5l-0.6 3M14.4 18.5l0.6 3M16 17.8l1.4 3M17.2 16.2l2.2 2.8"
       />
-    </svg>
+    </AllergenMark>
   );
 }
 
 function IconMolluscs() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
+    <AllergenMark fill="#f06292">
+      <path d="M4 14.5c0-4.2 3.6-7.8 8-7.8s8 3.6 8 7.8v1.2H4v-1.2z" />
       <path
-        fill="#8aa6b8"
-        d="M3 10c0-2.5 2-4.5 5-4.5s5 2 5 4.5c0 .5-.1 1-.3 1.5H3.3c-.2-.5-.3-1-.3-1.5z"
+        fill="none"
+        stroke="#f8bbd0"
+        strokeWidth="0.5"
+        strokeLinecap="round"
+        d="M12 15.2L7.5 8M12 15.2L9 6.8M12 15.2L12 6M12 15.2L15 6.8M12 15.2L16.5 8M12 15.2L18 10"
       />
-      <path fill="none" stroke="#5a7588" strokeWidth="0.6" d="M5 9.5h6" />
-    </svg>
+    </AllergenMark>
   );
 }
 
 function IconPeanuts() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <ellipse cx="6" cy="9" rx="2.2" ry="3" fill="#c4a574" transform="rotate(-35 6 9)" />
-      <ellipse cx="10" cy="7" rx="2.2" ry="3" fill="#a88452" transform="rotate(35 10 7)" />
-    </svg>
+    <AllergenMark fill="#795548">
+      <ellipse cx="9" cy="14" rx="3.8" ry="5.5" transform="rotate(-38 9 14)" />
+      <ellipse cx="15" cy="11" rx="3.8" ry="5.5" transform="rotate(42 15 11)" />
+      <ellipse cx="14.5" cy="10.5" rx="1.9" ry="2.6" transform="rotate(42 14.5 10.5)" />
+      <path
+        fill="none"
+        stroke="#fff"
+        strokeWidth="0.85"
+        d="M12.5 8.5c1.2 0.6 2 1.8 2.2 3.2"
+        opacity="0.9"
+      />
+    </AllergenMark>
   );
 }
 
 function IconSoy() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path fill="#6b8f3d" d="M8 2c-1 2-2 3.5-1.5 5 .3-.5.8-.8 1.5-.9V2z" />
-      <path fill="#8cb04c" d="M8 6.1c.7.1 1.2.4 1.5.9.5-1.5-.5-3-1.5-5v4.1z" />
-      <ellipse cx="6" cy="11" rx="2" ry="3.5" fill="#a4c969" />
-      <ellipse cx="10" cy="11" rx="2" ry="3.5" fill="#8cb04c" />
-    </svg>
+    <AllergenMark fill="#43a047">
+      <path d="M5.5 10.5c1-2.5 4-4 8-3.5 3.5 0.4 5.5 2.2 6 4.5 0.3 1.4-0.2 2.8-1.2 3.8-1.5 1.6-4 2-6.5 1.2C8.8 15.5 6 13.8 5.5 10.5z" />
+      <circle cx="9.5" cy="11" r="1.5" />
+      <circle cx="12.5" cy="10" r="1.65" />
+      <circle cx="15.5" cy="11.2" r="1.45" />
+      <circle cx="10" cy="17.5" r="1.35" />
+      <circle cx="13.5" cy="18" r="1.25" />
+    </AllergenMark>
   );
 }
 
 function IconNuts() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <ellipse cx="8" cy="9" rx="3" ry="3.8" fill="#8b5a2b" />
-      <path fill="#5c3d1e" d="M8 5.2c-1.2.8-2 2-2 3.3 0 .3 0 .6.1.9 1.2-.5 2.8-.5 4 0 .1-.3.1-.6.1-.9 0-1.3-.8-2.5-2-3.3z" />
-    </svg>
+    <AllergenMark fill="#6d4c41">
+      <ellipse cx="9.5" cy="12" rx="3.2" ry="3.8" transform="rotate(-25 9.5 12)" />
+      <ellipse cx="14.5" cy="11.5" rx="2.4" ry="3.2" transform="rotate(18 14.5 11.5)" />
+      <ellipse cx="12.5" cy="15.5" rx="2.8" ry="2.2" transform="rotate(8 12.5 15.5)" />
+      <path
+        fill="none"
+        stroke="#fff"
+        strokeWidth="0.7"
+        opacity="0.5"
+        d="M8.2 9.5c1.2-1.8 2.8-2.8 4-2.5"
+      />
+    </AllergenMark>
   );
 }
 
 function IconCelery() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
+    <AllergenMark fill="#2e7d32">
+      <path d="M8.5 19.5V8.2c0.8-1.8 1.6-3 2.2-3.5l0.8 14.8h-3z" />
+      <path d="M12 20V6.5c0.5-0.6 1-1.5 1.3-2.8L13.2 20H12z" />
+      <path d="M15.5 19.2V8.5c0.6 1.2 1.4 2.2 2.2 3.2v7.5h-2.2z" />
       <path
-        fill="#43a047"
-        d="M8 1.5l1 2.5-.5 6h-1l-.5-6 1-2.5zm-2 4l-.8 5.5c-.2 1.2.6 2.3 1.8 2.5V9.5L6 5.5zm4 0l.8 5.5L9 13.5v-4c1.2-.2 2-1.3 1.8-2.5L10 5.5z"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="0.85"
+        strokeLinecap="round"
+        d="M6.5 7.5c1.2-1.5 2.5-2.3 3.8-2.5M10 6c0.8-1 1.6-1.6 2.5-1.8M14.5 6.8c1-0.5 2-0.3 3 0.5"
       />
-    </svg>
+    </AllergenMark>
   );
 }
 
 function IconMustard() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path fill="#e6c200" d="M6 2h4l.5 3H5.5L6 2zm-.5 5h5l-.5 7.5c0 .5-.4 1-1 1H7c-.6 0-1-.5-1-1L5.5 7z" />
-    </svg>
+    <AllergenMark fill="#fb8c00">
+      <rect x="9.2" y="4" width="5.6" height="3.2" rx="0.6" />
+      <path d="M7 8.5h10v11.5a2.2 2.2 0 01-2.2 2.2H9.2A2.2 2.2 0 017 20V8.5z" />
+      <circle cx="12" cy="2.5" r="1.05" />
+    </AllergenMark>
   );
 }
 
 function IconSesame() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <circle cx="6" cy="7" r="1.1" fill="#d4b896" />
-      <circle cx="10" cy="6" r="1.1" fill="#c4a882" />
-      <circle cx="8" cy="10" r="1.1" fill="#e8d4b8" />
-      <circle cx="5" cy="10.5" r="0.9" fill="#b8956a" />
-      <circle cx="11" cy="9" r="0.9" fill="#a88460" />
-    </svg>
-  );
-}
-
-function IconSulphites() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path fill="#c62828" d="M5 2h6l1 10H4L5 2zm1 2l-.5 6h5L10 4H6z" />
-      <path fill="#ff8a80" d="M6 6h4v3H6z" opacity="0.85" />
-    </svg>
+    <AllergenMark fill="#7e57c2">
+      <ellipse cx="9" cy="11" rx="1.4" ry="2.2" transform="rotate(-25 9 11)" />
+      <ellipse cx="12" cy="9.5" rx="1.4" ry="2.3" transform="rotate(5 12 9.5)" />
+      <ellipse cx="15" cy="11" rx="1.4" ry="2.2" transform="rotate(25 15 11)" />
+      <ellipse cx="10.5" cy="14" rx="1.3" ry="2" transform="rotate(-12 10.5 14)" />
+      <ellipse cx="13.8" cy="14.2" rx="1.3" ry="2" transform="rotate(15 13.8 14.2)" />
+      <ellipse cx="12" cy="16.8" rx="1.2" ry="1.8" />
+    </AllergenMark>
   );
 }
 
 function IconLupin() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path fill="#7e57c2" d="M8 2c1.5 2 2 3.5 1.5 5l-.5 7h-2l-.5-7C6 5.5 6.5 4 8 2z" />
-      <circle cx="8" cy="6" r="1.2" fill="#b39ddb" />
-    </svg>
+    <AllergenMark fill="#ffc107">
+      <path d="M7.5 9.5C7 8 8.5 6.5 10 7c1.2 0.4 1.8 1.8 1.5 3.2-0.2 1-1 2-2 2.5-0.8-1.8-1.5-2.8-2-3.2z" />
+      <path d="M11.5 8.5c-0.5-1.8 1-3.2 2.8-3 1.5 0.2 2.5 1.6 2.3 3.2-0.2 1.3-1.2 2.5-2.5 3-0.5-1.6-1.2-2.8-1.6-3.2z" />
+      <path d="M15.5 10.5c-0.3-1.6 1.2-2.8 2.8-2.5 1.4 0.2 2.3 1.5 2 3-0.3 1.4-1.5 2.6-3 3-0.2-1.5-0.8-2.8-1.8-3.5z" />
+    </AllergenMark>
   );
 }
 
 function IconAlcohol() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path fill="#8d6e63" d="M3 12h4v2H3v-2zm5-8l1 6H7l1-6h0z" />
-      <path fill="#5d4037" d="M9 4h3v1.5c0 1-.7 1.8-1.5 1.8H9.5L9 4z" />
-    </svg>
-  );
-}
-
-function IconVegetarian() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path
-        fill="#2e7d32"
-        d="M8 14c-2-3-4-5.5-4-8.5a4 4 0 018 0c0 3-2 5.5-4 8.5z"
-      />
-      <path fill="#66bb6a" d="M8 12.5c-1.2-1.8-2.5-3.5-2.5-6A2.5 2.5 0 018 7a2.5 2.5 0 012.5 2.5c0 2.5-1.3 4.2-2.5 6z" />
-    </svg>
-  );
-}
-
-function IconGarlic() {
-  return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <ellipse cx="8" cy="9" rx="3" ry="4" fill="#f5f5f5" />
-      <path fill="#9ccc65" d="M8 2c-.5 1-1 2-.8 3.2h1.6c.2-1.2-.3-2.2-.8-3.2z" />
-      <path stroke="#bdbdbd" strokeWidth="0.4" fill="none" d="M6.5 6.5h3M6.5 8h3M6.5 9.5h3" />
-    </svg>
+    <AllergenMark fill="#8e24aa">
+      <path d="M8.2 4h7.6l-1 8.8c-0.4 1.8-2.2 3.2-4.8 3.2s-4.4-1.4-4.8-3.2L8.2 4z" />
+      <path d="M11.2 17h3.6v3.2h-3.6V17z" />
+      <path d="M8 21.2h8v1H8v-1.2z" />
+    </AllergenMark>
   );
 }
 
 function IconMushroom() {
   return (
-    <svg viewBox="0 0 16 16" className="h-[0.72rem] w-[0.72rem] sm:h-[0.78rem] sm:w-[0.78rem]" aria-hidden>
-      <path
-        fill="#a1887f"
-        d="M3 9c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5v.5H3V9zm5 1.5v3.5h-1v-3.5"
-      />
-      <ellipse cx="8" cy="6" rx="4.5" ry="3" fill="#bcaaa4" />
-    </svg>
+    <AllergenMark fill="#8d6e63">
+      <path d="M4.5 14.5c0-4.5 3.4-7.5 7.5-7.5s7.5 3 7.5 7.5v1H4.5v-1z" />
+      <rect x="10" y="14.5" width="4" height="6.5" rx="0.8" />
+    </AllergenMark>
   );
 }
 
@@ -222,16 +261,10 @@ function iconForCode(code: string) {
       return <IconMustard />;
     case "sesame":
       return <IconSesame />;
-    case "sulphites":
-      return <IconSulphites />;
     case "lupin":
       return <IconLupin />;
     case "alcohol":
       return <IconAlcohol />;
-    case "vegetarian":
-      return <IconVegetarian />;
-    case "garlic":
-      return <IconGarlic />;
     case "mushroom":
       return <IconMushroom />;
     default:
@@ -239,10 +272,29 @@ function iconForCode(code: string) {
   }
 }
 
+function AllergenTile({ code }: { code: string }) {
+  const src = allergenPhotoSrc(code);
+  const svg = iconForCode(code);
+  const [useSvg, setUseSvg] = useState(!src);
+
+  if (src && !useSvg) {
+    return (
+      <img
+        src={src}
+        alt=""
+        className="h-full w-full object-contain"
+        loading="lazy"
+        decoding="async"
+        onError={() => setUseSvg(true)}
+      />
+    );
+  }
+  return svg;
+}
+
 type AllergenIconRowProps = {
   codes: string[];
   className?: string;
-  /** Larger icons on dashboard rows */
   variant?: "guest" | "dense";
 };
 
@@ -250,35 +302,19 @@ export function AllergenIconRow({ codes, className = "", variant = "guest" }: Al
   if (!codes.length) return null;
   const isGuest = variant === "guest";
   const box = isGuest ? GUEST_BOX : DENSE_BOX;
-  const imgClass = isGuest
-    ? "h-5 w-5 object-contain sm:h-6 sm:w-6"
-    : "h-3 w-3 object-contain";
-  const svgBoost = isGuest ? "[&_svg]:!h-5 [&_svg]:!w-5 sm:[&_svg]:!h-6 sm:[&_svg]:!w-6" : "";
   return (
     <span
-      className={`inline-flex flex-wrap items-center ${isGuest ? "gap-1" : "gap-0.5"} ${className}`}
+      className={`inline-flex flex-wrap items-center ${isGuest ? "gap-0.5" : "gap-0.5"} ${className}`}
       role="list"
       aria-label="Allergens and dietary markers"
     >
       {codes.map((code) => {
         const label = allergenLabel(code);
-        const src = allergenPhotoSrc(code);
-        const inner = src ? (
-          <img
-            src={src}
-            alt=""
-            className={imgClass}
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          iconForCode(code)
-        );
-        if (!inner) return null;
+        if (!iconForCode(code)) return null;
         return (
-          <span key={code} role="listitem" title={label} className={`${box} bg-white/90 ${svgBoost}`}>
+          <span key={code} role="listitem" title={label} className={box}>
             <span className="sr-only">{label}</span>
-            {inner}
+            <AllergenTile code={code} />
           </span>
         );
       })}

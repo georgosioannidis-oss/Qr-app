@@ -23,7 +23,7 @@ export type PrintOrderPayload = {
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Pending payment",
-  paid: "Paid",
+  paid: "Order confirmed",
   preparing: "Preparing",
   ready: "Ready for pickup",
   delivered: "Delivered",
@@ -66,7 +66,7 @@ export function PrintOrderTicket({
             onClick={onPrint}
             className="min-h-[44px] rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-neutral-800"
           >
-            Print
+            Print or save as PDF
           </button>
           <Link
             href={backHref}
@@ -76,7 +76,8 @@ export function PrintOrderTicket({
           </Link>
         </div>
         <p className="mt-4 text-sm text-neutral-600">
-          Opens your system print dialog (pick a printer or “Save as PDF”).
+          Opens your system print dialog — choose <strong className="text-neutral-800">Save as PDF</strong> or a
+          printer. The ticket includes every line on this order.
         </p>
       </div>
 

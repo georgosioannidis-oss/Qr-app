@@ -4,7 +4,6 @@
  */
 
 export const ALLERGEN_DEFS = [
-  { code: "vegetarian", label: "Vegetarian" },
   { code: "gluten", label: "Gluten" },
   { code: "crustaceans", label: "Crustaceans" },
   { code: "eggs", label: "Eggs" },
@@ -16,11 +15,9 @@ export const ALLERGEN_DEFS = [
   { code: "celery", label: "Celery" },
   { code: "mustard", label: "Mustard" },
   { code: "sesame", label: "Sesame" },
-  { code: "sulphites", label: "Sulphites" },
   { code: "lupin", label: "Lupin" },
   { code: "molluscs", label: "Molluscs" },
   { code: "alcohol", label: "Alcohol" },
-  { code: "garlic", label: "Garlic" },
   { code: "mushroom", label: "Mushroom" },
 ] as const;
 
@@ -51,7 +48,12 @@ export function parseStoredAllergenCodes(raw: unknown): string[] {
     }
   }
   if (!Array.isArray(v)) return [];
-  const uniq = [...new Set(v.map((x) => String(x)).filter((c) => ALLOWED.has(c)))];
+  // Legacy: sulphites markers use the alcohol icon / code only.
+  const mapped = v.map((x) => {
+    const c = String(x);
+    return c === "sulphites" ? "alcohol" : c;
+  });
+  const uniq = [...new Set(mapped.filter((c) => ALLOWED.has(c)))];
   return sortAllergenCodes(uniq);
 }
 

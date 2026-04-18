@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { KitchenTicketPrintHint } from "@/components/KitchenTicketPrintHint";
+import { tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import { Spinner } from "@/components/ui/spinner";
 import {
   filterOrderItemsForPreset,
@@ -76,13 +79,17 @@ function formatDate(iso: string) {
 
 function OrderStatusBadge({ status }: { status: string }) {
   /*
+   * `paid` in the DB means the guest confirmed the order (pay-at-table / preference), not that the
+   * table bill was collected — so we do not show a “Paid” pill here (avoids kitchen confusion).
+   */
+  if (status === "paid") return null;
+  /*
    * Always use dark text on light-tinted pills. Do not use Tailwind `dark:` (OS preference) on the
    * dashboard — use `group-data-[theme=dark]/dashboard:` on `.dashboard-theme-root` instead.
    */
   const styles: Record<string, string> = {
     pending:
       "bg-yellow-100 text-yellow-950 ring-2 ring-yellow-700/55 group-data-[theme=dark]/dashboard:bg-yellow-950/35 group-data-[theme=dark]/dashboard:text-yellow-50 group-data-[theme=dark]/dashboard:ring-yellow-500/50",
-    paid: "bg-primary/20 text-ink ring-1 ring-primary/30",
     preparing:
       "bg-amber-100 text-amber-950 ring-2 ring-amber-700/70 shadow-sm text-sm font-bold",
     ready:
@@ -92,7 +99,6 @@ function OrderStatusBadge({ status }: { status: string }) {
   };
   const labels: Record<string, string> = {
     pending: "Pending",
-    paid: "Paid",
     preparing: "Preparing",
     ready: "Ready for pickup",
     delivered: "Delivered",
@@ -209,7 +215,7 @@ type Tab = "current" | "history";
 const STATUS_FILTER_OPTIONS = [
   { value: "all", label: "All statuses" },
   { value: "pending", label: "Pending" },
-  { value: "paid", label: "Paid" },
+  { value: "paid", label: "Confirmed (guest)" },
   { value: "preparing", label: "Preparing" },
   { value: "ready", label: "Ready for pickup" },
   { value: "delivered", label: "Delivered" },
@@ -222,6 +228,8 @@ type OrdersListProps = {
 };
 
 export function OrdersList({ stationPreset }: OrdersListProps) {
+  const params = useParams();
+  const tenantSlug = typeof params?.slug === "string" ? params.slug : "";
   const [tab, setTab] = useState<Tab>("current");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -579,6 +587,18 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
                 <span className="ml-2 text-sm text-ink-muted">
                   {formatDate(order.createdAt)}
                 </span>
+                {!stationPreset && tenantSlug ? (
+                  <div className="mt-1.5">
+                    <Link
+                      href={tenantDashboardHref(tenantSlug, `/orders/print/${order.id}`)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-[40px] items-center rounded-lg border-2 border-border bg-card px-3 py-2 text-sm font-semibold text-primary ring-primary/20 hover:bg-surface hover:underline"
+                    >
+                      Print full order (PDF)
+                    </Link>
+                  </div>
+                ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <OrderStatusBadge status={order.status ?? "pending"} />

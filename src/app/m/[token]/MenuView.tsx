@@ -13,72 +13,24 @@ import { Spinner } from "@/components/ui/spinner";
 import { AllergenIconRow } from "@/components/AllergenIcons";
 import { confirmDestructiveAction } from "@/lib/confirm-destructive";
 import { createGuestSessionId } from "@/lib/guest-session-id";
+import {
+  guestOptionSummaryFromSelection,
+  isGuestMenuBilingualSlug,
+  localizeGuestMenuCategories,
+  type GuestMenuCategory as Category,
+  type GuestMenuItem as Item,
+} from "@/lib/guest-demo-menu-i18n";
+import { getGuestMenuUiStrings, type GuestMenuLang, type GuestMenuUiStrings } from "@/lib/guest-menu-ui-strings";
 
-/** Guest menu UI copy (English only until i18n returns). */
-const M = {
-  /** After returning from Stripe (?paid=1) */
-  paymentSuccessfulCombined: "Payment successful. Your order was sent.",
-  /** After pay-at-table order */
-  thankYouAfterOrder: "Order sent. Thank you!",
-  /** Stripe: one line before Pay now */
-  stripePayPrompt: "Order placed — pay below to confirm your order.",
-  backToMenu: "Back to menu",
-  yourOrders: "Your orders",
-  yourOrdersHint:
-    "Orders you placed from this device. Tap one for status.",
-  noOrdersYet: "You haven't placed any orders yet.",
-  couldNotLoadOrders: "Could not load orders. Try again.",
-  cancel: "Cancel",
-  emptyMenuTitle: "No dishes to show yet",
-  emptyMenuHint:
-    "This table link works, but the restaurant hasn’t published any menu items (or they’re all hidden). Ask the owner to add items in the dashboard, or run the demo seed: npm run db:seed",
-  emptyMenuWrongLink: "If you expected a menu, check the QR link or URL (e.g. /m/table-1 for the demo).",
-  orderingPausedTitle: "Not taking orders right now",
-  orderingPausedHint:
-    "The kitchen is at capacity. Please speak to a member of staff if you need anything. Pull down on this page to refresh.",
-  callWaiterAria: "Call waiter to your table",
-  callWaiterCaption: "Call a waiter",
-  callWaiterSent: "We’ve let the staff know someone will come by.",
-  callWaiterFailed: "Couldn’t reach the restaurant. Try again in a moment.",
-  payNow: "Pay now",
-  viewPhoto: "View photo",
-  order: "Order",
-  customise: "Customise",
-  addToOrder: "Add to order",
-  close: "Close",
-  yourOrder: "Your order",
-  swipeToRemove: "Swipe left to remove",
-  decreaseQty: "Decrease quantity",
-  increaseQty: "Increase quantity",
-  remove: "Remove",
-  total: "Total",
-  placingOrder: "Placing order…",
-  placeOrderPay: "Place order & pay",
-  howToPay: "How will you pay?",
-  payCardAtTable: "Card",
-  payCardAtTableHint: "Pay at the table (terminal or reader)",
-  payCash: "Cash",
-  payCashHint: "Pay with cash to staff",
-  choosePayment: "Choose how you will pay.",
-  paymentModalSubtitle: "Tap an option to place your order.",
-  viewCart: "View cart",
-  placeOrder: "Place order",
-  placing: "Placing…",
-  chooseOptions: "Choose your options, then add to order.",
-  noteKitchen: "Note for the kitchen",
-  noteOptional: "(optional)",
-  notePlaceholder: "e.g. No onions, allergy to nuts…",
-  addToOrderBtn: "Add to order",
-  optionalExtrasHint: "Optional extras available — tap Customise to choose.",
-  cartEmptyHint: "Browse the categories above to add dishes.",
-  cartStripHint: "Tap to review or change your order",
-  allergenTrustLine: "For allergies or special diets, ask staff before ordering.",
-  searchMenu: "Search menu",
-  searchPlaceholder: "Search dishes…",
-  searchNoResults: "No dishes match your search.",
-  menuRefreshing: "Updating menu…",
-  reorderHint: "To repeat a past order, add the dishes again from the menu.",
-} as const;
+const GUEST_MENU_LANG_KEY = "guestMenuDemoLang";
+
+function findGuestItemById(categories: Category[], id: string): Item | undefined {
+  for (const c of categories) {
+    const hit = c.items.find((i) => i.id === id);
+    if (hit) return hit;
+  }
+  return undefined;
+}
 
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -91,10 +43,6 @@ function usePrefersReducedMotion(): boolean {
     return () => mq.removeEventListener("change", apply);
   }, []);
   return reduced;
-}
-
-function itemsInCartLabel(count: number) {
-  return count === 1 ? `${count} item in cart` : `${count} items in cart`;
 }
 
 /** Simple credit-card glyph for the pay-at-table modal */
@@ -139,32 +87,6 @@ function WaiterBellGlyph({ className }: { className?: string }) {
   );
 }
 
-type OptionChoice = { id: string; label: string; priceCents: number };
-type OptionGroup = {
-  id: string;
-  label: string;
-  required: boolean;
-  type: "single" | "multi";
-  choices: OptionChoice[];
-};
-
-type Item = {
-  id: string;
-  name: string;
-  description?: string;
-  price: number;
-  imageUrl?: string;
-  optionGroups?: OptionGroup[];
-  /** Parsed from `MenuItem.allergenCodes` — shown beside the name. */
-  allergenCodes?: string[];
-};
-
-type Category = {
-  id: string;
-  name: string;
-  items: Item[];
-};
-
 type CartItem = Item & {
   quantity: number;
   notes?: string;
@@ -197,21 +119,6 @@ type TableOrderSummary = {
   waiterRelayPending?: boolean;
 };
 
-function guestOrderStatusLabel(status: string, waiterRelayPending?: boolean): string {
-  if (waiterRelayPending && status === "paid") {
-    return "Waiting for staff";
-  }
-  const map: Record<string, string> = {
-    pending: "Awaiting payment",
-    paid: "Order accepted",
-    preparing: "Preparing",
-    ready: "Ready for pickup",
-    delivered: "Delivered",
-    declined: "Order declined",
-  };
-  return map[status] ?? status;
-}
-
 function formatOrderWhen(iso: string) {
   return new Date(iso).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
 }
@@ -228,6 +135,8 @@ type Props = {
   /** Kitchen overload: block new guest orders from this QR link (staff flow unchanged). */
   guestOrderingPaused?: boolean;
   categories: Category[];
+  /** When `demo-restaurant` or `moustakallis`, guest can switch EL/EN for menu + UI. */
+  restaurantSlug?: string | null;
 };
 
 export function MenuView({
@@ -241,6 +150,7 @@ export function MenuView({
   payAtTableCashEnabled = true,
   guestOrderingPaused = false,
   categories,
+  restaurantSlug = null,
 }: Props) {
   const formatPrice = useCallback(
     (cents: number) =>
@@ -266,16 +176,46 @@ export function MenuView({
   const [isRefreshing, startRefreshTransition] = useTransition();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [menuSearch, setMenuSearch] = useState("");
+  const [searchMenuOpen, setSearchMenuOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [flashItemId, setFlashItemId] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement>(null);
   const pullStartY = useRef<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const [callWaiterBusy, setCallWaiterBusy] = useState(false);
 
+  const bilingual = useMemo(() => isGuestMenuBilingualSlug(restaurantSlug), [restaurantSlug]);
+  const [menuLang, setMenuLang] = useState<GuestMenuLang>("el");
+  useEffect(() => {
+    if (!bilingual || typeof window === "undefined") return;
+    try {
+      const s = localStorage.getItem(GUEST_MENU_LANG_KEY);
+      if (s === "en" || s === "el") setMenuLang(s);
+    } catch {
+      /* ignore */
+    }
+  }, [bilingual]);
+  useEffect(() => {
+    if (!bilingual || typeof window === "undefined") return;
+    try {
+      localStorage.setItem(GUEST_MENU_LANG_KEY, menuLang);
+    } catch {
+      /* ignore */
+    }
+  }, [bilingual, menuLang]);
+  const ui = useMemo(
+    () => getGuestMenuUiStrings(bilingual ? menuLang : "en"),
+    [bilingual, menuLang]
+  );
+  const localizedCategories = useMemo(
+    () =>
+      bilingual ? localizeGuestMenuCategories(categories, menuLang, restaurantSlug) : categories,
+    [bilingual, categories, menuLang, restaurantSlug]
+  );
   const displayCategories = useMemo(() => {
     const q = menuSearch.trim().toLowerCase();
-    if (!q) return categories;
-    return categories
+    if (!q) return localizedCategories;
+    return localizedCategories
       .map((c) => ({
         ...c,
         items: c.items.filter(
@@ -285,7 +225,24 @@ export function MenuView({
         ),
       }))
       .filter((c) => c.items.length > 0);
-  }, [categories, menuSearch]);
+  }, [localizedCategories, menuSearch]);
+
+  useEffect(() => {
+    if (!bilingual) return;
+    setCart((prev) =>
+      prev.map((line) => {
+        const item = findGuestItemById(localizedCategories, line.id);
+        if (!item) return line;
+        return {
+          ...line,
+          name: item.name,
+          description: item.description,
+          optionGroups: item.optionGroups,
+          optionSummary: guestOptionSummaryFromSelection(item, line.selectedOptions),
+        };
+      })
+    );
+  }, [bilingual, menuLang, localizedCategories]);
 
   /** Set on the client only — avoids SSR/localStorage mismatch and hydration issues. */
   const [guestSessionId, setGuestSessionId] = useState("");
@@ -305,15 +262,19 @@ export function MenuView({
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    const lang = navigator.language?.split("-")[0]?.trim();
-    if (lang && /^[a-z]{2}$/i.test(lang)) {
-      document.documentElement.lang = lang.toLowerCase();
+    if (bilingual) {
+      document.documentElement.lang = menuLang;
+      return;
     }
-  }, []);
+    const nav = navigator.language?.split("-")[0]?.trim();
+    if (nav && /^[a-z]{2}$/i.test(nav)) {
+      document.documentElement.lang = nav.toLowerCase();
+    }
+  }, [bilingual, menuLang]);
 
   const callWaiter = useCallback(async () => {
     setCallWaiterBusy(true);
-    toast.success(M.callWaiterSent);
+    toast.success(ui.callWaiterSent);
     try {
       const res = await fetch("/api/customer/waiter-call", {
         method: "POST",
@@ -324,14 +285,14 @@ export function MenuView({
         const text = await res.text();
         let data: { error?: string } = {};
         try { if (text) data = JSON.parse(text); } catch { /* ignore */ }
-        toast.error(data.error ?? M.callWaiterFailed);
+        toast.error(data.error ?? ui.callWaiterFailed);
       }
     } catch {
-      toast.error(M.callWaiterFailed);
+      toast.error(ui.callWaiterFailed);
     } finally {
       setCallWaiterBusy(false);
     }
-  }, [tableToken]);
+  }, [tableToken, ui]);
 
   useEffect(() => {
     if (!displayCategories.some((c) => c.id === activeCategory)) {
@@ -391,14 +352,14 @@ export function MenuView({
           if (text) data = JSON.parse(text) as { error?: string; orders?: TableOrderSummary[] };
         } catch {
           if (!cancelled) {
-            setOrderHistoryError(M.couldNotLoadOrders);
+            setOrderHistoryError(ui.couldNotLoadOrders);
             setOrderHistory(null);
           }
           return;
         }
         if (!res.ok) {
           if (!cancelled) {
-            setOrderHistoryError(data.error || M.couldNotLoadOrders);
+            setOrderHistoryError(data.error || ui.couldNotLoadOrders);
             setOrderHistory(null);
           }
           return;
@@ -406,7 +367,7 @@ export function MenuView({
         if (!cancelled) setOrderHistory(Array.isArray(data.orders) ? data.orders : []);
       } catch {
         if (!cancelled) {
-          setOrderHistoryError(M.couldNotLoadOrders);
+          setOrderHistoryError(ui.couldNotLoadOrders);
           setOrderHistory(null);
         }
       } finally {
@@ -417,7 +378,7 @@ export function MenuView({
     return () => {
       cancelled = true;
     };
-  }, [orderHistoryOpen, tableToken, guestSessionId]);
+  }, [orderHistoryOpen, tableToken, guestSessionId, ui]);
 
   const totalCents = cart.reduce(
     (sum, i) => sum + (i.price + (i.optionPriceModifier ?? 0)) * i.quantity,
@@ -480,7 +441,7 @@ export function MenuView({
         payAtTableCashEnabled &&
         (paymentPreference !== "card" && paymentPreference !== "cash");
       if (needsPick) {
-        toast.error(M.choosePayment);
+        toast.error(ui.choosePayment);
         return;
       }
     }
@@ -542,7 +503,7 @@ export function MenuView({
         setCart(savedCart);
         setShowPostOrderThankYou(false);
       }
-      toast.error(e instanceof Error ? e.message : "Something went wrong");
+      toast.error(e instanceof Error ? e.message : ui.orderFailedGeneric);
     } finally {
       setIsPlacing(false);
     }
@@ -577,13 +538,13 @@ export function MenuView({
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
         <div className="max-w-sm w-full text-center bg-card rounded-3xl shadow-lg border border-border p-8">
           {thankYouIcon}
-          <h2 className="text-xl font-bold text-ink mb-6 leading-snug">{M.paymentSuccessfulCombined}</h2>
+          <h2 className="text-xl font-bold text-ink mb-6 leading-snug">{ui.paymentSuccessfulCombined}</h2>
           <button
             type="button"
             onClick={() => setShowPaidSuccess(false)}
             className="min-h-[48px] w-full py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold shadow-sm ring-1 ring-black/10"
           >
-            {M.backToMenu}
+            {ui.backToMenu}
           </button>
         </div>
       </div>
@@ -598,13 +559,13 @@ export function MenuView({
             <img src={tableLogoUrl} alt="" className="h-10 w-auto mx-auto mb-3 object-contain" />
           ) : null}
           {thankYouIcon}
-          <h2 className="text-xl font-bold text-ink mb-6 leading-snug">{M.thankYouAfterOrder}</h2>
+          <h2 className="text-xl font-bold text-ink mb-6 leading-snug">{ui.thankYouAfterOrder}</h2>
           <button
             type="button"
             onClick={() => setShowPostOrderThankYou(false)}
             className="min-h-[48px] w-full py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold shadow-sm ring-1 ring-black/10"
           >
-            {M.backToMenu}
+            {ui.backToMenu}
           </button>
         </div>
       </div>
@@ -623,8 +584,8 @@ export function MenuView({
           <div className="w-14 h-14 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-200 flex items-center justify-center text-2xl mx-auto mb-4 ring-1 ring-amber-500/25">
             ⏸
           </div>
-          <h2 className="text-xl font-bold text-ink mb-3 leading-snug">{M.orderingPausedTitle}</h2>
-          <p className="text-base leading-relaxed text-ink-muted sm:text-sm">{M.orderingPausedHint}</p>
+          <h2 className="text-xl font-bold text-ink mb-3 leading-snug">{ui.orderingPausedTitle}</h2>
+          <p className="text-base leading-relaxed text-ink-muted sm:text-sm">{ui.orderingPausedHint}</p>
         </div>
       </div>
     );
@@ -634,9 +595,9 @@ export function MenuView({
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
         <div className="max-w-md w-full rounded-3xl border border-border bg-card p-8 shadow-sm text-center">
-          <h2 className="text-xl font-bold text-ink mb-2">{M.emptyMenuTitle}</h2>
-          <p className="text-base leading-relaxed text-ink-muted mb-4 sm:text-sm">{M.emptyMenuHint}</p>
-          <p className="text-sm text-ink-muted sm:text-xs">{M.emptyMenuWrongLink}</p>
+          <h2 className="text-xl font-bold text-ink mb-2">{ui.emptyMenuTitle}</h2>
+          <p className="text-base leading-relaxed text-ink-muted mb-4 sm:text-sm">{ui.emptyMenuHint}</p>
+          <p className="text-sm text-ink-muted sm:text-xs">{ui.emptyMenuWrongLink}</p>
         </div>
       </div>
     );
@@ -646,12 +607,12 @@ export function MenuView({
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
         <div className="max-w-sm w-full text-center bg-card rounded-3xl shadow-lg border border-border p-8">
-          <h2 className="text-xl font-bold text-ink mb-6 leading-snug">{M.stripePayPrompt}</h2>
+          <h2 className="text-xl font-bold text-ink mb-6 leading-snug">{ui.stripePayPrompt}</h2>
           <a
             href={payUrl}
             className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold text-center shadow-md ring-1 ring-black/10"
           >
-            {M.payNow}
+            {ui.payNow}
           </a>
         </div>
       </div>
@@ -685,7 +646,26 @@ export function MenuView({
     !orderHistoryOpen &&
     !paymentModalOpen &&
     !optionsModalItem &&
-    !imagePreviewItem;
+    !imagePreviewItem &&
+    !searchMenuOpen;
+
+  useEffect(() => {
+    if (!searchMenuOpen) return;
+    const t = window.setTimeout(() => {
+      searchInputRef.current?.focus();
+      searchInputRef.current?.select();
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [searchMenuOpen]);
+
+  useEffect(() => {
+    if (!searchMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSearchMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [searchMenuOpen]);
 
   const mainBottomPad =
     totalItems > 0
@@ -714,13 +694,53 @@ export function MenuView({
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => setOrderHistoryOpen(true)}
-              className="shrink-0 min-h-[44px] rounded-xl border-2 border-border bg-card px-3 py-2 text-sm font-semibold text-ink shadow-sm hover:border-primary/40 hover:bg-primary/5"
-            >
-              {M.yourOrders}
-            </button>
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              <button
+                type="button"
+                onClick={() => setOrderHistoryOpen(true)}
+                className="min-h-[44px] rounded-xl border-2 border-border bg-card px-3 py-2 text-sm font-semibold text-ink shadow-sm hover:border-primary/40 hover:bg-primary/5"
+              >
+                {ui.yourOrders}
+              </button>
+              {bilingual ? (
+                <div
+                  className="flex flex-wrap justify-end gap-1.5"
+                  role="group"
+                  aria-label={ui.menuLanguageGroupAria}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setMenuLang("el")}
+                    className={`flex min-h-[34px] items-center gap-1 rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
+                      menuLang === "el"
+                        ? "border-primary bg-primary/10 text-ink"
+                        : "border-border bg-card text-ink-muted hover:border-ink/20"
+                    }`}
+                    aria-pressed={menuLang === "el"}
+                  >
+                    <span className="text-base leading-none" aria-hidden>
+                      🇬🇷
+                    </span>
+                    {ui.langGreek}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMenuLang("en")}
+                    className={`flex min-h-[34px] items-center gap-1 rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
+                      menuLang === "en"
+                        ? "border-primary bg-primary/10 text-ink"
+                        : "border-border bg-card text-ink-muted hover:border-ink/20"
+                    }`}
+                    aria-pressed={menuLang === "en"}
+                  >
+                    <span className="text-base leading-none" aria-hidden>
+                      🇬🇧
+                    </span>
+                    {ui.langEnglish}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
         <div className="flex gap-1.5 overflow-x-auto px-4 pb-2 [-webkit-overflow-scrolling:touch]">
@@ -741,23 +761,27 @@ export function MenuView({
         </div>
         <div className="border-t border-border/50 bg-surface/90 px-4 py-1.5">
           <p className="text-center text-[0.65rem] leading-snug text-ink-muted sm:text-[0.7rem]">
-            {M.allergenTrustLine}
+            {ui.allergenTrustLine}
           </p>
         </div>
-        <div className="border-b border-border px-4 py-2">
-          <label className="sr-only" htmlFor="guest-menu-search">
-            {M.searchMenu}
-          </label>
-          <input
-            id="guest-menu-search"
-            type="search"
-            enterKeyHint="search"
-            autoComplete="off"
-            value={menuSearch}
-            onChange={(e) => setMenuSearch(e.target.value)}
-            placeholder={M.searchPlaceholder}
-            className="w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-ink placeholder:text-ink-muted/70 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
+        <div className="flex justify-end border-b border-border px-4 py-1 pb-1.5">
+          <button
+            type="button"
+            onClick={() => setSearchMenuOpen(true)}
+            className="inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-ink shadow-sm ring-1 ring-black/[0.03] transition-colors hover:border-primary/35 hover:bg-primary/[0.04] active:scale-[0.98] sm:min-h-[32px] sm:text-[0.8125rem]"
+            aria-haspopup="dialog"
+            aria-expanded={searchMenuOpen}
+            aria-controls="guest-menu-search-dialog"
+          >
+            <svg className="h-3.5 w-3.5 shrink-0 text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.3-4.3" />
+            </svg>
+            <span className="truncate">{ui.searchButton}</span>
+            {menuSearch.trim() ? (
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" title={menuSearch} aria-hidden />
+            ) : null}
+          </button>
         </div>
       </header>
 
@@ -780,7 +804,7 @@ export function MenuView({
             aria-busy="true"
             aria-live="polite"
           >
-            <p className="mb-3 text-center text-xs font-medium text-ink-muted">{M.menuRefreshing}</p>
+            <p className="mb-3 text-center text-xs font-medium text-ink-muted">{ui.menuRefreshing}</p>
             <div className="space-y-3">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div
@@ -794,7 +818,7 @@ export function MenuView({
           </div>
         ) : null}
         {displayCategories.length === 0 && menuSearch.trim() ? (
-          <p className="py-12 text-center text-sm text-ink-muted">{M.searchNoResults}</p>
+          <p className="py-12 text-center text-sm text-ink-muted">{ui.searchNoResults}</p>
         ) : (
           displayCategories.map((cat, catIndex) => (
           <section
@@ -820,7 +844,7 @@ export function MenuView({
                       type="button"
                       onClick={() => setImagePreviewItem(item)}
                       className="shrink-0 self-start"
-                      aria-label={M.viewPhoto}
+                      aria-label={ui.viewPhoto}
                     >
                       <img
                         src={item.imageUrl}
@@ -847,7 +871,7 @@ export function MenuView({
                       <p className="line-clamp-2 text-xs leading-snug text-ink-muted">{item.description}</p>
                     )}
                     {itemHasOptionGroups(item) && !itemHasRequiredOptionGroup(item) ? (
-                      <p className="text-[0.65rem] leading-snug text-ink-muted sm:text-xs">{M.optionalExtrasHint}</p>
+                      <p className="text-[0.65rem] leading-snug text-ink-muted sm:text-xs">{ui.optionalExtrasHint}</p>
                     ) : null}
                     <div className="mt-0.5 flex min-w-0 flex-row flex-wrap items-center justify-end gap-1.5">
                       {flashItemId === item.id ? (
@@ -870,7 +894,7 @@ export function MenuView({
                           }
                           className="min-h-[40px] min-w-0 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm ring-1 ring-black/10 transition-colors hover:bg-primary-hover"
                         >
-                          {M.order}
+                          {ui.order}
                         </button>
                       ) : itemHasRequiredOptionGroup(item) ? (
                         <button
@@ -878,7 +902,7 @@ export function MenuView({
                           onClick={() => setOptionsModalItem(item)}
                           className="min-h-[40px] min-w-0 rounded-full border-2 border-primary bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-sm transition-colors hover:bg-primary/10"
                         >
-                          {M.customise}
+                          {ui.customise}
                         </button>
                       ) : (
                         <>
@@ -887,7 +911,7 @@ export function MenuView({
                             onClick={() => setOptionsModalItem(item)}
                             className="min-h-[40px] min-w-0 rounded-full border-2 border-primary bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-sm transition-colors hover:bg-primary/10"
                           >
-                            {M.customise}
+                            {ui.customise}
                           </button>
                           <button
                             type="button"
@@ -898,7 +922,7 @@ export function MenuView({
                             }
                             className="min-h-[40px] min-w-0 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm ring-1 ring-black/10 transition-colors hover:bg-primary-hover"
                           >
-                            {M.order}
+                            {ui.order}
                           </button>
                         </>
                       )}
@@ -926,8 +950,8 @@ export function MenuView({
             className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg ring-2 ring-violet-400/50 transition hover:bg-violet-700 disabled:opacity-55 dark:bg-violet-600 dark:ring-violet-400/35 dark:hover:bg-violet-500 ${
               prefersReducedMotion ? "" : "active:scale-95"
             }`}
-            aria-label={M.callWaiterAria}
-            title={M.callWaiterAria}
+            aria-label={ui.callWaiterAria}
+            title={ui.callWaiterAria}
           >
             {callWaiterBusy ? (
               <Spinner className="h-5 w-5 border-white border-t-transparent" label="" />
@@ -936,7 +960,7 @@ export function MenuView({
             )}
           </button>
           <span className="pointer-events-none max-w-[6rem] text-center text-[0.68rem] font-medium leading-tight text-ink-muted">
-            {M.callWaiterCaption}
+            {ui.callWaiterCaption}
           </span>
         </div>
       ) : null}
@@ -944,6 +968,7 @@ export function MenuView({
       {optionsModalItem && (
         <ItemOptionsModal
           item={optionsModalItem}
+          ui={ui}
           onAdd={(notes, selectedOptions, optionPriceModifier, optionSummary) =>
             addToCart(
               optionsModalItem,
@@ -988,12 +1013,79 @@ export function MenuView({
                 onClick={() => setImagePreviewItem(null)}
                 className="mt-4 w-full min-h-[48px] rounded-xl border-2 border-border bg-surface text-base font-semibold text-ink hover:bg-ink/5 sm:text-sm"
               >
-                {M.close}
+                {ui.close}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {searchMenuOpen ? (
+        <div
+          id="guest-menu-search-dialog"
+          className="fixed inset-0 z-[37] flex items-end justify-center bg-black/45 backdrop-blur-[2px] sm:items-center sm:px-4 sm:py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guest-search-title"
+          onClick={() => setSearchMenuOpen(false)}
+        >
+          <div
+            className="flex w-full max-w-md flex-col rounded-t-3xl border border-border bg-card shadow-2xl sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <h2 id="guest-search-title" className="min-w-0 text-base font-bold text-ink sm:text-lg">
+                {ui.searchMenu}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setSearchMenuOpen(false)}
+                className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-surface text-lg font-bold leading-none text-ink hover:bg-ink/5"
+                aria-label={ui.close}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="px-4 py-3">
+              <label className="sr-only" htmlFor="guest-menu-search">
+                {ui.searchMenu}
+              </label>
+              <input
+                ref={searchInputRef}
+                id="guest-menu-search"
+                type="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                value={menuSearch}
+                onChange={(e) => setMenuSearch(e.target.value)}
+                placeholder={ui.searchPlaceholder}
+                className="w-full rounded-xl border-2 border-border bg-surface px-3 py-2.5 text-base text-ink placeholder:text-ink-muted/65 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:text-sm"
+              />
+              {menuSearch.trim() ? (
+                <button
+                  type="button"
+                  onClick={() => setMenuSearch("")}
+                  className="mt-2 text-sm font-semibold text-primary hover:underline"
+                >
+                  {ui.searchClear}
+                </button>
+              ) : null}
+              {menuSearch.trim() && displayCategories.length === 0 ? (
+                <p className="mt-4 text-center text-sm leading-snug text-ink-muted">{ui.searchNoResults}</p>
+              ) : null}
+            </div>
+            <div className="shrink-0 border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+              <button
+                type="button"
+                onClick={() => setSearchMenuOpen(false)}
+                className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-md ring-1 ring-black/10 hover:bg-primary-hover"
+              >
+                {ui.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {cartOpen && (
         <div
@@ -1005,20 +1097,20 @@ export function MenuView({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-[1.35rem] font-bold leading-tight text-ink sm:text-xl">{M.yourOrder}</h2>
+              <h2 className="text-[1.35rem] font-bold leading-tight text-ink sm:text-xl">{ui.yourOrder}</h2>
               <button
                 type="button"
                 onClick={() => setCartOpen(false)}
                 className="min-h-[44px] min-w-[44px] rounded-full bg-surface text-ink border-2 border-border hover:bg-ink/5 flex items-center justify-center text-lg leading-none font-bold"
-                aria-label={M.close}
+                aria-label={ui.close}
               >
                 ✕
               </button>
             </div>
-            <p className="text-sm text-ink-muted mb-2 sm:text-xs">{M.swipeToRemove}</p>
+            <p className="text-sm text-ink-muted mb-2 sm:text-xs">{ui.swipeToRemove}</p>
             {cart.length === 0 ? (
               <p className="mb-6 rounded-xl border border-dashed border-border bg-surface px-4 py-6 text-center text-sm text-ink-muted">
-                {M.cartEmptyHint}
+                {ui.cartEmptyHint}
               </p>
             ) : (
               <ul className="mb-5 space-y-4">
@@ -1026,21 +1118,26 @@ export function MenuView({
                   <CartLineRow
                     key={cartLineKey(i)}
                     line={i}
-                    tEachQty={`${formatPrice(i.price + (i.optionPriceModifier ?? 0))} each × ${i.quantity}`}
+                    tEachQty={ui.priceEachTimesQty(
+                      formatPrice(i.price + (i.optionPriceModifier ?? 0)),
+                      i.quantity
+                    )}
                     onDecrease={() => updateQuantity(i, -1)}
                     onIncrease={() => updateQuantity(i, 1)}
                     onRemove={() => removeFromCart(i)}
                     labels={{
-                      decrease: M.decreaseQty,
-                      increase: M.increaseQty,
-                      remove: M.remove,
+                      decrease: ui.decreaseQty,
+                      increase: ui.increaseQty,
+                      remove: ui.remove,
                     }}
+                    removeConfirmTitle={ui.removeFromCartTitle(i.name)}
+                    removeConfirmBody={ui.removeFromCartBody}
                   />
                 ))}
               </ul>
             )}
             <div className="flex items-center justify-between mb-4">
-              <span className="text-base font-medium text-ink-muted sm:text-sm">{M.total}</span>
+              <span className="text-base font-medium text-ink-muted sm:text-sm">{ui.total}</span>
               <span className="text-xl font-bold tabular-nums text-ink">{formatPrice(totalCents)}</span>
             </div>
             <button
@@ -1054,13 +1151,13 @@ export function MenuView({
             >
               {isPlacing ? (
                 <>
-                  <Spinner className="h-5 w-5 border-white border-t-transparent" label={M.placingOrder} />
-                  {M.placingOrder}
+                  <Spinner className="h-5 w-5 border-white border-t-transparent" label={ui.placingOrder} />
+                  {ui.placingOrder}
                 </>
               ) : usesOnlineCheckout ? (
-                M.placeOrderPay
+                ui.placeOrderPay
               ) : (
-                M.placeOrder
+                ui.placeOrder
               )}
             </button>
           </div>
@@ -1074,11 +1171,11 @@ export function MenuView({
             onClick={() => setCartOpen(true)}
             className="flex w-full max-w-lg mx-auto items-center justify-center gap-2 border-b border-border/70 bg-card/90 px-3 py-1.5 text-center text-[0.7rem] font-medium text-ink-muted transition-colors hover:bg-primary/[0.06] hover:text-ink sm:text-xs"
           >
-            <span className="tabular-nums">{itemsInCartLabel(totalItems)}</span>
+            <span className="tabular-nums">{ui.itemsInCart(totalItems)}</span>
             <span aria-hidden>·</span>
             <span className="font-bold tabular-nums text-primary">{formatPrice(totalCents)}</span>
             <span aria-hidden>·</span>
-            <span>{M.cartStripHint}</span>
+            <span>{ui.cartStripHint}</span>
           </button>
           <div className="max-w-lg mx-auto flex items-center gap-2 px-3 py-2">
             <button
@@ -1086,7 +1183,7 @@ export function MenuView({
               onClick={() => setCartOpen(true)}
               className="flex min-h-[44px] min-w-0 items-center gap-2 rounded-lg border-2 border-primary bg-card px-3 py-1.5 text-xs font-semibold text-primary shadow-sm transition-colors hover:bg-primary/10"
             >
-              <span>{itemsInCartLabel(totalItems)}</span>
+              <span>{ui.itemsInCart(totalItems)}</span>
               <span className="font-bold tabular-nums">{formatPrice(totalCents)}</span>
             </button>
             <button
@@ -1099,13 +1196,13 @@ export function MenuView({
             >
                 {isPlacing ? (
                   <>
-                    <Spinner className="h-4 w-4 border-white border-t-transparent" label={M.placing} />
-                    {M.placing}
+                    <Spinner className="h-4 w-4 border-white border-t-transparent" label={ui.placing} />
+                    {ui.placing}
                   </>
                 ) : usesOnlineCheckout ? (
-                  M.placeOrderPay
+                  ui.placeOrderPay
                 ) : (
-                  M.placeOrder
+                  ui.placeOrder
                 )}
               </button>
           </div>
@@ -1125,9 +1222,9 @@ export function MenuView({
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="payment-modal-title" className="text-xl font-bold text-ink text-center sm:text-2xl">
-              {M.howToPay}
+              {ui.howToPay}
             </h2>
-            <p className="mt-1 text-base text-ink-muted text-center sm:text-sm">{M.paymentModalSubtitle}</p>
+            <p className="mt-1 text-base text-ink-muted text-center sm:text-sm">{ui.paymentModalSubtitle}</p>
             <div className="mt-5 flex flex-col gap-3 sm:mt-6">
               <button
                 type="button"
@@ -1139,9 +1236,9 @@ export function MenuView({
               >
                 <PaymentCardGlyph className="h-12 w-12 shrink-0 text-primary sm:h-14 sm:w-14" />
                 <div className="min-w-0 flex-1">
-                  <span className="block text-base font-bold text-ink sm:text-lg">{M.payCardAtTable}</span>
+                  <span className="block text-base font-bold text-ink sm:text-lg">{ui.payCardAtTable}</span>
                   <span className="mt-0.5 block text-xs leading-snug text-ink-muted sm:text-sm">
-                    {M.payCardAtTableHint}
+                    {ui.payCardAtTableHint}
                   </span>
                 </div>
               </button>
@@ -1155,15 +1252,15 @@ export function MenuView({
               >
                 <PaymentCashGlyph className="h-12 w-12 shrink-0 text-primary sm:h-14 sm:w-14" />
                 <div className="min-w-0 flex-1">
-                  <span className="block text-base font-bold text-ink sm:text-lg">{M.payCash}</span>
-                  <span className="mt-0.5 block text-xs leading-snug text-ink-muted sm:text-sm">{M.payCashHint}</span>
+                  <span className="block text-base font-bold text-ink sm:text-lg">{ui.payCash}</span>
+                  <span className="mt-0.5 block text-xs leading-snug text-ink-muted sm:text-sm">{ui.payCashHint}</span>
                 </div>
               </button>
             </div>
             {isPlacing ? (
               <div className="mt-5 flex items-center justify-center gap-2 text-base text-ink-muted">
-                <Spinner className="h-5 w-5 border-primary border-t-transparent" label={M.placingOrder} />
-                {M.placingOrder}
+                <Spinner className="h-5 w-5 border-primary border-t-transparent" label={ui.placingOrder} />
+                {ui.placingOrder}
               </div>
             ) : null}
             <button
@@ -1172,7 +1269,7 @@ export function MenuView({
               onClick={() => setPaymentModalOpen(false)}
               className="mt-5 w-full min-h-[52px] rounded-2xl border-2 border-border bg-surface text-base font-semibold text-ink hover:bg-ink/5 disabled:opacity-50"
             >
-              {M.cancel}
+              {ui.cancel}
             </button>
           </div>
         </div>
@@ -1192,20 +1289,20 @@ export function MenuView({
           >
             <div className="shrink-0 border-b border-border px-5 py-4">
               <h2 id="order-history-title" className="text-lg font-bold text-ink sm:text-xl">
-                {M.yourOrders}
+                {ui.yourOrders}
               </h2>
-              <p className="mt-1 text-sm text-ink-muted">{M.yourOrdersHint}</p>
+              <p className="mt-1 text-sm text-ink-muted">{ui.yourOrdersHint}</p>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-5">
               {orderHistoryLoading ? (
                 <div className="flex items-center justify-center gap-2 py-12 text-ink-muted">
                   <Spinner className="h-6 w-6 border-primary border-t-transparent" label="" />
-                  <span className="text-sm">{M.placingOrder}</span>
+                  <span className="text-sm">{ui.placingOrder}</span>
                 </div>
               ) : orderHistoryError ? (
                 <p className="py-10 text-center text-sm text-red-800">{orderHistoryError}</p>
               ) : !orderHistory || orderHistory.length === 0 ? (
-                <p className="py-10 text-center text-sm text-ink-muted">{M.noOrdersYet}</p>
+                <p className="py-10 text-center text-sm text-ink-muted">{ui.noOrdersYet}</p>
               ) : (
                 <>
                   <ul className="space-y-2 pb-2">
@@ -1218,7 +1315,7 @@ export function MenuView({
                         >
                           <div className="flex items-start justify-between gap-2">
                             <span className="text-sm font-semibold text-ink">
-                              {guestOrderStatusLabel(o.status, o.waiterRelayPending)}
+                              {ui.orderStatus(o.status, o.waiterRelayPending)}
                             </span>
                             <span className="shrink-0 text-base font-bold tabular-nums text-ink">
                               {formatPrice(o.totalAmount)}
@@ -1228,7 +1325,7 @@ export function MenuView({
                             <span>{formatOrderWhen(o.createdAt)}</span>
                             <span aria-hidden>·</span>
                             <span>
-                              {o.itemCount === 1 ? "1 item" : `${o.itemCount} items`}
+                              {ui.orderHistoryItems(o.itemCount)}
                             </span>
                           </div>
                         </Link>
@@ -1236,7 +1333,7 @@ export function MenuView({
                     ))}
                   </ul>
                   <p className="mt-3 border-t border-border pt-3 text-center text-[0.7rem] leading-snug text-ink-muted sm:text-xs">
-                    {M.reorderHint}
+                    {ui.reorderHint}
                   </p>
                 </>
               )}
@@ -1247,7 +1344,7 @@ export function MenuView({
                 onClick={() => setOrderHistoryOpen(false)}
                 className="min-h-[48px] w-full rounded-xl border-2 border-border bg-card text-base font-semibold text-ink hover:bg-ink/5"
               >
-                {M.close}
+                {ui.close}
               </button>
             </div>
           </div>
@@ -1264,6 +1361,8 @@ function CartLineRow({
   onIncrease,
   onRemove,
   labels,
+  removeConfirmTitle,
+  removeConfirmBody,
 }: {
   line: CartItem;
   tEachQty: string;
@@ -1271,6 +1370,8 @@ function CartLineRow({
   onIncrease: () => void;
   onRemove: () => void;
   labels: { decrease: string; increase: string; remove: string };
+  removeConfirmTitle: string;
+  removeConfirmBody: string;
 }) {
   const touchStartX = useRef<number | null>(null);
 
@@ -1321,12 +1422,7 @@ function CartLineRow({
         <button
           type="button"
           onClick={() => {
-            if (
-              !confirmDestructiveAction(
-                `Remove “${line.name}” from your order?`,
-                "You can add it again from the menu."
-              )
-            )
+            if (!confirmDestructiveAction(removeConfirmTitle, removeConfirmBody))
               return;
             onRemove();
           }}
@@ -1341,11 +1437,13 @@ function CartLineRow({
 
 function ItemOptionsModal({
   item,
+  ui,
   onAdd,
   onClose,
   formatPrice,
 }: {
   item: Item;
+  ui: GuestMenuUiStrings;
   onAdd: (
     notes: string,
     selectedOptions: Record<string, string | string[]>,
@@ -1446,14 +1544,14 @@ function ItemOptionsModal({
             type="button"
             onClick={onClose}
             className="min-h-[44px] min-w-[44px] rounded-full bg-surface text-ink border-2 border-border hover:bg-ink/5 flex items-center justify-center text-lg leading-none font-bold"
-            aria-label={M.close}
+            aria-label={ui.close}
           >
             ✕
           </button>
         </div>
         <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4 pt-3">
-            <p className="mb-4 text-base leading-relaxed text-ink-muted sm:text-sm">{M.chooseOptions}</p>
+            <p className="mb-4 text-base leading-relaxed text-ink-muted sm:text-sm">{ui.chooseOptions}</p>
             <div className="space-y-5">
           {groups.map((g, groupIdx) => (
             <div key={`${g.id}-${groupIdx}`} className="pb-4 border-b border-border last:border-0">
@@ -1533,14 +1631,14 @@ function ItemOptionsModal({
             </div>
             <div className="mt-5">
             <label className="mb-2 block text-base font-semibold text-ink sm:text-sm">
-              {M.noteKitchen}{" "}
-              <span className="font-normal text-ink-muted">{M.noteOptional}</span>
+              {ui.noteKitchen}{" "}
+              <span className="font-normal text-ink-muted">{ui.noteOptional}</span>
             </label>
             <input
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder={M.notePlaceholder}
+              placeholder={ui.notePlaceholder}
               className="w-full rounded-xl border-2 border-border bg-surface px-4 py-3 text-base text-ink placeholder:text-ink-muted/70 focus:border-primary focus:outline-none sm:text-sm"
               maxLength={300}
             />
@@ -1558,7 +1656,7 @@ function ItemOptionsModal({
                 prefersReducedMotion ? "" : "active:scale-[0.99]"
               }`}
             >
-              {M.addToOrderBtn}
+              {ui.addToOrderBtn}
             </button>
           </div>
           </div>

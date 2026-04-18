@@ -12,6 +12,7 @@ out/
 
 # misc
 .DS_Store
+tmp-demo-menu-dump.json
 # Uploaded menu photos (local / deployment FS; not for git)
 public/item-images/*
 !public/item-images/.gitkeep

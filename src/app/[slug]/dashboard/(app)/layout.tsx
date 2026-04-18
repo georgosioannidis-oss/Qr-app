@@ -1,25 +1,29 @@
 /**
  * Authenticated dashboard shell: nav, restaurant name, CSS variables for primary color (light theme default).
- * Middleware already ensures a session exists for /dashboard/* except /dashboard/login.
+ * Middleware ensures a session for `/{slug}/dashboard/*`.
  */
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { DashboardAccountMenu } from "@/components/DashboardAccountMenu";
 import { DashboardSessionProvider } from "@/components/DashboardSessionProvider";
+import { DashboardNavDesktop, DashboardNavMobile } from "@/app/dashboard/DashboardNav";
 import { getDashboardServerSession } from "@/lib/auth-server";
 import {
   getCachedRestaurantBranding,
   getCachedRestaurantUserDashboardRow,
 } from "@/lib/dashboard-request-cache";
+import { tenantDashboardBase } from "@/lib/dashboard-tenant-paths";
 import { normalizePublicMediaUrl } from "@/lib/media-url";
 import { darkenHex } from "@/lib/theme";
-import { DashboardNavDesktop, DashboardNavMobile } from "../DashboardNav";
 
 export default async function AppLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ slug: string }>;
 }) {
+  const { slug } = await params;
   const session = await getDashboardServerSession();
   const restaurantId = session?.user?.restaurantId;
   const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
@@ -86,7 +90,7 @@ export default async function AppLayout({
             <div className="min-w-0 flex flex-1 flex-col gap-2 lg:max-w-[min(100%,28rem)] lg:flex-none">
               <div className="flex items-start justify-between gap-3">
                 <Link
-                  href="/dashboard"
+                  href={tenantDashboardBase(slug)}
                   prefetch
                   className={`flex min-h-[44px] min-w-0 flex-1 flex-wrap items-center gap-2 break-words text-lg font-bold leading-tight tracking-tight lg:min-h-0 ${mode === "dark" ? "text-white" : "text-ink"}`}
                 >

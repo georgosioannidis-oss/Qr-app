@@ -9,6 +9,7 @@ declare module "next-auth" {
   interface User {
     id?: string;
     restaurantId?: string;
+    restaurantSlug?: string;
     restaurantName?: string;
     role?: string;
     permissions?: unknown;
@@ -22,6 +23,7 @@ declare module "next-auth" {
     user: User & {
       id?: string;
       restaurantId?: string;
+      restaurantSlug?: string;
       restaurantName?: string;
       role?: string;
       permissions?: unknown;
@@ -35,6 +37,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     email?: string;
     restaurantId?: string;
+    restaurantSlug?: string;
     restaurantName?: string;
     role?: string;
     permissions?: unknown;

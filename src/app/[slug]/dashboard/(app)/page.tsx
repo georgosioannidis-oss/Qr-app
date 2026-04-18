@@ -4,6 +4,7 @@ import { getDashboardServerSession } from "@/lib/auth-server";
 import { CONFIRMED_ORDER_STATUSES } from "@/lib/dashboard-roles";
 import { getCachedRestaurantUserDashboardRow } from "@/lib/dashboard-request-cache";
 import { prisma } from "@/lib/prisma";
+import { tenantDashboardBase, tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import { defaultDashboardHome, resolveDashboardAccess } from "@/lib/staff-permissions";
 
 const CONFIRMED_STATUSES = [...CONFIRMED_ORDER_STATUSES];
@@ -41,7 +42,13 @@ function statusLabel(status: string) {
   return map[status] ?? status;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const base = tenantDashboardBase(slug);
   const session = await getDashboardServerSession();
   if (!session?.user?.restaurantId) redirect("/dashboard/login");
   const userId = (session.user as { id?: string }).id;
@@ -61,7 +68,7 @@ export default async function DashboardPage() {
       : { role: session.user.role ?? "", permissions: null },
   );
   if (!access.overview) {
-    redirect(defaultDashboardHome(access));
+    redirect(defaultDashboardHome(access, base));
   }
   const todayStart = startOfLocalDay(new Date());
 
@@ -142,7 +149,7 @@ export default async function DashboardPage() {
         {access.office ? (
           <div className="pt-2">
             <Link
-              href="/dashboard/office"
+              href={tenantDashboardHref(slug, "/office")}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm ring-1 ring-black/10 transition hover:opacity-95"
             >
               Open Office — sales, team &amp; reports
@@ -170,7 +177,7 @@ export default async function DashboardPage() {
             ) : null}
             {access.orders ? (
               <Link
-                href="/dashboard/orders"
+                href={tenantDashboardHref(slug, "/orders")}
                 className="rounded-2xl border border-border bg-card p-5 shadow-sm ring-1 ring-ink/[0.04] transition hover:border-primary/30 hover:shadow-md"
               >
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
@@ -182,7 +189,7 @@ export default async function DashboardPage() {
             ) : null}
             {access.waitStaff ? (
               <Link
-                href="/dashboard/wait-staff"
+                href={tenantDashboardHref(slug, "/wait-staff")}
                 className={`rounded-2xl border p-5 shadow-sm ring-1 transition hover:shadow-md ${
                   guestCallsCount > 0
                     ? "border-violet-400/70 bg-violet-50 ring-violet-200/50 hover:border-violet-500 dark:border-violet-600/50 dark:bg-violet-950/40 dark:ring-violet-900/40"
@@ -212,7 +219,7 @@ export default async function DashboardPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {access.menu ? (
             <Link
-              href="/dashboard/menu"
+              href={tenantDashboardHref(slug, "/menu")}
               className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/25 hover:shadow-md"
             >
               <p className="text-sm font-medium text-ink-muted">Categories</p>
@@ -224,7 +231,7 @@ export default async function DashboardPage() {
           ) : null}
           {access.menu ? (
             <Link
-              href="/dashboard/menu"
+              href={tenantDashboardHref(slug, "/menu")}
               className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/25 hover:shadow-md"
             >
               <p className="text-sm font-medium text-ink-muted">Menu items</p>
@@ -236,7 +243,7 @@ export default async function DashboardPage() {
           ) : null}
           {access.tables ? (
             <Link
-              href="/dashboard/tables"
+              href={tenantDashboardHref(slug, "/tables")}
               className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/25 hover:shadow-md"
             >
               <p className="text-sm font-medium text-ink-muted">Tables</p>
@@ -248,7 +255,7 @@ export default async function DashboardPage() {
           ) : null}
           {access.orders ? (
             <Link
-              href="/dashboard/orders"
+              href={tenantDashboardHref(slug, "/orders")}
               className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/25 hover:shadow-md"
             >
               <p className="text-sm font-medium text-ink-muted">Orders today</p>
@@ -282,7 +289,7 @@ export default async function DashboardPage() {
               Recent orders
             </h2>
             <Link
-              href="/dashboard/orders"
+              href={tenantDashboardHref(slug, "/orders")}
               className="text-sm font-semibold text-primary hover:underline"
             >
               View all
@@ -293,7 +300,7 @@ export default async function DashboardPage() {
               {recentOrders.map((o) => (
                 <li key={o.id}>
                   <Link
-                    href="/dashboard/orders"
+                    href={tenantDashboardHref(slug, "/orders")}
                     className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 transition hover:bg-surface sm:px-5"
                   >
                     <div className="min-w-0">

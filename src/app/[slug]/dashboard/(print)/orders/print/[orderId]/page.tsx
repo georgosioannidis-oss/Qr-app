@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getDashboardServerSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { hasKitchenQueueAccess, hasWaitStaffAccess } from "@/lib/dashboard-roles";
+import { tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import type { PrintOrderPayload } from "./PrintOrderTicket";
 import { PrintOrderTicket } from "./PrintOrderTicket";
 
@@ -10,14 +11,14 @@ export const dynamic = "force-dynamic";
 export default async function PrintOrderPage({
   params,
 }: {
-  params: Promise<{ orderId: string }>;
+  params: Promise<{ slug: string; orderId: string }>;
 }) {
   const session = await getDashboardServerSession();
   if (!session?.user?.restaurantId) {
     redirect("/dashboard/login");
   }
 
-  const { orderId } = await params;
+  const { slug, orderId } = await params;
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, restaurantId: session.user.restaurantId },
@@ -62,7 +63,11 @@ export default async function PrintOrderPage({
   const k = hasKitchenQueueAccess(role);
   const w = hasWaitStaffAccess(role);
   const backHref =
-    w && !k ? "/dashboard/wait-staff" : k && !w ? "/dashboard/orders" : "/dashboard/wait-staff";
+    w && !k
+      ? tenantDashboardHref(slug, "/wait-staff")
+      : k && !w
+        ? tenantDashboardHref(slug, "/orders")
+        : tenantDashboardHref(slug, "/wait-staff");
 
   return <PrintOrderTicket order={payload} backHref={backHref} />;
 }

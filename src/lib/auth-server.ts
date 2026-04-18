@@ -8,6 +8,7 @@ import { sessionTokenCookieName, shouldUseSecureAuthCookies } from "./auth-cooki
 import { getCachedRestaurantUserDashboardRow } from "./dashboard-request-cache";
 import { pickDashboardSession, resolveDashboardPathnameForApi } from "./dashboard-session-pick";
 import type { DashboardAuthChannel } from "./dashboard-session-pick";
+import { virtualDashboardPathForCookies } from "./dashboard-tenant-paths";
 
 const DASHBOARD_PATH_HEADER = "x-dashboard-path";
 const DASHBOARD_SESSION_PATH_HEADER = "x-dashboard-session-path";
@@ -21,6 +22,7 @@ function buildSessionFromJwt(jwt: JWT, channel: DashboardAuthChannel): Session {
       id: jwt.sub!,
       email: (jwt.email as string | undefined) ?? undefined,
       restaurantId: jwt.restaurantId as string,
+      restaurantSlug: jwt.restaurantSlug as string | undefined,
       restaurantName: jwt.restaurantName as string,
       role: jwt.role as string | undefined,
       permissions: jwt.permissions,
@@ -54,9 +56,10 @@ async function _getDashboardServerSessionImpl(req?: NextRequest): Promise<Sessio
   let staff: JWT | null;
 
   if (req) {
-    pathname =
+    pathname = virtualDashboardPathForCookies(
       req.headers.get(DASHBOARD_SESSION_PATH_HEADER) ??
-      resolveDashboardPathnameForApi(req.headers.get("referer"));
+        resolveDashboardPathnameForApi(req.headers.get("referer"))
+    );
     [owner, staff] = await Promise.all([
       getToken({
         req,
@@ -75,7 +78,10 @@ async function _getDashboardServerSessionImpl(req?: NextRequest): Promise<Sessio
     const h = await headers();
     const c = await cookies();
     pathname =
-      h.get(DASHBOARD_PATH_HEADER) ?? h.get(DASHBOARD_SESSION_PATH_HEADER) ?? "/dashboard";
+      h.get(DASHBOARD_PATH_HEADER) ??
+      h.get(DASHBOARD_SESSION_PATH_HEADER) ??
+      "/dashboard";
+    pathname = virtualDashboardPathForCookies(pathname);
     const cookieRecord = Object.fromEntries(c.getAll().map((x) => [x.name, x.value]));
     const reqLike = {
       headers: Object.fromEntries(h.entries()),

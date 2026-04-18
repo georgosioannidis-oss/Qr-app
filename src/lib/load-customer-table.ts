@@ -9,8 +9,14 @@ import { prisma } from "@/lib/prisma";
 export const CUSTOMER_PATHNAME_HEADER = "x-customer-pathname";
 
 const menuInclude = {
+  tableSection: {
+    select: {
+      guestQrOrderingPaused: true,
+    },
+  },
   restaurant: {
     select: {
+      slug: true,
       name: true,
       logoUrl: true,
       primaryColor: true,

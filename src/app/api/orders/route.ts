@@ -8,6 +8,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getDashboardServerSession } from "@/lib/auth-server";
+import { isGuestQrOrderingBlocked } from "@/lib/guest-ordering-pause";
 import { prisma } from "@/lib/prisma";
 import { requireWaitStaffApiAccess } from "@/lib/require-wait-staff-api";
 import { restaurantUsesStripeCheckout } from "@/lib/restaurant-checkout";
@@ -203,7 +204,10 @@ export async function POST(req: NextRequest) {
 
     const table = await prisma.table.findUnique({
       where: { token: tableToken },
-      include: { restaurant: true },
+      include: {
+        restaurant: true,
+        tableSection: { select: { guestQrOrderingPaused: true } },
+      },
     });
 
     if (!table) {
@@ -217,7 +221,14 @@ export async function POST(req: NextRequest) {
       staffSkipsWaiterRelay = denied === null;
     }
 
-    if (table.restaurant.guestQrOrderingPaused === true && !staffSkipsWaiterRelay) {
+    if (
+      isGuestQrOrderingBlocked({
+        restaurantPaused: table.restaurant.guestQrOrderingPaused === true,
+        sectionPaused: table.tableSection?.guestQrOrderingPaused === true,
+        tablePaused: table.guestQrOrderingPaused === true,
+      }) &&
+      !staffSkipsWaiterRelay
+    ) {
       return NextResponse.json(
         {
           error:

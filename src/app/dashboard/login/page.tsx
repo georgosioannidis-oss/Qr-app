@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { SessionProvider, signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense, useMemo } from "react";
@@ -52,15 +51,17 @@ function absoluteCallbackUrl(raw: string): string {
 function LoginPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackParam = searchParams.get("callbackUrl") ?? "/dashboard";
-  const callbackUrl = absoluteCallbackUrl(callbackParam);
   const signedUpSlug = searchParams.get("slug")?.trim() ?? "";
+  const callbackParam =
+    searchParams.get("callbackUrl")?.trim() ||
+    (signedUpSlug.length > 0 ? `/${encodeURIComponent(signedUpSlug)}/dashboard` : "/dashboard");
+  const callbackUrl = absoluteCallbackUrl(callbackParam);
 
   const joinedFromQuery = searchParams.get("joined") === "1";
   const callbackPath = pathnameFromCallbackUrl(callbackParam);
   const tabFromQuery = useMemo((): LoginTab => {
     if (joinedFromQuery) return "wait_staff";
-    if (callbackPath.startsWith("/dashboard/wait-staff")) return "wait_staff";
+    if (callbackPath.includes("/dashboard/wait-staff")) return "wait_staff";
     return "owner";
   }, [joinedFromQuery, callbackPath]);
 
@@ -122,11 +123,12 @@ function LoginPageInner() {
       }
 
       if (res?.ok) {
-        const raw = res.url && res.url.length > 0 ? res.url : callbackUrl;
         if (typeof window !== "undefined") {
-          const u = new URL(raw, window.location.origin);
-          const dest = `${u.pathname}${u.search}`;
-          /* Client transition picks up the new session cookie reliably; full reload sometimes raced CSS/RSC. */
+          const cbPath = pathnameFromCallbackUrl(callbackParam);
+          const dest =
+            cbPath.startsWith("/dashboard/login") || cbPath === "/" || cbPath === ""
+              ? "/dashboard"
+              : cbPath;
           navigated = true;
           router.replace(dest);
           router.refresh();
@@ -296,21 +298,6 @@ function LoginPageInner() {
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
-
-          <p className="text-center text-base text-ink-muted mt-4 leading-relaxed sm:text-sm">
-            <span className="font-medium text-ink">Demo</span>
-            <br />
-            <span className="text-sm sm:text-xs">
-              Owner: admin@demo.com / demo123
-              <br />
-              Team (kitchen / wait): waiter@demo.com / demo123 · kitchen@demo.com / demo123
-            </span>
-          </p>
-          <p className="text-center text-base mt-3 sm:text-sm">
-            <Link href="/signup" className="text-primary font-semibold hover:underline">
-              Don&apos;t have an account? Sign up
-            </Link>
-          </p>
         </div>
       </main>
     </SessionProvider>

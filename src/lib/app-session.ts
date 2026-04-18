@@ -9,6 +9,7 @@ export type AppDashboardSession = {
     id?: string;
     email?: string | null;
     restaurantId?: string;
+    restaurantSlug?: string;
     restaurantName?: string;
     role?: string;
     permissions?: unknown;

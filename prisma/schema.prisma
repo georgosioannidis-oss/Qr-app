@@ -53,6 +53,8 @@ model TableSection {
   id           String   @id @default(cuid())
   name         String
   sortOrder    Int      @default(0)
+  /// When true, guest QR menus for every table in this section cannot place new orders.
+  guestQrOrderingPaused Boolean @default(false)
   restaurantId String
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   tables       Table[]
@@ -109,6 +111,8 @@ model Table {
   restaurant     Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   tableSectionId String?
   tableSection   TableSection? @relation(fields: [tableSectionId], references: [id], onDelete: Restrict)
+  /// When true, this table’s QR menu cannot place new orders (combined with venue-wide and section pauses).
+  guestQrOrderingPaused Boolean @default(false)
   /// Set when the guest taps “Call waiter” on the menu; staff clears after visiting the table.
   waiterCalledAt DateTime?
 

@@ -1,3 +1,4 @@
+import { parseTenantDashboardPath, tenantDashboardBase } from "./dashboard-tenant-paths";
 import { resolveDashboardAccess, pathNotAllowedRedirect } from "./staff-permissions";
 
 /**
@@ -9,6 +10,8 @@ export function dashboardPathRedirect(
   role: string,
   permissions?: unknown
 ): string | null {
+  const parsed = parseTenantDashboardPath(pathname);
+  if (!parsed) return null;
   const access = resolveDashboardAccess({ role, permissions });
-  return pathNotAllowedRedirect(pathname, access);
+  return pathNotAllowedRedirect(pathname, access, tenantDashboardBase(parsed.slug));
 }

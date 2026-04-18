@@ -12,9 +12,9 @@
     "seed": "tsx prisma/seed.ts"
   },
   "scripts": {
-    "dev": "next dev -H 127.0.0.1",
-    "dev:clean": "rm -rf .next && next dev -H 127.0.0.1",
-    "dev:turbo": "next dev --turbopack -H 127.0.0.1",
+    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "dev:clean": "rm -rf .next && next dev -H 127.0.0.1 -p 3000",
+    "dev:turbo": "next dev --turbopack -H 127.0.0.1 -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -26,6 +26,7 @@
     "db:backfill-table-sections": "npx tsx prisma/backfill-table-sections.ts",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed:otter": "npx tsx prisma/seed-otter-menu.ts",
+    "db:add-moustakallis-tables": "npx tsx prisma/add-moustakallis-tables-11-65.ts",
     "print-agent": "node scripts/print-agent.mjs",
     "postinstall": "node scripts/patch-next-compiled-pkg.cjs && prisma generate"
   },

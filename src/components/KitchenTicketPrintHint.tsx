@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 
 /**
  * Expandable copy for station-based auto-print setup.
  */
 export function KitchenTicketPrintHint() {
+  const params = useParams();
+  const slug = typeof params?.slug === "string" ? params.slug : "";
+  const optionsHref = slug ? tenantDashboardHref(slug, "/branding") : "/dashboard/login";
+
   return (
     <details className="rounded-xl border border-border bg-card/60 px-4 py-3 text-sm text-ink-muted shadow-sm">
       <summary className="cursor-pointer list-none font-medium text-ink select-none [&::-webkit-details-marker]:hidden">
@@ -23,7 +29,7 @@ export function KitchenTicketPrintHint() {
           Start one agent per station: <strong className="text-ink">Bar</strong>, <strong className="text-ink">Cold
           kitchen</strong>, and <strong className="text-ink">Kitchen</strong>. Set it up under{" "}
           <Link
-            href="/dashboard/branding"
+            href={optionsHref}
             className="font-semibold text-primary underline underline-offset-2 hover:opacity-90"
           >
             Options → Auto-print (kitchen PC)
