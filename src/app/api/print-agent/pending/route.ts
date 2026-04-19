@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ordersInKitchenQueueWhere } from "@/lib/kitchen-queue";
-import { restaurantForPrintAgentBearer } from "@/lib/print-agent-auth";
+import { ordersEligibleForStationPrintWhere } from "@/lib/kitchen-queue";
+import { printAgentApiDisabledReason, restaurantForPrintAgentRequest } from "@/lib/print-agent-auth";
 import {
   isPrintStationKey,
   type PrintStationKey,
@@ -12,16 +12,25 @@ import {
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/print-agent/pending
- * Authorization: Bearer <printAgentToken>
+ * GET /api/print-agent/pending?slug=<restaurantSlug>&station=bar|cold-kitchen|kitchen
+ * Header: X-Print-Agent-Secret: <PRINT_AGENT_API_SECRET> (same value as server env)
  *
- * Query param:
- *   station=bar|cold-kitchen|kitchen
- *
- * Returns station-specific tickets not yet acknowledged by the print agent for that station.
+ * Orders: {@link ordersEligibleForStationPrintWhere} — not unpaid `pending`; with waiter relay on, only after send to kitchen.
  */
 export async function GET(req: NextRequest) {
-  const restaurant = await restaurantForPrintAgentBearer(req.headers.get("authorization"));
+  const disabled = printAgentApiDisabledReason();
+  if (disabled === "missing_secret") {
+    return NextResponse.json(
+      { error: "Print agent API is not configured. Set PRINT_AGENT_API_SECRET on the server." },
+      { status: 503 }
+    );
+  }
+
+  const slug = req.nextUrl.searchParams.get("slug");
+  const restaurant = await restaurantForPrintAgentRequest(
+    req.headers.get("x-print-agent-secret"),
+    slug
+  );
   if (!restaurant) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -34,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   const orders = await prisma.order.findMany({
     where: {
-      AND: [ordersInKitchenQueueWhere(restaurant.id)],
+      AND: [ordersEligibleForStationPrintWhere(restaurant.id)],
     },
     orderBy: { createdAt: "asc" },
     take: 25,

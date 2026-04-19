@@ -32,7 +32,6 @@ export async function GET() {
         payAtTableCardEnabled: true,
         payAtTableCashEnabled: true,
         prepTimeEstimateMinutes: true,
-        printAgentToken: true,
       },
     });
 
@@ -40,11 +39,7 @@ export async function GET() {
       return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
     }
 
-    const { printAgentToken, ...rest } = restaurant;
-    return NextResponse.json({
-      ...rest,
-      hasPrintAgentToken: Boolean(printAgentToken),
-    });
+    return NextResponse.json(restaurant);
   } catch (e) {
     console.error("GET /api/dashboard/restaurant:", e);
     const message = e instanceof Error ? e.message : "Server error";

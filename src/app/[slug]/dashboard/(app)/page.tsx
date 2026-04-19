@@ -20,8 +20,8 @@ const restaurantBrandingSelect = {
   navLabelGuestOrders: true,
 } as const;
 
-function fmtUsd(cents: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+function fmtEur(cents: number) {
+  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(cents / 100);
 }
 
 function startOfLocalDay(d: Date) {
@@ -170,7 +170,7 @@ export default async function DashboardPage({
                   Sales today
                 </p>
                 <p className="mt-1 text-2xl font-bold tabular-nums text-ink">
-                  {fmtUsd(salesTodayCents)}
+                  {fmtEur(salesTodayCents)}
                 </p>
                 <p className="mt-1 text-xs text-ink-muted">Confirmed orders only</p>
               </div>
@@ -315,7 +315,7 @@ export default async function DashboardPage({
                       </p>
                     </div>
                     <span className="shrink-0 text-sm font-bold tabular-nums text-ink">
-                      {fmtUsd(o.totalAmount)}
+                      {fmtEur(o.totalAmount)}
                     </span>
                   </Link>
                 </li>

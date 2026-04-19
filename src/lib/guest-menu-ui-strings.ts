@@ -55,6 +55,10 @@ export type GuestMenuUiStrings = {
   cartStripHint: string;
   allergenTrustLine: string;
   searchMenu: string;
+  /** Opens allergen reference infographic. */
+  infoButton: string;
+  allergenInfoTitle: string;
+  allergenInfoImageAlt: string;
   /** Compact header control — opens search sheet. */
   searchButton: string;
   searchClear: string;
@@ -128,6 +132,9 @@ const EN: GuestMenuUiStrings = {
   cartEmptyHint: "Browse the categories above to add dishes.",
   cartStripHint: "Tap to review or change your order",
   allergenTrustLine: "For allergies or special diets, ask staff before ordering.",
+  infoButton: "Info",
+  allergenInfoTitle: "Food allergen icons",
+  allergenInfoImageAlt: "Chart of common food allergen icons (gluten, sesame, nuts, and others).",
   searchMenu: "Search menu",
   searchButton: "Search",
   searchClear: "Clear",
@@ -212,6 +219,9 @@ const EL: GuestMenuUiStrings = {
   cartEmptyHint: "Δείτε τις κατηγορίες παραπάνω για να προσθέσετε πιάτα.",
   cartStripHint: "Πατήστε για να δείτε ή να αλλάξετε την παραγγελία σας",
   allergenTrustLine: "Για αλλεργίες ή ειδικές δίαιτες, ρωτήστε το προσωπικό πριν παραγγείλετε.",
+  infoButton: "Πληροφορίες",
+  allergenInfoTitle: "Εικονίδια αλλεργιών τροφίμων",
+  allergenInfoImageAlt: "Πίνακας με συνηθισμένα εικονίδια αλλεργιών σε τρόφιμα (γλουτένη, σουσάμι, ξηροί καρποί κ.ά.).",
   searchMenu: "Αναζήτηση μενού",
   searchButton: "Έρευνα",
   searchClear: "Καθαρισμός",

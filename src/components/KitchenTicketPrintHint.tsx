@@ -27,18 +27,20 @@ export function KitchenTicketPrintHint() {
         </p>
         <p>
           Start one agent per station: <strong className="text-ink">Bar</strong>, <strong className="text-ink">Cold
-          kitchen</strong>, and <strong className="text-ink">Kitchen</strong>. Set it up under{" "}
+          kitchen</strong>, and <strong className="text-ink">Kitchen</strong>. Full steps under{" "}
           <Link
             href={optionsHref}
             className="font-semibold text-primary underline underline-offset-2 hover:opacity-90"
           >
             Options → Auto-print (kitchen PC)
           </Link>
-          . Use <code className="rounded bg-surface px-1 font-mono text-xs">PRINT_AGENT_STATION</code> with{" "}
+          : set <code className="rounded bg-surface px-1 font-mono text-xs">PRINT_AGENT_API_SECRET</code> on the server
+          and the same value on each PC, plus <code className="rounded bg-surface px-1 font-mono text-xs">PRINT_AGENT_RESTAURANT_SLUG</code>{" "}
+          and <code className="rounded bg-surface px-1 font-mono text-xs">PRINT_AGENT_STATION</code> (
           <code className="rounded bg-surface px-1 font-mono text-xs">bar</code>,{" "}
           <code className="rounded bg-surface px-1 font-mono text-xs">cold-kitchen</code>, or{" "}
-          <code className="rounded bg-surface px-1 font-mono text-xs">kitchen</code> (see{" "}
-          <code className="rounded bg-surface px-1 font-mono text-xs">.env.example</code>).
+          <code className="rounded bg-surface px-1 font-mono text-xs">kitchen</code>). See{" "}
+          <code className="rounded bg-surface px-1 font-mono text-xs">.env.example</code>.
         </p>
       </div>
     </details>

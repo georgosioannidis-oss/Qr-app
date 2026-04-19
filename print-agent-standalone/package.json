@@ -1,0 +1,17 @@
+{
+  "name": "qr-menu-print-agent",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Standalone kitchen/bar print agent for QR Menu (no app source code).",
+  "type": "module",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "start": "node print-agent.mjs"
+  },
+  "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "pdf-lib": "^1.17.1"
+  }
+}

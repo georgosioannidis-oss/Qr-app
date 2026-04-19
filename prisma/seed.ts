@@ -284,13 +284,31 @@ async function main() {
       { id: "cream", label: "Κρέμας", priceCents: 200 },
     ],
   };
-  const extraSauceSteaks = {
-    id: "extra-sauce", label: "Επιπλέον σάλτσα (+€2.00)", required: false, type: "single" as const,
+  /** All items under Φιλέτα / fillets: optional €2 extra sauce + where to serve it. */
+  const filletsExtraSauceGroup = {
+    id: "fillets-extra-sauce",
+    label: "Επιπλέον σάλτσα (+€2.00)",
+    required: false,
+    type: "single" as const,
     choices: [
-      { id: "pepper", label: "Πιπεράτη", priceCents: 200 },
-      { id: "diana", label: "Νταϊάνα", priceCents: 200 },
+      { id: "pepper-sauce", label: "Σάλτσα πιπεριού", priceCents: 200 },
+      { id: "diana-sauce", label: "Σάλτσα Νταϊάνα", priceCents: 200 },
+      { id: "garlic-butter", label: "Βούτυρο σκόρδου", priceCents: 200 },
+      { id: "garlic-sauce", label: "Σάλτσα σκόρδου", priceCents: 200 },
+      { id: "gravy-sauce", label: "Σάλτσα gravy", priceCents: 200 },
     ],
   };
+  const filletsExtraSaucePlacementGroup = {
+    id: "fillets-extra-sauce-serve",
+    label: "Η επιπλέον σάλτσα",
+    required: false,
+    type: "single" as const,
+    choices: [
+      { id: "sauce-on-dish", label: "Από πάνω στο πιάτο", priceCents: 0 },
+      { id: "sauce-on-side", label: "Στο πλάι", priceCents: 0 },
+    ],
+  };
+  const filletsExtraSaucePair = [filletsExtraSauceGroup, filletsExtraSaucePlacementGroup] as const;
 
   const mixerOption = {
     id: "mixer", label: "Προσθήκη mixer (+€1.50)", required: false, type: "single" as const,
@@ -323,6 +341,36 @@ async function main() {
     ],
   };
   const steakNoSidesOption = noOption(["ρύζι", "λαχανικά"]);
+  /** Στη σχάρα: optional rice/veg removal (separate id from dish-specific `remove` group). */
+  const grilledSidesRemoveOption = {
+    id: "grilled-remove-rice-veg",
+    label: "Αφαίρεση ρυζιού / λαχανικών",
+    required: false,
+    type: "multi" as const,
+    choices: [
+      { id: "grilled-no-rice", label: "Χωρίς ρύζι", priceCents: 0 },
+      { id: "grilled-no-vegetables", label: "Χωρίς λαχανικά", priceCents: 0 },
+    ],
+  };
+  const grilledPotatoAndSidesPair = [steakSideRequiredOption, grilledSidesRemoveOption] as const;
+  /** Beef / gammon steaks only (not chicken). */
+  const beefSteakDonenessRequired = {
+    id: "steak-doneness",
+    label: "Προτίμηση ψησίματος",
+    required: true,
+    type: "single" as const,
+    choices: [
+      { id: "normal", label: "Normal", priceCents: 0 },
+      { id: "blue", label: "Blue", priceCents: 0 },
+      { id: "rm", label: "R M", priceCents: 0 },
+      { id: "m", label: "M", priceCents: 0 },
+      { id: "mr", label: "M R", priceCents: 0 },
+      { id: "rare", label: "RARE", priceCents: 0 },
+      { id: "mwd", label: "M W D", priceCents: 0 },
+      { id: "wd", label: "W D", priceCents: 0 },
+      { id: "vwd", label: "V W D", priceCents: 0 },
+    ],
+  };
   const fishSideRequiredOption = {
     id: "fish-side",
     label: "Συνοδευτικό πατάτας",
@@ -698,7 +746,8 @@ async function main() {
       { name: "Bloody Mary", description: "Βότκα, χυμός ντομάτας, tabasco και σάλτσα worcestershire.", price: 600 },
     ]},
     { cat: kids, items: [
-      { name: "Κοτόπουλο μπουκιές", description: "Χρυσαφένιες τραγανές κοτομπουκιές με σπιτικές τηγανητές πατάτες.", price: 700 },
+      { name: "Κοτόπουλο μπουκιές", description: "Χρυσαφένιες τραγανές κοτομπουκιές με σπιτικές τηγανητές πατάτες.", price: 700,
+        optionGroups: JSON.stringify([extraSauce]) },
       { name: "Παναρισμένες γαρίδες", description: "Τραγανές γαρίδες με σπιτικές τηγανητές πατάτες.", price: 1000 },
       { name: "Μπέργκερ", description: "Ζουμερό μπιφτέκι με σπιτικές τηγανητές πατάτες.", price: 800,
         optionGroups: JSON.stringify([{ id: "cheese", label: "Έξτρα τυρί", required: false, type: "single", choices: [
@@ -744,49 +793,55 @@ async function main() {
       { name: "Επιπλέον μπάλα παγωτό", description: "", price: 150 },
     ]},
     { cat: grilled, items: [
-      { name: "Μεζές κρεατικών", description: "Ποικιλία κρεατικών (ελάχιστη παραγγελία 2 άτομα). Τιμή ανά άτομο.", price: 2000 },
-      { name: "Σεφταλιές", description: "Παραδοσιακά χοιρινά ρολά με μπαχαρικά.", price: 1400 },
+      { name: "Μεζές κρεατικών", description: "Ποικιλία κρεατικών (ελάχιστη παραγγελία 2 άτομα). Τιμή ανά άτομο.", price: 2000,
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair]) },
+      { name: "Σεφταλιές", description: "Παραδοσιακά χοιρινά ρολά με μπαχαρικά.", price: 1400,
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair]) },
       { name: "Διάφορα σχάρας", description: "Σουβλάκι, σεφταλιά, αρνίσιο παϊδάκι, πανσέτα, λουκάνικο και χαλλούμι.", price: 1600,
-        optionGroups: JSON.stringify([noOption(["σουβλάκι", "σεφταλιά", "παϊδάκι", "πανσέτα", "λουκάνικο", "χαλλούμι"])]) },
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair, noOption(["σουβλάκι", "σεφταλιά", "παϊδάκι", "πανσέτα", "λουκάνικο", "χαλλούμι"])]) },
       { name: "Σουβλάκι κοτόπουλο", description: "Μαριναρισμένο στήθος κοτόπουλου με πιπεριές και κρεμμύδι.", price: 1300,
-        optionGroups: JSON.stringify([noOption(["πιπεριές", "κρεμμύδι"])]) },
-      { name: "Σουβλάκι χοιρινό", description: "Μαριναρισμένα κομμάτια χοιρινού.", price: 1300 },
-      { name: "Μπριζόλα χοιρινή", description: "Μαριναρισμένη με τοπικά βότανα.", price: 1400 },
-      { name: "Παϊδάκια", description: "Αρνίσια παϊδάκια μαριναρισμένα.", price: 1600 },
-      { name: "Πανσέτα σχάρας", description: "Ζουμερή χοιρινή πανσέτα.", price: 1400 },
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair, noOption(["πιπεριές", "κρεμμύδι"]), extraSauce]) },
+      { name: "Σουβλάκι χοιρινό", description: "Μαριναρισμένα κομμάτια χοιρινού.", price: 1300,
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair]) },
+      { name: "Μπριζόλα χοιρινή", description: "Μαριναρισμένη με τοπικά βότανα.", price: 1400,
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair]) },
+      { name: "Παϊδάκια", description: "Αρνίσια παϊδάκια μαριναρισμένα.", price: 1600,
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair]) },
+      { name: "Πανσέτα σχάρας", description: "Ζουμερή χοιρινή πανσέτα.", price: 1400,
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair]) },
       { name: "Αρνίσιο συκώτι", description: "Στη σχάρα με κρεμμύδια και μπέικον.", price: 1400,
-        optionGroups: JSON.stringify([noOption(["κρεμμύδια", "μπέικον"])]) },
+        optionGroups: JSON.stringify([...grilledPotatoAndSidesPair, noOption(["κρεμμύδια", "μπέικον"])]) },
     ]},
     { cat: fillets, items: [
       { name: "Στέικ μοσχαρίσιο φιλέτο", description: "Φρέσκο φιλέτο στη σχάρα.", price: 2400,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption]) },
+        optionGroups: JSON.stringify([beefSteakDonenessRequired, steakSideRequiredOption, steakNoSidesOption, ...filletsExtraSaucePair]) },
       { name: "Στέικ μοσχαρίσιο πιπεράτο", description: "Με πράσινο πιπέρι, μουστάρδα, κρασί και κρέμα.", price: 2600,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["πράσινο πιπέρι", "μουστάρδα", "κρασί"])]) },
+        optionGroups: JSON.stringify([beefSteakDonenessRequired, steakSideRequiredOption, steakNoSidesOption, noOption(["πράσινο πιπέρι", "μουστάρδα", "κρασί"]), ...filletsExtraSaucePair]) },
       { name: "Στέικ μοσχαρίσιο Νταϊάνα", description: "Με μανιτάρια, μουστάρδα, κρασί και κρέμα.", price: 2600,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["μανιτάρια", "μουστάρδα", "κρασί"])]) },
+        optionGroups: JSON.stringify([beefSteakDonenessRequired, steakSideRequiredOption, steakNoSidesOption, noOption(["μανιτάρια", "μουστάρδα", "κρασί"]), ...filletsExtraSaucePair]) },
       { name: "Στέικ μοσχαρίσιο με σάλτσα σκόρδου", description: "Με σπιτική σάλτσα σκόρδου.", price: 2600,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["σάλτσα σκόρδου"])]) },
+        optionGroups: JSON.stringify([beefSteakDonenessRequired, steakSideRequiredOption, steakNoSidesOption, noOption(["σάλτσα σκόρδου"]), ...filletsExtraSaucePair]) },
       { name: "Τι-μπον στέικ", description: "Μεγάλο στέικ με το κόκαλο στη σχάρα.", price: 2200,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption]) },
+        optionGroups: JSON.stringify([beefSteakDonenessRequired, steakSideRequiredOption, steakNoSidesOption, ...filletsExtraSaucePair]) },
       { name: "Γκάμον στέικ", description: "Χοντρή φέτα καπνιστού χοιρινού με αυγό ή ανανά.", price: 1500,
-        optionGroups: JSON.stringify([{ id: "topping", label: "Συνοδευτικό", required: true, type: "single", choices: [
+        optionGroups: JSON.stringify([beefSteakDonenessRequired, { id: "topping", label: "Συνοδευτικό", required: true, type: "single", choices: [
           { id: "egg", label: "Με αυγό", priceCents: 0 },
           { id: "pineapple", label: "Με ανανά", priceCents: 0 },
-        ]}, steakSideRequiredOption, steakNoSidesOption]) },
+        ]}, steakSideRequiredOption, steakNoSidesOption, ...filletsExtraSaucePair]) },
       { name: "Κοτόπουλο φιλέτο", description: "Μαριναρισμένο με βότανα και ελαιόλαδο.", price: 1300,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["βότανα", "ελαιόλαδο"])]) },
+        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["βότανα", "ελαιόλαδο"]), ...filletsExtraSaucePair]) },
       { name: "Κοτόπουλο πιπεράτο", description: "Με πιπεράτη σάλτσα κρέμας.", price: 1400,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["σάλτσα κρέμας"])]) },
+        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["σάλτσα κρέμας"]), ...filletsExtraSaucePair]) },
       { name: "Κοτόπουλο Νταϊάνα", description: "Με μανιτάρια και σάλτσα κρέμας.", price: 1400,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["μανιτάρια", "σάλτσα κρέμας"])]) },
+        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["μανιτάρια", "σάλτσα κρέμας"]), ...filletsExtraSaucePair]) },
       { name: "Κοτόπουλο με σάλτσα σκόρδου", description: "Με κρεμώδη σάλτσα σκόρδου.", price: 1400,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["σάλτσα σκόρδου"])]) },
+        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["σάλτσα σκόρδου"]), ...filletsExtraSaucePair]) },
       { name: "Κοτόπουλο Κιέβου", description: "Φιλέτο γεμιστό με τυρί και βούτυρο σκόρδου.", price: 1400,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["τυρί", "βούτυρο σκόρδου"])]) },
+        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["τυρί", "βούτυρο σκόρδου"]), ...filletsExtraSaucePair]) },
       { name: "Κοτόπουλο κάρρυ", description: "Φιλέτο με κρεμμύδι και σάλτσα κάρρυ.", price: 1400,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["κρεμμύδι", "σάλτσα κάρρυ"])]) },
+        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["κρεμμύδι", "σάλτσα κάρρυ"]), ...filletsExtraSaucePair]) },
       { name: "Κοτόπουλο «Μουστάκαλλης»", description: "Φιλέτο γεμιστό με ζαμπόν και τυρί.", price: 1400,
-        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["ζαμπόν", "τυρί"])]) },
+        optionGroups: JSON.stringify([steakSideRequiredOption, steakNoSidesOption, noOption(["ζαμπόν", "τυρί"]), ...filletsExtraSaucePair]) },
     ]},
     { cat: cypriot, items: [
       { name: "Κλέφτικο", description: "Αρνί ψημένο στον φούρνο για 8 ώρες. Σερβίρεται με gravy sauce, λαχανικά, ρύζι και πατάτες.", price: 1500,
@@ -807,6 +862,7 @@ async function main() {
         optionGroups: JSON.stringify([noOption(["ντομάτα", "κολοκύθι", "πιπεριές", "κιμά", "ρύζι", "τζατζίκι"])]) },
       { name: "Φασολάκι κοκκινιστό με αρνί", description: "Αρνί κατσαρόλας με πράσινα φασόλια και καρότα.", price: 1400,
         optionGroups: JSON.stringify([noOption(["πράσινα φασόλια", "καρότα"])]) },
+      { name: "Κολοκάσι με χοιρινό", description: "Κλασικό κυπριακό κολοκάσι, αργομαγειρεμένο με τρυφερό χοιρινό σε πλούσια σάλτσα ντομάτας, με σέλινο και αρωματικά βότανα.", price: 1200 },
     ]},
     { cat: vegetarian, items: [
       { name: "Μουσακάς για χορτοφάγους", description: "Στρώσεις από πατάτα, μελιτζάνα, κολοκύθι και ντομάτα με μπεσαμέλ. Σερβίρεται με πατάτες και σαλάτα.", price: 1200,
@@ -817,6 +873,7 @@ async function main() {
         optionGroups: JSON.stringify([noOption(["ελαιόλαδο", "λαχανικά", "ρύζι"])]) },
       { name: "Λουβί", description: "Μαγειρεμένο με εποχιακά λαχανικά σε ελαιόλαδο.", price: 1200,
         optionGroups: JSON.stringify([noOption(["λαχανικά", "ελαιόλαδο"])]) },
+      { name: "Κολοκάσι γιαχνί", description: "Παραδοσιακό κυπριακό πιάτο με τρυφερό κολοκάσι, αργομαγειρεμένο σε ελαιόλαδο με ντομάτα, σέλινο και βότανα.", price: 1200 },
     ]},
     { cat: salads, items: [
       { name: "Ελληνική σαλάτα", description: "Ντομάτα, αγγούρι, κρεμμύδι και φέτα με παρθένο ελαιόλαδο.", price: 800,
@@ -895,18 +952,33 @@ async function main() {
       } else if (cat.id === vegetarian.id) {
         await prisma.menuItem.update({
           where: { id: existing.id },
-          data: { optionGroups: null },
+          data: {
+            description: item.description ?? existing.description,
+            price: item.price,
+            optionGroups: null,
+          },
         });
       } else if (cat.id === fishSeafood.id && item.name !== "Ψαρομεζέδες") {
         await prisma.menuItem.update({
           where: { id: existing.id },
           data: { optionGroups: item.optionGroups ?? null },
         });
-      } else if (cat.id === cypriot.id && item.name === "Κλέφτικο") {
+      } else if (cat.id === kids.id && item.optionGroups != null) {
+        await prisma.menuItem.update({
+          where: { id: existing.id },
+          data: { optionGroups: item.optionGroups },
+        });
+      } else if (cat.id === grilled.id) {
+        await prisma.menuItem.update({
+          where: { id: existing.id },
+          data: { optionGroups: item.optionGroups ?? null },
+        });
+      } else if (cat.id === cypriot.id) {
         await prisma.menuItem.update({
           where: { id: existing.id },
           data: {
             description: item.description ?? existing.description,
+            price: item.price,
             optionGroups: item.optionGroups ?? null,
           },
         });

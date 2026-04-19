@@ -13,7 +13,8 @@
   },
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 3000",
-    "dev:clean": "rm -rf .next && next dev -H 127.0.0.1 -p 3000",
+    "clean:next": "node scripts/clean-next.cjs",
+    "dev:clean": "node scripts/clean-next.cjs && next dev -H 127.0.0.1 -p 3000",
     "dev:turbo": "next dev --turbopack -H 127.0.0.1 -p 3000",
     "build": "next build",
     "start": "next start",

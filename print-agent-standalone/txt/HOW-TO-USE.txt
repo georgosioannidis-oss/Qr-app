@@ -1,0 +1,27 @@
+What is in this folder
+----------------------
+  print-agent-config.example.txt  = template (safe to commit).
+  print-agent-config.txt          = your real values (copy from example;
+                                    this filename is gitignored — not pushed).
+
+1) Server (your Next.js host)
+------------------------------
+  On the server, set in .env (or hosting panel), then restart the app:
+
+  PRINT_AGENT_API_SECRET=<same long secret as in print-agent-config.txt>
+
+  Use the same base URL in NEXT_PUBLIC_APP_URL as guests use in the browser
+  (must match PRINT_AGENT_BASE_URL on print PCs).
+
+2) Kitchen PC
+-------------
+  Copy print-agent-config.example.txt to print-agent-config.txt and edit it.
+  Copy those values into START-PRINT-AGENT.cmd (see parent folder), or set
+  the four variables in the .cmd file directly.
+
+  Restaurant slug = the part of the dashboard URL: /YOUR-SLUG/dashboard
+
+3) Port / HTTPS
+---------------
+  If the site only works with https:// or :3000, put that exact URL in
+  PRINT_AGENT_BASE_URL everywhere (server + print agent).

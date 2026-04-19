@@ -24,8 +24,6 @@ model Restaurant {
   payAtTableCardEnabled Boolean @default(true)
   /// Guest menu: offer “Cash”.
   payAtTableCashEnabled   Boolean @default(true)
-  /// Bearer token for the local print-agent script (kitchen PC). Null = API disabled.
-  printAgentToken String? @unique
   /// When true, kitchen & wait staff may open and edit Menu + Tables. When false (default), only owner-type logins can.
   staffMayEditMenuTables Boolean @default(false)
   /// Optional nav label for the orders / prep queue screen (default: "Orders"). E.g. "Bar", "Kitchen", "Expo".

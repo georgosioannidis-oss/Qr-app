@@ -20,6 +20,7 @@ import {
   type GuestMenuCategory as Category,
   type GuestMenuItem as Item,
 } from "@/lib/guest-demo-menu-i18n";
+import { guestCategoryLabelWithEmoji } from "@/lib/guest-category-emoji";
 import { getGuestMenuUiStrings, type GuestMenuLang, type GuestMenuUiStrings } from "@/lib/guest-menu-ui-strings";
 
 const GUEST_MENU_LANG_KEY = "guestMenuDemoLang";
@@ -177,6 +178,7 @@ export function MenuView({
   const prefersReducedMotion = usePrefersReducedMotion();
   const [menuSearch, setMenuSearch] = useState("");
   const [searchMenuOpen, setSearchMenuOpen] = useState(false);
+  const [allergenInfoOpen, setAllergenInfoOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [flashItemId, setFlashItemId] = useState<string | null>(null);
   const mainRef = useRef<HTMLElement>(null);
@@ -397,6 +399,15 @@ export function MenuView({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [searchMenuOpen]);
+
+  useEffect(() => {
+    if (!allergenInfoOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAllergenInfoOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [allergenInfoOpen]);
 
   const totalCents = cart.reduce(
     (sum, i) => sum + (i.price + (i.optionPriceModifier ?? 0)) * i.quantity,
@@ -665,7 +676,8 @@ export function MenuView({
     !paymentModalOpen &&
     !optionsModalItem &&
     !imagePreviewItem &&
-    !searchMenuOpen;
+    !searchMenuOpen &&
+    !allergenInfoOpen;
 
   const mainBottomPad =
     totalItems > 0
@@ -755,7 +767,7 @@ export function MenuView({
                   : "bg-card text-ink border border-border shadow-sm hover:border-ink/25 hover:bg-surface"
               }`}
             >
-              {c.name}
+              {guestCategoryLabelWithEmoji(c.name)}
             </button>
           ))}
         </div>
@@ -764,11 +776,25 @@ export function MenuView({
             {ui.allergenTrustLine}
           </p>
         </div>
-        <div className="flex justify-end border-b border-border px-4 py-1 pb-1.5">
+        <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-1 pb-1.5">
+          <button
+            type="button"
+            onClick={() => setAllergenInfoOpen(true)}
+            className="inline-flex min-h-[34px] shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-ink shadow-sm ring-1 ring-black/[0.03] transition-colors hover:border-primary/35 hover:bg-primary/[0.04] active:scale-[0.98] sm:min-h-[32px] sm:text-[0.8125rem]"
+            aria-haspopup="dialog"
+            aria-expanded={allergenInfoOpen}
+            aria-controls="guest-allergen-info-dialog"
+          >
+            <svg className="h-3.5 w-3.5 shrink-0 text-ink-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4M12 8h.01" />
+            </svg>
+            <span>{ui.infoButton}</span>
+          </button>
           <button
             type="button"
             onClick={() => setSearchMenuOpen(true)}
-            className="inline-flex min-h-[34px] max-w-full items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-ink shadow-sm ring-1 ring-black/[0.03] transition-colors hover:border-primary/35 hover:bg-primary/[0.04] active:scale-[0.98] sm:min-h-[32px] sm:text-[0.8125rem]"
+            className="inline-flex min-h-[34px] max-w-full shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-ink shadow-sm ring-1 ring-black/[0.03] transition-colors hover:border-primary/35 hover:bg-primary/[0.04] active:scale-[0.98] sm:min-h-[32px] sm:text-[0.8125rem]"
             aria-haspopup="dialog"
             aria-expanded={searchMenuOpen}
             aria-controls="guest-menu-search-dialog"
@@ -787,7 +813,7 @@ export function MenuView({
 
       <main
         ref={mainRef}
-        className={`relative mx-auto min-h-0 w-full max-w-lg flex-1 scroll-pt-[12.5rem] overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-5 sm:scroll-pt-[12rem] ${mainBottomPad}`}
+        className={`relative mx-auto min-h-0 w-full max-w-lg flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain px-4 py-5 ${mainBottomPad}`}
         onTouchStart={onMainTouchStart}
         onTouchMove={onMainTouchMove}
         onTouchEnd={onMainTouchEnd}
@@ -824,10 +850,10 @@ export function MenuView({
           <section
             key={cat.id}
             id={`menu-cat-${cat.id}`}
-            className={`scroll-mt-[12.5rem] sm:scroll-mt-[12rem] ${catIndex > 0 ? "mt-8 border-t border-border/60 pt-6" : ""}`}
+            className={catIndex > 0 ? "mt-8 border-t border-border/60 pt-6" : ""}
           >
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              {cat.name}
+              {guestCategoryLabelWithEmoji(cat.name)}
             </h2>
             <ul className="space-y-2">
               {cat.items.map((item) => (
@@ -1078,6 +1104,55 @@ export function MenuView({
               <button
                 type="button"
                 onClick={() => setSearchMenuOpen(false)}
+                className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-md ring-1 ring-black/10 hover:bg-primary-hover"
+              >
+                {ui.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {allergenInfoOpen ? (
+        <div
+          id="guest-allergen-info-dialog"
+          className="fixed inset-0 z-[38] flex items-end justify-center bg-black/45 backdrop-blur-[2px] sm:items-center sm:px-4 sm:py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guest-allergen-info-title"
+          onClick={() => setAllergenInfoOpen(false)}
+        >
+          <div
+            className="flex max-h-[min(92dvh,900px)] w-full max-w-lg flex-col rounded-t-3xl border border-border bg-card shadow-2xl sm:max-h-[85vh] sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <h2 id="guest-allergen-info-title" className="min-w-0 text-base font-bold text-ink sm:text-lg">
+                {ui.allergenInfoTitle}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setAllergenInfoOpen(false)}
+                className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-surface text-lg font-bold leading-none text-ink hover:bg-ink/5"
+                aria-label={ui.close}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-3 py-3 sm:px-4 sm:py-4">
+              {/* Static asset: add/replace at public/food-allergen-info.png */}
+              <img
+                src="/food-allergen-info.png"
+                alt={ui.allergenInfoImageAlt}
+                className="mx-auto h-auto w-full max-w-full rounded-lg border border-border/40 bg-surface object-contain"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div className="shrink-0 border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+              <button
+                type="button"
+                onClick={() => setAllergenInfoOpen(false)}
                 className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-md ring-1 ring-black/10 hover:bg-primary-hover"
               >
                 {ui.close}

@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 /**
- * Station auto-print agent.
- *
- * Generates a PDF ticket per order, saves it locally, and optionally sends the PDF
- * to a print command.
+ * Standalone station auto-print agent (same behaviour as scripts/print-agent.mjs in the full app).
+ * Customers only need this folder + Node — not the QR Menu source code.
  */
 
 import { spawn } from "node:child_process";
@@ -36,13 +34,13 @@ let nextTicketNumber = null;
 if (!BASE || !API_SECRET || !RESTAURANT_SLUG || !STATION_LABELS[STATION]) {
   console.error(
     "Missing PRINT_AGENT_BASE_URL (or NEXT_PUBLIC_APP_URL), PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, or PRINT_AGENT_STATION.\n" +
-      "Set the same PRINT_AGENT_API_SECRET on the server (.env / hosting) and on this PC.\n" +
-      "  export PRINT_AGENT_BASE_URL=https://your-app.com\n" +
-      "  export PRINT_AGENT_API_SECRET=long-random-shared-secret\n" +
-      "  export PRINT_AGENT_RESTAURANT_SLUG=your-dashboard-slug\n" +
-      "  export PRINT_AGENT_STATION=bar | cold-kitchen | kitchen\n" +
-      "  export PRINT_AGENT_PDF_DIR=./print-agent-pdfs\n" +
-      "  npm run print-agent"
+      "Use the same PRINT_AGENT_API_SECRET on the server and this PC (see Dashboard → Options / Branding → Auto-print).\n" +
+      "  PRINT_AGENT_BASE_URL=https://your-site.com   (no path after the domain)\n" +
+      "  PRINT_AGENT_API_SECRET=long-random-shared-secret\n" +
+      "  PRINT_AGENT_RESTAURANT_SLUG=your-dashboard-slug\n" +
+      "  PRINT_AGENT_STATION=bar | cold-kitchen | kitchen\n" +
+      "  PRINT_AGENT_PDF_DIR=./print-agent-pdfs\n" +
+      "  npm start"
   );
   process.exit(1);
 }
@@ -145,10 +143,6 @@ function sanitizeFilePart(value) {
     .slice(0, 64);
 }
 
-/**
- * pdf-lib standard fonts use WinAnsi; replace unsupported Unicode chars so
- * ticket generation never crashes on menu items/table names.
- */
 function toWinAnsiSafeText(value) {
   return String(value)
     .normalize("NFKD")
@@ -189,7 +183,7 @@ async function loadPdfFont(doc) {
 
 async function renderTicketPdf(order) {
   const doc = await PDFDocument.create();
-  let page = doc.addPage([226.77, 700]); // 80mm thermal-like width
+  let page = doc.addPage([226.77, 700]);
   const fontInfo = await loadPdfFont(doc);
   const font = fontInfo.font;
 

@@ -28,8 +28,8 @@ const CONFIRMED_STATUSES = ["paid", "preparing", "ready", "delivered"] as string
 
 export const dynamic = "force-dynamic";
 
-function fmtUsd(cents: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+function fmtEur(cents: number) {
+  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(cents / 100);
 }
 
 function startOfLocalDay(d: Date) {
@@ -321,19 +321,19 @@ export default async function OfficePage({
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
             <p className="text-sm font-medium text-ink-muted">Today</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums text-ink">{fmtUsd(revenueToday)}</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums text-ink">{fmtEur(revenueToday)}</p>
             <p className="mt-1 text-xs text-ink-muted">{countToday} orders</p>
           </div>
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
             <p className="text-sm font-medium text-ink-muted">Last 7 days</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums text-ink">{fmtUsd(revenue7)}</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums text-ink">{fmtEur(revenue7)}</p>
             <p className="mt-1 text-xs text-ink-muted">{count7} orders</p>
           </div>
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm ring-1 ring-primary/15">
             <p className="text-sm font-medium text-ink-muted">Last 30 days</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums text-primary">{fmtUsd(revenue30)}</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums text-primary">{fmtEur(revenue30)}</p>
             <p className="mt-1 text-xs text-ink-muted">
-              {count30} orders · avg {fmtUsd(avgOrderCents30)} / order
+              {count30} orders · avg {fmtEur(avgOrderCents30)} / order
             </p>
           </div>
         </div>
@@ -417,7 +417,7 @@ export default async function OfficePage({
                   </td>
                   <td className="px-4 py-3">{o.table.name}</td>
                   <td className="px-4 py-3 capitalize">{o.status}</td>
-                  <td className="px-4 py-3 text-right font-medium tabular-nums">{fmtUsd(o.totalAmount)}</td>
+                  <td className="px-4 py-3 text-right font-medium tabular-nums">{fmtEur(o.totalAmount)}</td>
                 </tr>
               ))}
             </tbody>

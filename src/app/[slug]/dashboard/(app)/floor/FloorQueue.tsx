@@ -22,9 +22,9 @@ type Order = {
 };
 
 function formatPrice(cents: number) {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("de-DE", {
     style: "currency",
-    currency: "USD",
+    currency: "EUR",
   }).format(cents / 100);
 }
 

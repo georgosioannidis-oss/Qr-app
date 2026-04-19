@@ -15,7 +15,7 @@ export function BrandingPageClient() {
     primaryColor: string | null;
     colorMode: string | null;
     waiterRelayEnabled?: boolean;
-    hasPrintAgentToken?: boolean;
+    slug: string;
     navLabelOrdersQueue?: string | null;
     navLabelGuestOrders?: string | null;
     onlinePaymentEnabled?: boolean;
@@ -37,7 +37,7 @@ export function BrandingPageClient() {
           primaryColor?: string | null;
           colorMode?: string | null;
           waiterRelayEnabled?: boolean;
-          hasPrintAgentToken?: boolean;
+          slug?: string;
           navLabelOrdersQueue?: string | null;
           navLabelGuestOrders?: string | null;
           onlinePaymentEnabled?: boolean;
@@ -70,7 +70,7 @@ export function BrandingPageClient() {
             primaryColor: json.primaryColor ?? null,
             colorMode: json.colorMode ?? null,
             waiterRelayEnabled: json.waiterRelayEnabled === true,
-            hasPrintAgentToken: json.hasPrintAgentToken === true,
+            slug: typeof json.slug === "string" ? json.slug : "",
             navLabelOrdersQueue: json.navLabelOrdersQueue ?? null,
             navLabelGuestOrders: json.navLabelGuestOrders ?? null,
             onlinePaymentEnabled: json.onlinePaymentEnabled === true,
@@ -128,7 +128,7 @@ export function BrandingPageClient() {
         initialPayAtTableCashEnabled={data.payAtTableCashEnabled}
         initialPrepTimeEstimateMinutes={data.prepTimeEstimateMinutes ?? null}
       />
-      <PrintAgentSection hasPrintAgentToken={data.hasPrintAgentToken === true} />
+      <PrintAgentSection restaurantSlug={data.slug} />
     </div>
   );
 }

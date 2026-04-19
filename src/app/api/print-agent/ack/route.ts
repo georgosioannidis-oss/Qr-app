@@ -1,18 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ordersInKitchenQueueWhere } from "@/lib/kitchen-queue";
-import { restaurantForPrintAgentBearer } from "@/lib/print-agent-auth";
+import { ordersEligibleForStationPrintWhere } from "@/lib/kitchen-queue";
+import { printAgentApiDisabledReason, restaurantForPrintAgentRequest } from "@/lib/print-agent-auth";
 import { isPrintStationKey } from "@/lib/print-station-routing";
 
 /**
- * POST /api/print-agent/ack
- * Authorization: Bearer <printAgentToken>
+ * POST /api/print-agent/ack?slug=<restaurantSlug>
+ * Header: X-Print-Agent-Secret: <PRINT_AGENT_API_SECRET>
  * Body: { "orderId": "<cuid>", "stationKey": "bar|cold-kitchen|kitchen" }
- *
- * Marks the order as printed by the agent (idempotent if already acked).
  */
 export async function POST(req: NextRequest) {
-  const restaurant = await restaurantForPrintAgentBearer(req.headers.get("authorization"));
+  const disabled = printAgentApiDisabledReason();
+  if (disabled === "missing_secret") {
+    return NextResponse.json(
+      { error: "Print agent API is not configured. Set PRINT_AGENT_API_SECRET on the server." },
+      { status: 503 }
+    );
+  }
+
+  const slug = req.nextUrl.searchParams.get("slug");
+  const restaurant = await restaurantForPrintAgentRequest(
+    req.headers.get("x-print-agent-secret"),
+    slug
+  );
   if (!restaurant) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -35,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   const order = await prisma.order.findFirst({
     where: {
-      AND: [{ id: orderId }, ordersInKitchenQueueWhere(restaurant.id)],
+      AND: [{ id: orderId }, ordersEligibleForStationPrintWhere(restaurant.id)],
     },
     select: { id: true },
   });
