@@ -136,7 +136,7 @@ type Props = {
   /** Kitchen overload: block new guest orders from this QR link (staff flow unchanged). */
   guestOrderingPaused?: boolean;
   categories: Category[];
-  /** When `demo-restaurant` or `moustakallis`, guest can switch EL/EN for menu + UI. */
+  /** When `moustakallis` (or legacy `demo-restaurant` slug), guest can switch EL/EN for menu + UI. */
   restaurantSlug?: string | null;
 };
 

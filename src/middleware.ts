@@ -16,8 +16,19 @@ import { CUSTOMER_PATHNAME_HEADER } from "@/lib/load-customer-table";
 const DASHBOARD_PATH_HEADER = "x-dashboard-path";
 const DASHBOARD_SESSION_PATH_HEADER = "x-dashboard-session-path";
 
+/** DB slug renamed from `demo-restaurant` → `moustakallis`; JWT may still carry the old value until re-login. */
+function canonicalDashboardRestaurantSlug(slug: string): string {
+  return slug === "demo-restaurant" ? "moustakallis" : slug;
+}
+
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
+
+  if (path === "/demo-restaurant" || path.startsWith("/demo-restaurant/")) {
+    const u = req.nextUrl.clone();
+    u.pathname = "/moustakallis" + path.slice("/demo-restaurant".length);
+    return NextResponse.redirect(u);
+  }
 
   if (path.startsWith("/m/")) {
     const requestHeaders = new Headers(req.headers);
@@ -90,7 +101,8 @@ export async function middleware(req: NextRequest) {
 
   if (path === "/dashboard/floor" || path.startsWith("/dashboard/floor/")) {
     const { jwt } = virtualPick(path);
-    const slug = typeof jwt?.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const raw = typeof jwt?.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const slug = raw ? canonicalDashboardRestaurantSlug(raw) : "";
     if (slug) {
       const u = req.nextUrl.clone();
       const after = path.slice("/dashboard/floor".length);
@@ -109,7 +121,8 @@ export async function middleware(req: NextRequest) {
       login.searchParams.set("callbackUrl", path);
       return NextResponse.redirect(login);
     }
-    const slug = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const raw = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const slug = raw ? canonicalDashboardRestaurantSlug(raw) : "";
     if (!slug) {
       const login = new URL("/dashboard/login", req.url);
       login.searchParams.set("callbackUrl", path);
@@ -127,7 +140,8 @@ export async function middleware(req: NextRequest) {
       const login = new URL("/dashboard/login", req.url);
       return NextResponse.redirect(login);
     }
-    const slug = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const raw = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const slug = raw ? canonicalDashboardRestaurantSlug(raw) : "";
     if (!slug) {
       const login = new URL("/dashboard/login", req.url);
       return NextResponse.redirect(login);
@@ -144,7 +158,8 @@ export async function middleware(req: NextRequest) {
       login.searchParams.set("callbackUrl", path);
       return NextResponse.redirect(login);
     }
-    const rs = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const rawRs = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const rs = rawRs ? canonicalDashboardRestaurantSlug(rawRs) : "";
     if (!rs) {
       const login = new URL("/dashboard/login", req.url);
       login.searchParams.set("callbackUrl", path);

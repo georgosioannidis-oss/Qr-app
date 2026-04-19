@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dashboardPathRedirect } from "./dashboard-path-guard";
 
-const base = "/moustakalis/dashboard";
+const base = "/moustakallis/dashboard";
 
 describe("dashboardPathRedirect", () => {
   it("allows owner on any dashboard path", () => {

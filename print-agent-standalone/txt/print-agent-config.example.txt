@@ -3,7 +3,7 @@
 
 PRINT_AGENT_BASE_URL=http://46.224.113.33
 PRINT_AGENT_API_SECRET=generate-a-long-random-string-same-on-server-and-each-pc
-PRINT_AGENT_RESTAURANT_SLUG=your-dashboard-slug
+PRINT_AGENT_RESTAURANT_SLUG=moustakallis
 PRINT_AGENT_STATION=kitchen
 
 # If the site uses HTTPS or a non-default port, fix BASE_URL, e.g.:

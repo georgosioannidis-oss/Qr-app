@@ -4,12 +4,21 @@ import { hash } from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
+  const existingMoustakallis = await prisma.restaurant.findUnique({ where: { slug: "moustakallis" } });
+  const existingDemo = await prisma.restaurant.findUnique({ where: { slug: "demo-restaurant" } });
+  if (existingDemo && !existingMoustakallis) {
+    await prisma.restaurant.update({
+      where: { id: existingDemo.id },
+      data: { slug: "moustakallis", name: "Moustakallis" },
+    });
+  }
+
   const restaurant = await prisma.restaurant.upsert({
-    where: { slug: "demo-restaurant" },
+    where: { slug: "moustakallis" },
     update: { waiterRelayEnabled: true, prepTimeEstimateMinutes: 18 },
     create: {
-      name: "Demo Restaurant",
-      slug: "demo-restaurant",
+      name: "Moustakallis",
+      slug: "moustakallis",
       waiterRelayEnabled: true,
       prepTimeEstimateMinutes: 18,
     },

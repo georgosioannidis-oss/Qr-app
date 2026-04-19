@@ -1,5 +1,5 @@
 /**
- * Guest QR menu localization for the demo / Moustakallis seed restaurants.
+ * Guest QR menu localization for the seeded Moustakallis venue (`slug: moustakallis`).
  * Dish copy merges `demo-guest-menu-en.json` (by Greek category + name); option labels use phrase maps.
  */
 import demoGuestMenuEn from "@/data/demo-guest-menu-en.json";
@@ -7,7 +7,8 @@ import type { GuestMenuLang } from "@/lib/guest-menu-ui-strings";
 
 export type { GuestMenuLang };
 
-export const GUEST_MENU_BILINGUAL_SLUGS = ["demo-restaurant", "moustakallis"] as const;
+/** Bilingual guest menu; `demo-restaurant` kept so old DB rows still work until re-seeded. */
+export const GUEST_MENU_BILINGUAL_SLUGS = ["moustakallis", "demo-restaurant"] as const;
 
 export function isGuestMenuBilingualSlug(slug: string | null | undefined): boolean {
   if (!slug) return false;

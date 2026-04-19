@@ -2,9 +2,12 @@ import { PrismaClient } from "@prisma/client";
 import { writeFileSync } from "node:fs";
 
 const prisma = new PrismaClient();
-const r = await prisma.restaurant.findFirst({ where: { slug: "demo-restaurant" }, select: { id: true } });
+const r = await prisma.restaurant.findFirst({
+  where: { slug: { in: ["moustakallis", "demo-restaurant"] } },
+  select: { id: true },
+});
 if (!r) {
-  console.error("demo-restaurant not found");
+  console.error("moustakallis (or demo-restaurant) not found");
   process.exit(1);
 }
 const cats = await prisma.menuCategory.findMany({
