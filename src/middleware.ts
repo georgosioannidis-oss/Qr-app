@@ -21,10 +21,10 @@ const MOUSTAKALLIS_CUSTOM_HOSTS = new Set([
 ]);
 const MOUSTAKALLIS_SLUG = "moustakallis";
 const SHARED_LOGIN_BASE_URL =
-  process.env.SHARED_LOGIN_BASE_URL?.trim() || "http://46.224.113.33";
-const SHARED_LOGIN_HOST = (() => {
+  process.env.SHARED_LOGIN_BASE_URL?.trim() || "http://46.224.113.33:3000";
+const SHARED_LOGIN_HOSTNAME = (() => {
   try {
-    return new URL(SHARED_LOGIN_BASE_URL).host.toLowerCase();
+    return new URL(SHARED_LOGIN_BASE_URL).hostname.toLowerCase();
   } catch {
     return "46.224.113.33";
   }
@@ -192,7 +192,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(login);
     }
     const tail = path.slice("/dashboard".length);
-    if (host === SHARED_LOGIN_HOST && slug === MOUSTAKALLIS_SLUG) {
+    if (host === SHARED_LOGIN_HOSTNAME && slug === MOUSTAKALLIS_SLUG) {
       const u = req.nextUrl.clone();
       u.protocol = "https:";
       u.host = "moustakallis-tavern-menu.com";
@@ -216,7 +216,7 @@ export async function middleware(req: NextRequest) {
       const login = new URL("/dashboard/login", req.url);
       return NextResponse.redirect(login);
     }
-    if (host === SHARED_LOGIN_HOST && slug === MOUSTAKALLIS_SLUG) {
+    if (host === SHARED_LOGIN_HOSTNAME && slug === MOUSTAKALLIS_SLUG) {
       const u = req.nextUrl.clone();
       u.protocol = "https:";
       u.host = "moustakallis-tavern-menu.com";
@@ -247,7 +247,7 @@ export async function middleware(req: NextRequest) {
       u.pathname = tenantDashboardHref(rs, tenant.rest || "");
       return NextResponse.redirect(u);
     }
-    if (host === SHARED_LOGIN_HOST && rs === MOUSTAKALLIS_SLUG) {
+    if (host === SHARED_LOGIN_HOSTNAME && rs === MOUSTAKALLIS_SLUG) {
       const u = req.nextUrl.clone();
       u.protocol = "https:";
       u.host = "moustakallis-tavern-menu.com";
