@@ -33,7 +33,8 @@ const SHARED_LOGIN_HOSTNAME = (() => {
 function moustakallisDashboardUrl(req: NextRequest): string {
   const u = req.nextUrl.clone();
   u.protocol = "https:";
-  u.host = "moustakallis-tavern-menu.com";
+  u.hostname = "moustakallis-tavern-menu.com";
+  u.port = "";
   u.pathname = `/${MOUSTAKALLIS_SLUG}/dashboard`;
   u.search = "";
   return u.toString();
@@ -195,7 +196,8 @@ export async function middleware(req: NextRequest) {
     if (host === SHARED_LOGIN_HOSTNAME && slug === MOUSTAKALLIS_SLUG) {
       const u = req.nextUrl.clone();
       u.protocol = "https:";
-      u.host = "moustakallis-tavern-menu.com";
+      u.hostname = "moustakallis-tavern-menu.com";
+      u.port = "";
       u.pathname = tenantDashboardHref(slug, tail && tail !== "/" ? tail : "");
       return NextResponse.redirect(u);
     }
@@ -219,7 +221,8 @@ export async function middleware(req: NextRequest) {
     if (host === SHARED_LOGIN_HOSTNAME && slug === MOUSTAKALLIS_SLUG) {
       const u = req.nextUrl.clone();
       u.protocol = "https:";
-      u.host = "moustakallis-tavern-menu.com";
+      u.hostname = "moustakallis-tavern-menu.com";
+      u.port = "";
       u.pathname = tenantDashboardHref(slug, "");
       return NextResponse.redirect(u);
     }
@@ -250,7 +253,8 @@ export async function middleware(req: NextRequest) {
     if (host === SHARED_LOGIN_HOSTNAME && rs === MOUSTAKALLIS_SLUG) {
       const u = req.nextUrl.clone();
       u.protocol = "https:";
-      u.host = "moustakallis-tavern-menu.com";
+      u.hostname = "moustakallis-tavern-menu.com";
+      u.port = "";
       u.pathname = tenantDashboardHref(rs, tenant.rest || "");
       return NextResponse.redirect(u);
     }
