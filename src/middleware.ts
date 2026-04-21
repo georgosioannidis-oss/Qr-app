@@ -265,7 +265,11 @@ export async function middleware(req: NextRequest) {
       u.hostname = "moustakallis-tavern-menu.com";
       u.port = "";
       u.pathname = tenantDashboardHref(rs, tenant.rest || "");
-      return NextResponse.redirect(u);
+      const currentNoQuery = `${req.nextUrl.protocol}//${req.nextUrl.hostname}${req.nextUrl.pathname}`;
+      const targetNoQuery = `${u.protocol}//${u.hostname}${u.pathname}`;
+      if (currentNoQuery !== targetNoQuery) {
+        return NextResponse.redirect(u);
+      }
     }
 
     const requestHeaders = new Headers(req.headers);
