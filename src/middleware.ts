@@ -21,12 +21,12 @@ const MOUSTAKALLIS_CUSTOM_HOSTS = new Set([
 ]);
 const MOUSTAKALLIS_SLUG = "moustakallis";
 const SHARED_LOGIN_BASE_URL =
-  process.env.SHARED_LOGIN_BASE_URL?.trim() || "http://46.224.113.33:3000";
+  process.env.SHARED_LOGIN_BASE_URL?.trim() || "https://scannorder.ink";
 const SHARED_LOGIN_HOSTNAME = (() => {
   try {
     return new URL(SHARED_LOGIN_BASE_URL).hostname.toLowerCase();
   } catch {
-    return "46.224.113.33";
+    return "scannorder.ink";
   }
 })();
 
