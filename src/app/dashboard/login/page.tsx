@@ -124,13 +124,33 @@ function LoginPageInner() {
 
       if (res?.ok) {
         if (typeof window !== "undefined") {
+          const targetUrl = typeof res.url === "string" ? res.url : "";
+          if (targetUrl) {
+            try {
+              const resolved = new URL(targetUrl, window.location.origin);
+              navigated = true;
+              if (resolved.origin !== window.location.origin) {
+                window.location.assign(resolved.toString());
+                return;
+              }
+              const dest =
+                resolved.pathname.startsWith("/dashboard/login") || resolved.pathname === "/" || resolved.pathname === ""
+                  ? "/dashboard"
+                  : `${resolved.pathname}${resolved.search}${resolved.hash}`;
+              router.replace(dest);
+              router.refresh();
+              return;
+            } catch {
+              /* fallback below */
+            }
+          }
           const cbPath = pathnameFromCallbackUrl(callbackParam);
-          const dest =
+          const fallbackDest =
             cbPath.startsWith("/dashboard/login") || cbPath === "/" || cbPath === ""
               ? "/dashboard"
               : cbPath;
           navigated = true;
-          router.replace(dest);
+          router.replace(fallbackDest);
           router.refresh();
         }
         return;
