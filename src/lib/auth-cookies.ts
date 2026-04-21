@@ -1,6 +1,7 @@
 /** Separate NextAuth cookie namespaces so owner and staff sessions can coexist in one browser. */
 
 export type AuthChannel = "owner" | "staff";
+const COOKIE_VERSION = "v2";
 
 export function shouldUseSecureAuthCookies(): boolean {
   const url = process.env.NEXTAUTH_URL ?? "";
@@ -16,7 +17,7 @@ function cookiePrefix(secure: boolean): string {
 /** Session JWT cookie names (must match `getToken({ cookieName })` and NextAuth `cookies` config). */
 export function sessionTokenCookieName(channel: AuthChannel): string {
   const secure = shouldUseSecureAuthCookies();
-  return `${cookiePrefix(secure)}next-auth.${channel}.session-token`;
+  return `${cookiePrefix(secure)}next-auth.${channel}.${COOKIE_VERSION}.session-token`;
 }
 
 export function buildChannelCookies(channel: AuthChannel) {
@@ -25,7 +26,7 @@ export function buildChannelCookies(channel: AuthChannel) {
   const ch = channel;
   return {
     sessionToken: {
-      name: `${p}next-auth.${ch}.session-token`,
+      name: `${p}next-auth.${ch}.${COOKIE_VERSION}.session-token`,
       options: {
         httpOnly: true,
         sameSite: "lax" as const,
@@ -34,7 +35,7 @@ export function buildChannelCookies(channel: AuthChannel) {
       },
     },
     callbackUrl: {
-      name: `${p}next-auth.${ch}.callback-url`,
+      name: `${p}next-auth.${ch}.${COOKIE_VERSION}.callback-url`,
       options: {
         httpOnly: true,
         sameSite: "lax" as const,
@@ -43,7 +44,7 @@ export function buildChannelCookies(channel: AuthChannel) {
       },
     },
     csrfToken: {
-      name: `${p}next-auth.${ch}.csrf-token`,
+      name: `${p}next-auth.${ch}.${COOKIE_VERSION}.csrf-token`,
       options: {
         httpOnly: true,
         sameSite: "lax" as const,
@@ -52,7 +53,7 @@ export function buildChannelCookies(channel: AuthChannel) {
       },
     },
     pkceCodeVerifier: {
-      name: `${p}next-auth.${ch}.pkce.code_verifier`,
+      name: `${p}next-auth.${ch}.${COOKIE_VERSION}.pkce.code_verifier`,
       options: {
         httpOnly: true,
         sameSite: "lax" as const,
@@ -62,7 +63,7 @@ export function buildChannelCookies(channel: AuthChannel) {
       },
     },
     state: {
-      name: `${p}next-auth.${ch}.state`,
+      name: `${p}next-auth.${ch}.${COOKIE_VERSION}.state`,
       options: {
         httpOnly: true,
         sameSite: "lax" as const,
@@ -72,7 +73,7 @@ export function buildChannelCookies(channel: AuthChannel) {
       },
     },
     nonce: {
-      name: `${p}next-auth.${ch}.nonce`,
+      name: `${p}next-auth.${ch}.${COOKIE_VERSION}.nonce`,
       options: {
         httpOnly: true,
         sameSite: "lax" as const,
