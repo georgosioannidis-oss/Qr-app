@@ -1,7 +1,7 @@
 /** Separate NextAuth cookie namespaces so owner and staff sessions can coexist in one browser. */
 
 export type AuthChannel = "owner" | "staff";
-const COOKIE_VERSION = "v2";
+const COOKIE_VERSION = "v3";
 
 export function shouldUseSecureAuthCookies(): boolean {
   const url = process.env.NEXTAUTH_URL ?? "";
