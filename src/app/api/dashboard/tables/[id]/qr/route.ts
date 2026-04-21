@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { getDashboardServerSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { requireMenuTablesApiAccess } from "@/lib/menu-tables-access";
+import { createQrProof } from "@/lib/guest-qr-access";
 
 /**
  * GET /api/dashboard/tables/[id]/qr
@@ -31,7 +32,8 @@ export async function GET(
 
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const menuUrl = `${baseUrl}/m/${table.token}`;
+  const proof = createQrProof(table.token);
+  const menuUrl = `${baseUrl}/m/${table.token}?qr=${encodeURIComponent(proof)}`;
 
   const pngBuffer = await QRCode.toBuffer(menuUrl, {
     type: "png",

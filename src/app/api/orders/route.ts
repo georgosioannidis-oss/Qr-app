@@ -12,6 +12,8 @@ import { isGuestQrOrderingBlocked } from "@/lib/guest-ordering-pause";
 import { prisma } from "@/lib/prisma";
 import { requireWaitStaffApiAccess } from "@/lib/require-wait-staff-api";
 import { restaurantUsesStripeCheckout } from "@/lib/restaurant-checkout";
+import { hasGuestQrAccess } from "@/lib/guest-qr-access";
+import { ensureMinTwoPeopleOptionGroup } from "@/lib/min-two-people-option";
 
 const MAX_ITEMS = 50;
 const MAX_QUANTITY = 10;
@@ -213,6 +215,12 @@ export async function POST(req: NextRequest) {
     if (!table) {
       return NextResponse.json({ error: "Invalid table" }, { status: 404 });
     }
+    if (!hasGuestQrAccess(req, tableToken)) {
+      return NextResponse.json(
+        { error: "QR session expired. Please scan your table QR code again." },
+        { status: 403 }
+      );
+    }
 
     const session = await getDashboardServerSession(req);
     let staffSkipsWaiterRelay = false;
@@ -246,7 +254,7 @@ export async function POST(req: NextRequest) {
         isAvailable: true,
       },
       select: {
-        id: true, price: true, optionGroups: true, stationId: true,
+        id: true, name: true, price: true, optionGroups: true, stationId: true,
         station: { select: { name: true } },
         category: { select: { stationId: true, station: { select: { name: true } } } },
       },
@@ -269,7 +277,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Invalid or unavailable item: " + i.menuItemId }, { status: 400 });
       }
       const realPrice = menuItem.price;
-      const groups = parseOptionGroups(menuItem.optionGroups);
+      const groups =
+        ensureMinTwoPeopleOptionGroup(menuItem.name, parseOptionGroups(menuItem.optionGroups)) ?? [];
       const selectedRaw =
         i.selectedOptions && typeof i.selectedOptions === "object"
           ? i.selectedOptions

@@ -8,6 +8,9 @@ import { normalizePublicMediaUrl } from "@/lib/media-url";
 import { resolvedMenuItemAllergenCodes } from "@/lib/merge-menu-allergens";
 import { restaurantUsesStripeCheckout } from "@/lib/restaurant-checkout";
 import { isGuestQrOrderingBlocked } from "@/lib/guest-ordering-pause";
+import { cookies } from "next/headers";
+import { grantGuestQrAccess, isValidQrProof, verifyAccessToken } from "@/lib/guest-qr-access";
+import { ensureMinTwoPeopleOptionGroup } from "@/lib/min-two-people-option";
 import { MenuView } from "./MenuView";
 
 export const revalidate = 30;
@@ -67,13 +70,34 @@ export default async function TableMenuPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ paid?: string; cancel?: string }>;
+  searchParams: Promise<{ paid?: string; cancel?: string; qr?: string }>;
 }) {
   const { token } = await params;
-  const { paid } = await searchParams;
+  const { paid, qr } = await searchParams;
   const table = await loadCustomerTableWithMenuByToken(token);
 
   if (!table) notFound();
+  const qrProofValid = isValidQrProof(token, qr);
+  if (qrProofValid) {
+    await grantGuestQrAccess(token);
+  }
+  const jar = await cookies();
+  const hasCurrentAccess = verifyAccessToken(
+    token,
+    jar.get("qr_menu_access")?.value
+  );
+  if (!qrProofValid && !hasCurrentAccess) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
+        <div className="max-w-md w-full rounded-3xl border border-border bg-card p-8 shadow-sm text-center">
+          <h2 className="text-xl font-bold text-ink mb-3 leading-snug">Scan table QR to order</h2>
+          <p className="text-base leading-relaxed text-ink-muted sm:text-sm">
+            Your ordering access has expired. Scan the QR code at your table again to start a new 30-minute session.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const menu = table.restaurant.menuCategories.filter((c) => c.items.length > 0);
   const usesOnlineCheckout = restaurantUsesStripeCheckout(table.restaurant);
@@ -105,7 +129,10 @@ export default async function TableMenuPage({
             description: i.description ?? undefined,
             price: i.price,
             imageUrl: normalizePublicMediaUrl(i.imageUrl ?? undefined) ?? undefined,
-            optionGroups: parseGuestMenuOptionGroups(i.optionGroups),
+            optionGroups: ensureMinTwoPeopleOptionGroup(
+              i.name,
+              parseGuestMenuOptionGroups(i.optionGroups)
+            ),
             ...(allergenCodes.length > 0 ? { allergenCodes } : {}),
           };
         }),

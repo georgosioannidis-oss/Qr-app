@@ -19,6 +19,21 @@ export async function DELETE(
   if (!table) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
+  const orderCount = await prisma.order.count({
+    where: {
+      restaurantId,
+      tableId: id,
+    },
+  });
+  if (orderCount > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "This table has order history and cannot be deleted. Keep it, or rename/move it to preserve financial records.",
+      },
+      { status: 400 }
+    );
+  }
 
   await prisma.table.delete({ where: { id } });
   return NextResponse.json({ ok: true });

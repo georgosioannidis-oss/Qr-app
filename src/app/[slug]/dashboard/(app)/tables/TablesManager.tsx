@@ -92,20 +92,17 @@ function GripIcon() {
 
 function TableCardContent({
   table,
-  appUrl,
   deletingId,
   onDelete,
   onRefresh,
   isDragging,
 }: {
   table: TableRow;
-  appUrl: string;
   deletingId: string | null;
   onDelete: (id: string, name: string) => void;
   onRefresh: () => Promise<void>;
   isDragging: boolean;
 }) {
-  const menuUrl = `${appUrl}/m/${table.token}`;
   const [nameEdit, setNameEdit] = useState(false);
   const [nameDraft, setNameDraft] = useState(table.name);
   const [savingName, setSavingName] = useState(false);
@@ -188,9 +185,6 @@ function TableCardContent({
           </div>
         )}
         <p className="text-xs text-ink-muted">Drag the handle to reorder or drop onto another section.</p>
-        <a href={menuUrl} target="_blank" rel="noopener noreferrer" className="inline-block break-all text-sm text-primary hover:underline">
-          {menuUrl}
-        </a>
       </div>
       <div className="flex flex-wrap gap-2 border-t border-border pt-3 sm:border-t-0 sm:pt-0 sm:border-l sm:pl-4 sm:items-center">
         <a href={`/api/dashboard/tables/${table.id}/qr`} download className="inline-flex items-center justify-center rounded-xl bg-primary/10 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/20">
@@ -212,13 +206,11 @@ function TableCardContent({
 
 function SortableTableRow({
   table,
-  appUrl,
   deletingId,
   onDelete,
   onRefresh,
 }: {
   table: TableRow;
-  appUrl: string;
   deletingId: string | null;
   onDelete: (id: string, name: string) => void;
   onRefresh: () => Promise<void>;
@@ -248,7 +240,6 @@ function SortableTableRow({
       <div className="min-w-0 flex-1">
         <TableCardContent
           table={table}
-          appUrl={appUrl}
           deletingId={deletingId}
           onDelete={onDelete}
           onRefresh={onRefresh}
@@ -288,7 +279,6 @@ function SectionDropZone({
 
 function SortableSectionBlock({
   section,
-  appUrl,
   deletingId,
   onDelete,
   onRefresh,
@@ -309,7 +299,6 @@ function SortableSectionBlock({
   emphasizeTableDropTarget,
 }: {
   section: TableSectionRow;
-  appUrl: string;
   deletingId: string | null;
   onDelete: (id: string, name: string) => void;
   onRefresh: () => Promise<void>;
@@ -448,7 +437,7 @@ function SortableSectionBlock({
           <SortableContext items={tableIds} strategy={verticalListSortingStrategy}>
             <ul className="space-y-3">
               {section.tables.map((t) => (
-                <SortableTableRow key={t.id} table={t} appUrl={appUrl} deletingId={deletingId} onDelete={onDelete} onRefresh={onRefresh} />
+                <SortableTableRow key={t.id} table={t} deletingId={deletingId} onDelete={onDelete} onRefresh={onRefresh} />
               ))}
             </ul>
           </SortableContext>
@@ -1042,7 +1031,7 @@ export function TablesManager() {
     if (
       !confirmDestructiveAction(
         `Delete table “${name}”?`,
-        "The QR code and guest link for this table will stop working."
+        "Delete only brand-new unused tables. If this table has any order history, deletion will be blocked to protect money reports."
       )
     )
       return;
@@ -1062,7 +1051,6 @@ export function TablesManager() {
     }
   };
 
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
   const otherSectionsForModal = deleteSectionPrompt
     ? sections.filter((s) => s.id !== deleteSectionPrompt.id).map((s) => ({ id: s.id, name: s.name }))
     : [];
@@ -1126,7 +1114,6 @@ export function TablesManager() {
                 <SortableSectionBlock
                   key={sec.id}
                   section={sec}
-                  appUrl={appUrl}
                   deletingId={deletingId}
                   onDelete={handleDelete}
                   onRefresh={fetchLayout}

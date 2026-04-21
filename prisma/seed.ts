@@ -515,6 +515,7 @@ async function main() {
           { id: "187ml", label: "187ml", priceCents: 0 },
           { id: "750ml", label: "750ml", priceCents: 1800 },
         ]}]) },
+      { name: "AVACAS (Xynisteri)", description: "Λευκό κρασί. 187ml.", price: 450 },
     ]},
     { cat: redWine, items: [
       // Κύπρος
@@ -541,6 +542,7 @@ async function main() {
       { name: "Alpha – Cabernet Sauvignon", description: "Colchagua Valley, Χιλή. 750ml.", price: 4500 },
       { name: "Bertani – Ripasso", description: "Valpolicella, Ιταλία. 750ml.", price: 3600 },
       { name: "Castello Banfi – Chianti", description: "Ανάμικτη ποικιλία, Ιταλία. 750ml.", price: 2500 },
+      { name: "AVACAS Rosalino", description: "Κόκκινο κρασί. 187ml.", price: 450 },
     ]},
     { cat: medWine, items: [
       { name: "Vouni Panayia – Alina (ημίξηρο)", description: "Ξυνιστέρι, ημίξηρο.", price: 450,
@@ -574,17 +576,11 @@ async function main() {
       { name: "Moët & Chandon Rosé Impérial NV", description: "750ml.", price: 15000 },
       { name: "Veuve Clicquot Yellow Label Brut NV", description: "750ml.", price: 13500 },
       { name: "Moët & Chandon Brut Impérial NV", description: "750ml.", price: 13500 },
-      { name: "Martini Brut / Asti", description: "NV.", price: 2500,
-        optionGroups: JSON.stringify([{ id: "type", label: "Τύπος", required: true, type: "single", choices: [
-          { id: "brut", label: "Brut", priceCents: 0 },
-          { id: "asti", label: "Asti", priceCents: 0 },
-        ]}]) },
+      { name: "Martini Brut", description: "200ml.", price: 650 },
+      { name: "Martini Asti", description: "200ml.", price: 650 },
       { name: "Beato Bartolomeo Prosecco NV", description: "750ml.", price: 2200 },
-      { name: "Maschio Prosecco NV", description: "Prosecco.", price: 650,
-        optionGroups: JSON.stringify([{ id: "size", label: "Μέγεθος", required: true, type: "single", choices: [
-          { id: "200ml", label: "200ml", priceCents: 0 },
-          { id: "750ml", label: "750ml", priceCents: 1350 },
-        ]}]) },
+      { name: "Maschio Prosecco NV (200ml)", description: "Prosecco 200ml.", price: 650 },
+      { name: "Maschio Prosecco NV (750ml)", description: "Prosecco 750ml.", price: 2000 },
       { name: "Henkell Trocken", description: "Αφρώδες. 200ml.", price: 600 },
     ]},
     { cat: coffees, items: [

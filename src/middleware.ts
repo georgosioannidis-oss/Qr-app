@@ -15,6 +15,22 @@ import { CUSTOMER_PATHNAME_HEADER } from "@/lib/load-customer-table";
 
 const DASHBOARD_PATH_HEADER = "x-dashboard-path";
 const DASHBOARD_SESSION_PATH_HEADER = "x-dashboard-session-path";
+const MOUSTAKALLIS_CUSTOM_HOSTS = new Set([
+  "moustakallis-tavern-menu.com",
+  "www.moustakallis-tavern-menu.com",
+]);
+const MOUSTAKALLIS_SLUG = "moustakallis";
+const SHARED_LOGIN_BASE_URL =
+  process.env.SHARED_LOGIN_BASE_URL?.trim() || "http://46.224.113.33";
+
+function moustakallisDashboardUrl(req: NextRequest): string {
+  const u = req.nextUrl.clone();
+  u.protocol = "https:";
+  u.host = "moustakallis-tavern-menu.com";
+  u.pathname = `/${MOUSTAKALLIS_SLUG}/dashboard`;
+  u.search = "";
+  return u.toString();
+}
 
 /** DB slug renamed from `demo-restaurant` → `moustakallis`; JWT may still carry the old value until re-login. */
 function canonicalDashboardRestaurantSlug(slug: string): string {
@@ -23,6 +39,46 @@ function canonicalDashboardRestaurantSlug(slug: string): string {
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  const host = (req.headers.get("host") || "").toLowerCase().split(":")[0];
+  const isMoustakallisCustomHost = MOUSTAKALLIS_CUSTOM_HOSTS.has(host);
+
+  if (isMoustakallisCustomHost) {
+    const isSharedLoginPath =
+      path === "/dashboard/login" || path.startsWith("/dashboard/login/");
+
+    if (path === "/" || path === "") {
+      const target = new URL(`${SHARED_LOGIN_BASE_URL}/dashboard/login`);
+      target.searchParams.set("callbackUrl", moustakallisDashboardUrl(req));
+      return NextResponse.redirect(target, 301);
+    }
+
+    if (isSharedLoginPath) {
+      const target = new URL(`${SHARED_LOGIN_BASE_URL}/dashboard/login`);
+      const callback = req.nextUrl.searchParams.get("callbackUrl");
+      if (callback) target.searchParams.set("callbackUrl", callback);
+      else target.searchParams.set("callbackUrl", moustakallisDashboardUrl(req));
+      return NextResponse.redirect(target, 301);
+    }
+
+    if (path === "/dashboard" || path === "/dashboard/") {
+      const u = req.nextUrl.clone();
+      u.pathname = `/${MOUSTAKALLIS_SLUG}/dashboard`;
+      return NextResponse.redirect(u, 301);
+    }
+
+    if (path.startsWith("/dashboard/")) {
+      const u = req.nextUrl.clone();
+      u.pathname = `/${MOUSTAKALLIS_SLUG}${path}`;
+      return NextResponse.redirect(u, 301);
+    }
+
+    const tenantPath = parseTenantDashboardPath(path);
+    if (tenantPath && tenantPath.slug !== MOUSTAKALLIS_SLUG) {
+      const u = req.nextUrl.clone();
+      u.pathname = tenantDashboardHref(MOUSTAKALLIS_SLUG, tenantPath.rest || "");
+      return NextResponse.redirect(u, 301);
+    }
+  }
 
   if (path === "/demo-restaurant" || path.startsWith("/demo-restaurant/")) {
     const u = req.nextUrl.clone();
