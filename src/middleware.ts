@@ -29,6 +29,9 @@ const SHARED_LOGIN_HOSTNAME = (() => {
     return "scannorder.ink";
   }
 })();
+const USES_MOUSTAKALLIS_AS_SHARED_LOGIN =
+  SHARED_LOGIN_HOSTNAME === "moustakallis-tavern-menu.com" ||
+  SHARED_LOGIN_HOSTNAME === "www.moustakallis-tavern-menu.com";
 
 function moustakallisDashboardUrl(req: NextRequest): string {
   const u = req.nextUrl.clone();
@@ -50,7 +53,7 @@ export async function middleware(req: NextRequest) {
   const host = (req.headers.get("host") || "").toLowerCase().split(":")[0];
   const isMoustakallisCustomHost = MOUSTAKALLIS_CUSTOM_HOSTS.has(host);
 
-  if (isMoustakallisCustomHost) {
+  if (isMoustakallisCustomHost && !USES_MOUSTAKALLIS_AS_SHARED_LOGIN) {
     const isSharedLoginPath =
       path === "/dashboard/login" || path.startsWith("/dashboard/login/");
     const isSharedLoginHost = host === SHARED_LOGIN_HOSTNAME;
