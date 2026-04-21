@@ -53,14 +53,23 @@ export async function middleware(req: NextRequest) {
   if (isMoustakallisCustomHost) {
     const isSharedLoginPath =
       path === "/dashboard/login" || path.startsWith("/dashboard/login/");
+    const isSharedLoginHost = host === SHARED_LOGIN_HOSTNAME;
 
     if (path === "/" || path === "") {
+      if (isSharedLoginHost) {
+        const u = req.nextUrl.clone();
+        u.pathname = "/dashboard/login";
+        return NextResponse.redirect(u, 301);
+      }
       const target = new URL(`${SHARED_LOGIN_BASE_URL}/dashboard/login`);
       target.searchParams.set("callbackUrl", moustakallisDashboardUrl(req));
       return NextResponse.redirect(target, 301);
     }
 
     if (isSharedLoginPath) {
+      if (isSharedLoginHost) {
+        return NextResponse.next();
+      }
       const target = new URL(`${SHARED_LOGIN_BASE_URL}/dashboard/login`);
       const callback = req.nextUrl.searchParams.get("callbackUrl");
       if (callback) target.searchParams.set("callbackUrl", callback);
