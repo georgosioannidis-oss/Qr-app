@@ -1,6 +1,6 @@
 /** All customer-visible strings on `/m/[token]` when bilingual mode is on. */
 
-export type GuestMenuLang = "el" | "en";
+export type GuestMenuLang = "el" | "en" | "ru";
 
 export type GuestMenuUiStrings = {
   paymentSuccessfulCombined: string;
@@ -73,6 +73,7 @@ export type GuestMenuUiStrings = {
   orderFailedGeneric: string;
   langGreek: string;
   langEnglish: string;
+  langRussian: string;
   orderHistoryItems: (count: number) => string;
   priceEachTimesQty: (unitFormatted: string, qty: number) => string;
   menuLanguageGroupAria: string;
@@ -160,6 +161,7 @@ const EN: GuestMenuUiStrings = {
   orderFailedGeneric: "Something went wrong",
   langGreek: "Ελληνικά",
   langEnglish: "English",
+  langRussian: "Русский",
   orderHistoryItems: (count) => (count === 1 ? "1 item" : `${count} items`),
   priceEachTimesQty: (unit, qty) => `${unit} each × ${qty}`,
   menuLanguageGroupAria: "Menu language",
@@ -248,11 +250,104 @@ const EL: GuestMenuUiStrings = {
   orderFailedGeneric: "Κάτι πήγε στραβά",
   langGreek: "Ελληνικά",
   langEnglish: "English",
+  langRussian: "Русский",
   orderHistoryItems: (count) => (count === 1 ? "1 προϊόν" : `${count} προϊόντα`),
   priceEachTimesQty: (unit, qty) => `${unit} το καθένα × ${qty}`,
   menuLanguageGroupAria: "Γλώσσα μενού",
 };
 
+const RU: GuestMenuUiStrings = {
+  paymentSuccessfulCombined: "Оплата прошла успешно. Заказ отправлен.",
+  thankYouAfterOrder: "Заказ отправлен. Спасибо!",
+  stripePayPrompt: "Заказ оформлен — оплатите ниже, чтобы подтвердить его.",
+  backToMenu: "Назад к меню",
+  yourOrders: "Мои заказы",
+  yourOrdersHint: "Заказы с этого устройства. Нажмите для статуса.",
+  noOrdersYet: "Вы ещё ничего не заказывали.",
+  couldNotLoadOrders: "Не удалось загрузить заказы. Попробуйте снова.",
+  cancel: "Отмена",
+  emptyMenuTitle: "Пока нет блюд",
+  emptyMenuHint:
+    "Ссылка на стол работает, но ресторан не опубликовал позиции меню (или все скрыты). Попросите владельца добавить блюда в панели или выполните демо: npm run db:seed",
+  emptyMenuWrongLink: "Если вы ожидали меню, проверьте QR или адрес (например /m/table-1 в демо).",
+  orderingPausedTitle: "Сейчас заказы не принимаем",
+  orderingPausedHint:
+    "Кухня перегружена. Обратитесь к персоналу. Потяните страницу вниз, чтобы обновить.",
+  callWaiterAria: "Вызвать официанта к столу",
+  callWaiterCaption: "Вызвать официанта",
+  callWaiterSent: "Персонал уведомлён.",
+  callWaiterFailed: "Не удалось связаться с рестораном. Попробуйте через минуту.",
+  payNow: "Оплатить",
+  viewPhoto: "Смотреть фото",
+  order: "Заказ",
+  customise: "Настроить",
+  addToOrder: "В заказ",
+  close: "Закрыть",
+  yourOrder: "Ваш заказ",
+  swipeToRemove: "Смахните влево, чтобы убрать",
+  decreaseQty: "Меньше",
+  increaseQty: "Больше",
+  remove: "Удалить",
+  total: "Итого",
+  placingOrder: "Отправка заказа…",
+  placeOrderPay: "Заказать и оплатить",
+  howToPay: "Как вы будете платить?",
+  payCardAtTable: "Картой",
+  payCardAtTableHint: "Оплата за столом (терминал)",
+  payCash: "Наличные",
+  payCashHint: "Наличными персоналу",
+  choosePayment: "Выберите способ оплаты.",
+  paymentModalSubtitle: "Нажмите вариант, чтобы отправить заказ.",
+  viewCart: "Корзина",
+  placeOrder: "Заказать",
+  placing: "Отправка…",
+  chooseOptions: "Выберите опции, затем добавьте в заказ.",
+  noteKitchen: "Комментарий для кухни",
+  noteOptional: "(необязательно)",
+  notePlaceholder: "напр. без лука, аллергия на орехи…",
+  addToOrderBtn: "Добавить в заказ",
+  optionalExtrasHint: "Доступны дополнения — нажмите «Настроить».",
+  cartEmptyHint: "Выберите категории выше, чтобы добавить блюда.",
+  cartStripHint: "Нажмите, чтобы просмотреть или изменить заказ",
+  allergenTrustLine: "При аллергиях или особом питании уточните у персонала до заказа.",
+  infoButton: "Инфо",
+  allergenInfoTitle: "Значки пищевых аллергенов",
+  allergenInfoImageAlt:
+    "Таблица распространённых значков аллергенов (глютен, кунжут, орехи и др.).",
+  searchMenu: "Поиск в меню",
+  searchButton: "Поиск",
+  searchClear: "Сброс",
+  searchPlaceholder: "Искать блюда…",
+  searchNoResults: "Ничего не найдено.",
+  menuRefreshing: "Обновление меню…",
+  reorderHint: "Чтобы повторить прошлый заказ, снова добавьте блюда из меню.",
+  itemsInCart: (count) =>
+    count === 1 ? `${count} позиция в корзине` : `${count} позиций в корзине`,
+  orderStatus: (status, waiterRelayPending) => {
+    if (waiterRelayPending && status === "paid") return "Ожидание персонала";
+    const map: Record<string, string> = {
+      pending: "Ожидание оплаты",
+      paid: "Заказ принят",
+      preparing: "Готовится",
+      ready: "Готово к подаче",
+      delivered: "Подано",
+      declined: "Заказ отклонён",
+    };
+    return map[status] ?? status;
+  },
+  removeFromCartTitle: (name) => `Убрать «${name}» из заказа?`,
+  removeFromCartBody: "Вы сможете снова добавить из меню.",
+  orderFailedGeneric: "Что-то пошло не так",
+  langGreek: "Ελληνικά",
+  langEnglish: "English",
+  langRussian: "Русский",
+  orderHistoryItems: (count) => (count === 1 ? "1 позиция" : `${count} позиций`),
+  priceEachTimesQty: (unit, qty) => `${unit} за шт. × ${qty}`,
+  menuLanguageGroupAria: "Язык меню",
+};
+
 export function getGuestMenuUiStrings(lang: GuestMenuLang): GuestMenuUiStrings {
-  return lang === "el" ? EL : EN;
+  if (lang === "el") return EL;
+  if (lang === "ru") return RU;
+  return EN;
 }

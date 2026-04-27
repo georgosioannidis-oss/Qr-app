@@ -136,7 +136,7 @@ type Props = {
   /** Kitchen overload: block new guest orders from this QR link (staff flow unchanged). */
   guestOrderingPaused?: boolean;
   categories: Category[];
-  /** When `moustakallis` (or legacy `demo-restaurant` slug), guest can switch EL/EN for menu + UI. */
+  /** When `moustakallis` (or legacy `demo-restaurant` slug), guest can switch EL/EN/RU for menu + UI. */
   restaurantSlug?: string | null;
 };
 
@@ -192,7 +192,7 @@ export function MenuView({
     if (!bilingual || typeof window === "undefined") return;
     try {
       const s = localStorage.getItem(GUEST_MENU_LANG_KEY);
-      if (s === "en" || s === "el") setMenuLang(s);
+      if (s === "en" || s === "el" || s === "ru") setMenuLang(s);
     } catch {
       /* ignore */
     }
@@ -749,6 +749,21 @@ export function MenuView({
                       🇬🇧
                     </span>
                     {ui.langEnglish}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMenuLang("ru")}
+                    className={`flex min-h-[34px] items-center gap-1 rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
+                      menuLang === "ru"
+                        ? "border-primary bg-primary/10 text-ink"
+                        : "border-border bg-card text-ink-muted hover:border-ink/20"
+                    }`}
+                    aria-pressed={menuLang === "ru"}
+                  >
+                    <span className="text-base leading-none" aria-hidden>
+                      🇷🇺
+                    </span>
+                    {ui.langRussian}
                   </button>
                 </div>
               ) : null}
