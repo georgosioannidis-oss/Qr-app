@@ -5,6 +5,7 @@ import {
   createAccessToken,
   isValidQrProof,
 } from "@/lib/guest-qr-access";
+import { publicAppOriginFromRequest } from "@/lib/staff-invite-url";
 
 /**
  * Sets the httpOnly guest menu session cookie (30m) after a valid table QR proof.
@@ -20,7 +21,9 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const dest = new URL(`/m/${encodeURIComponent(token)}`, req.url);
+  /** Avoid `req.url` when reverse-proxy → Node uses 127.0.0.1 (customers would get sent to localhost). */
+  const origin = publicAppOriginFromRequest(req);
+  const dest = new URL(`/m/${encodeURIComponent(token)}`, `${origin}/`);
   dest.search = "";
   const res = NextResponse.redirect(dest);
   res.cookies.set(GUEST_QR_ACCESS_COOKIE, createAccessToken(token), {
