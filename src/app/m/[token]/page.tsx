@@ -2,14 +2,14 @@
  * Server page for `/m/[token]`: resolves the table by public token, loads menu tree, renders `MenuView`.
  * `token` is the `Table.token` column (what QR codes point at), not a session secret.
  */
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { loadCustomerTableWithMenuByToken } from "@/lib/load-customer-table";
 import { normalizePublicMediaUrl } from "@/lib/media-url";
 import { resolvedMenuItemAllergenCodes } from "@/lib/merge-menu-allergens";
 import { restaurantUsesStripeCheckout } from "@/lib/restaurant-checkout";
 import { isGuestQrOrderingBlocked } from "@/lib/guest-ordering-pause";
 import { cookies } from "next/headers";
-import { grantGuestQrAccess, isValidQrProof, verifyAccessToken } from "@/lib/guest-qr-access";
+import { GUEST_QR_ACCESS_COOKIE, isValidQrProof, verifyAccessToken } from "@/lib/guest-qr-access";
 import { ensureMinTwoPeopleOptionGroup } from "@/lib/min-two-people-option";
 import { MenuView } from "./MenuView";
 
@@ -77,16 +77,17 @@ export default async function TableMenuPage({
   const table = await loadCustomerTableWithMenuByToken(token);
 
   if (!table) notFound();
-  const qrProofValid = isValidQrProof(token, qr);
-  if (qrProofValid) {
-    await grantGuestQrAccess(token);
+  /** Cookie can only be set in a Route Handler (Next.js 15+); bootstrap then redirects back here. */
+  if (qr && isValidQrProof(token, qr)) {
+    const qs = new URLSearchParams({ token, qr });
+    redirect(`/api/guest-qr-bootstrap?${qs.toString()}`);
   }
   const jar = await cookies();
   const hasCurrentAccess = verifyAccessToken(
     token,
-    jar.get("qr_menu_access")?.value
+    jar.get(GUEST_QR_ACCESS_COOKIE)?.value
   );
-  if (!qrProofValid && !hasCurrentAccess) {
+  if (!hasCurrentAccess) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
         <div className="max-w-md w-full rounded-3xl border border-border bg-card p-8 shadow-sm text-center">

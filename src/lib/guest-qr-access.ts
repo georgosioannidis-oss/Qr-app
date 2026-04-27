@@ -1,9 +1,10 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
 const ACCESS_WINDOW_SECONDS = 30 * 60;
-const COOKIE_NAME = "qr_menu_access";
+
+export const GUEST_QR_ACCESS_COOKIE = "qr_menu_access";
+export const GUEST_QR_ACCESS_MAX_AGE_SEC = ACCESS_WINDOW_SECONDS;
 
 function base64url(input: string) {
   return Buffer.from(input, "utf8").toString("base64url");
@@ -72,19 +73,7 @@ export function verifyAccessToken(tableToken: string, token: string | null | und
   }
 }
 
-export async function grantGuestQrAccess(tableToken: string) {
-  const value = createAccessToken(tableToken);
-  const jar = await cookies();
-  jar.set(COOKIE_NAME, value, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: ACCESS_WINDOW_SECONDS,
-  });
-}
-
 export function hasGuestQrAccess(req: NextRequest, tableToken: string) {
-  const value = req.cookies.get(COOKIE_NAME)?.value;
+  const value = req.cookies.get(GUEST_QR_ACCESS_COOKIE)?.value;
   return verifyAccessToken(tableToken, value);
 }
