@@ -41,3 +41,24 @@ export function staffJoinUrlFromRequest(req: NextRequest, token: string): string
   return `/join/${token}`;
 }
 
+const LOCAL_APP_ORIGIN_RE =
+  /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
+
+/**
+ * Public site origin (no trailing slash) for absolute guest/dashboard links.
+ * Uses `NEXT_PUBLIC_APP_URL` when it is set and not a loopback URL; otherwise
+ * uses the current request host (so QR codes match the domain you opened the dashboard on).
+ */
+export function publicAppOriginFromRequest(req: NextRequest): string {
+  const env = baseFromEnv();
+  const fromReq = joinBaseFromHeaderGetter((name) => req.headers.get(name)).replace(
+    /\/$/,
+    ""
+  );
+  const envIsUsable = env && !LOCAL_APP_ORIGIN_RE.test(env);
+  if (envIsUsable) return env;
+  if (fromReq) return fromReq;
+  if (env) return env;
+  return "http://localhost:3000";
+}
+

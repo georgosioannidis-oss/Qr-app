@@ -4,6 +4,7 @@ import { getDashboardServerSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { requireMenuTablesApiAccess } from "@/lib/menu-tables-access";
 import { createQrProof } from "@/lib/guest-qr-access";
+import { publicAppOriginFromRequest } from "@/lib/staff-invite-url";
 
 /**
  * GET /api/dashboard/tables/[id]/qr
@@ -30,8 +31,7 @@ export async function GET(
     return NextResponse.json({ error: "Table not found" }, { status: 404 });
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = publicAppOriginFromRequest(req);
   const proof = createQrProof(table.token);
   const menuUrl = `${baseUrl}/m/${table.token}?qr=${encodeURIComponent(proof)}`;
 
