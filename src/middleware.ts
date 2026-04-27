@@ -15,35 +15,6 @@ import { CUSTOMER_PATHNAME_HEADER } from "@/lib/load-customer-table";
 
 const DASHBOARD_PATH_HEADER = "x-dashboard-path";
 const DASHBOARD_SESSION_PATH_HEADER = "x-dashboard-session-path";
-const MOUSTAKALLIS_CUSTOM_HOSTS = new Set([
-  "moustakallis-tavern-menu.com",
-  "www.moustakallis-tavern-menu.com",
-]);
-const MOUSTAKALLIS_SLUG = "moustakallis";
-const SHARED_LOGIN_BASE_URL =
-  process.env.SHARED_LOGIN_BASE_URL?.trim() || "https://scannorder.ink";
-const SHARED_LOGIN_HOSTNAME = (() => {
-  try {
-    return new URL(SHARED_LOGIN_BASE_URL).hostname.toLowerCase();
-  } catch {
-    return "scannorder.ink";
-  }
-})();
-const ENABLE_CUSTOM_HOST_HANDOFF =
-  process.env.ENABLE_CUSTOM_HOST_HANDOFF === "1";
-const USES_MOUSTAKALLIS_AS_SHARED_LOGIN =
-  SHARED_LOGIN_HOSTNAME === "moustakallis-tavern-menu.com" ||
-  SHARED_LOGIN_HOSTNAME === "www.moustakallis-tavern-menu.com";
-
-function moustakallisDashboardUrl(req: NextRequest): string {
-  const u = req.nextUrl.clone();
-  u.protocol = "https:";
-  u.hostname = "moustakallis-tavern-menu.com";
-  u.port = "";
-  u.pathname = `/${MOUSTAKALLIS_SLUG}/dashboard`;
-  u.search = "";
-  return u.toString();
-}
 
 /** DB slug renamed from `demo-restaurant` → `moustakallis`; JWT may still carry the old value until re-login. */
 function canonicalDashboardRestaurantSlug(slug: string): string {
@@ -52,59 +23,6 @@ function canonicalDashboardRestaurantSlug(slug: string): string {
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  const host = (req.headers.get("host") || "").toLowerCase().split(":")[0];
-  const isMoustakallisCustomHost = MOUSTAKALLIS_CUSTOM_HOSTS.has(host);
-
-  if (
-    ENABLE_CUSTOM_HOST_HANDOFF &&
-    isMoustakallisCustomHost &&
-    !USES_MOUSTAKALLIS_AS_SHARED_LOGIN
-  ) {
-    const isSharedLoginPath =
-      path === "/dashboard/login" || path.startsWith("/dashboard/login/");
-    const isSharedLoginHost = host === SHARED_LOGIN_HOSTNAME;
-
-    if (path === "/" || path === "") {
-      if (isSharedLoginHost) {
-        const u = req.nextUrl.clone();
-        u.pathname = "/dashboard/login";
-        return NextResponse.redirect(u, 301);
-      }
-      const target = new URL(`${SHARED_LOGIN_BASE_URL}/dashboard/login`);
-      target.searchParams.set("callbackUrl", moustakallisDashboardUrl(req));
-      return NextResponse.redirect(target, 301);
-    }
-
-    if (isSharedLoginPath) {
-      if (isSharedLoginHost) {
-        return NextResponse.next();
-      }
-      const target = new URL(`${SHARED_LOGIN_BASE_URL}/dashboard/login`);
-      const callback = req.nextUrl.searchParams.get("callbackUrl");
-      if (callback) target.searchParams.set("callbackUrl", callback);
-      else target.searchParams.set("callbackUrl", moustakallisDashboardUrl(req));
-      return NextResponse.redirect(target, 301);
-    }
-
-    if (path === "/dashboard" || path === "/dashboard/") {
-      const u = req.nextUrl.clone();
-      u.pathname = `/${MOUSTAKALLIS_SLUG}/dashboard`;
-      return NextResponse.redirect(u, 301);
-    }
-
-    if (path.startsWith("/dashboard/")) {
-      const u = req.nextUrl.clone();
-      u.pathname = `/${MOUSTAKALLIS_SLUG}${path}`;
-      return NextResponse.redirect(u, 301);
-    }
-
-    const tenantPath = parseTenantDashboardPath(path);
-    if (tenantPath && tenantPath.slug !== MOUSTAKALLIS_SLUG) {
-      const u = req.nextUrl.clone();
-      u.pathname = tenantDashboardHref(MOUSTAKALLIS_SLUG, tenantPath.rest || "");
-      return NextResponse.redirect(u, 301);
-    }
-  }
 
   if (path === "/demo-restaurant" || path.startsWith("/demo-restaurant/")) {
     const u = req.nextUrl.clone();
@@ -203,7 +121,7 @@ export async function middleware(req: NextRequest) {
       login.searchParams.set("callbackUrl", path);
       return NextResponse.redirect(login);
     }
-    const raw = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const raw = typeof jwt?.restaurantSlug === "string" ? jwt.restaurantSlug : "";
     const slug = raw ? canonicalDashboardRestaurantSlug(raw) : "";
     if (!slug) {
       const login = new URL("/dashboard/login", req.url);
@@ -211,14 +129,6 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(login);
     }
     const tail = path.slice("/dashboard".length);
-    if (host === SHARED_LOGIN_HOSTNAME && slug === MOUSTAKALLIS_SLUG) {
-      const u = req.nextUrl.clone();
-      u.protocol = "https:";
-      u.hostname = "moustakallis-tavern-menu.com";
-      u.port = "";
-      u.pathname = tenantDashboardHref(slug, tail && tail !== "/" ? tail : "");
-      return NextResponse.redirect(u);
-    }
     const u = req.nextUrl.clone();
     u.pathname = tenantDashboardHref(slug, tail && tail !== "/" ? tail : "");
     return NextResponse.redirect(u);
@@ -230,19 +140,11 @@ export async function middleware(req: NextRequest) {
       const login = new URL("/dashboard/login", req.url);
       return NextResponse.redirect(login);
     }
-    const raw = typeof jwt.restaurantSlug === "string" ? jwt.restaurantSlug : "";
+    const raw = typeof jwt?.restaurantSlug === "string" ? jwt.restaurantSlug : "";
     const slug = raw ? canonicalDashboardRestaurantSlug(raw) : "";
     if (!slug) {
       const login = new URL("/dashboard/login", req.url);
       return NextResponse.redirect(login);
-    }
-    if (host === SHARED_LOGIN_HOSTNAME && slug === MOUSTAKALLIS_SLUG) {
-      const u = req.nextUrl.clone();
-      u.protocol = "https:";
-      u.hostname = "moustakallis-tavern-menu.com";
-      u.port = "";
-      u.pathname = tenantDashboardHref(slug, "");
-      return NextResponse.redirect(u);
     }
     const u = req.nextUrl.clone();
     u.pathname = tenantDashboardHref(slug, "");
@@ -267,18 +169,6 @@ export async function middleware(req: NextRequest) {
       const u = req.nextUrl.clone();
       u.pathname = tenantDashboardHref(rs, tenant.rest || "");
       return NextResponse.redirect(u);
-    }
-    if (host === SHARED_LOGIN_HOSTNAME && rs === MOUSTAKALLIS_SLUG) {
-      const u = req.nextUrl.clone();
-      u.protocol = "https:";
-      u.hostname = "moustakallis-tavern-menu.com";
-      u.port = "";
-      u.pathname = tenantDashboardHref(rs, tenant.rest || "");
-      const currentNoQuery = `${req.nextUrl.protocol}//${req.nextUrl.hostname}${req.nextUrl.pathname}`;
-      const targetNoQuery = `${u.protocol}//${u.hostname}${u.pathname}`;
-      if (currentNoQuery !== targetNoQuery) {
-        return NextResponse.redirect(u);
-      }
     }
 
     const requestHeaders = new Headers(req.headers);

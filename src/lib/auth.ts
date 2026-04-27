@@ -9,12 +9,7 @@ import { buildChannelCookies } from "./auth-cookies";
 import { prisma } from "./prisma";
 import { isOwnerRole, isEmailStaffRole } from "./dashboard-roles";
 
-const ALLOWED_REDIRECT_HOSTS = new Set([
-  "scannorder.ink",
-  "www.scannorder.ink",
-  "moustakallis-tavern-menu.com",
-  "www.moustakallis-tavern-menu.com",
-]);
+const ALLOWED_REDIRECT_HOSTS = new Set(["scannorder.ink", "www.scannorder.ink"]);
 
 const sharedCallbacks: NextAuthOptions["callbacks"] = {
   async redirect({ url, baseUrl }) {
