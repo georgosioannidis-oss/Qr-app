@@ -36,7 +36,6 @@ const RAW_PORT = (() => {
   if (!Number.isFinite(n) || n < 1 || n > 65535) return 9100;
   return n;
 })();
-const RAW_CUT = /^(1|true|yes)$/i.test(String(process.env.PRINT_AGENT_RAW_CUT || "").trim());
 const RAW_ASCII_ONLY = /^(1|true|yes)$/i.test(String(process.env.PRINT_AGENT_RAW_ASCII_ONLY || "").trim());
 const STATION = (process.env.PRINT_AGENT_STATION || "").trim().toLowerCase();
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
@@ -869,9 +868,6 @@ function buildEscPosPayload(lines) {
   const chunks = [Buffer.from([0x1b, 0x40])]; // ESC @ initialize
   const body = `${lines.join("\n")}\n\n`;
   chunks.push(Buffer.from(body, "utf8"));
-  if (RAW_CUT) {
-    chunks.push(Buffer.from([0x1d, 0x56, 0x00])); // GS V 0 — full cut (common ESC/POS)
-  }
   return Buffer.concat(chunks);
 }
 
@@ -1069,7 +1065,7 @@ console.error(`Print agent polling ${BASE} for ${STATION_LABELS[STATION]} every 
 console.error(`PDF output folder: ${PDF_DIR}`);
 console.error(`Ticket counter file: ${COUNTER_FILE}`);
 if (RAW_HOST) {
-  console.error(`Network raw print: ${RAW_HOST}:${RAW_PORT}${RAW_CUT ? " + paper cut" : ""}`);
+  console.error(`Network raw print: ${RAW_HOST}:${RAW_PORT}`);
   if (RAW_ASCII_ONLY) console.error("Raw print: PRINT_AGENT_RAW_ASCII_ONLY — non-Latin chars may become ?");
   if (PRINT_CMD) console.error("PRINT_COMMAND ignored while PRINT_AGENT_RAW_HOST is set.");
 } else if (PRINT_CMD) {

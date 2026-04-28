@@ -31,8 +31,6 @@ set "PRINT_AGENT_PDF_DIR=%USERPROFILE%\print-agent-pdfs"
 set "PRINT_AGENT_FONT_PATH=C:\Windows\Fonts\arial.ttf"
 set "PRINT_AGENT_RAW_HOST=192.168.11.66"
 set "PRINT_AGENT_RAW_PORT=9100"
-REM Optional: send paper cut after each ticket (set to 1 if your printer supports it)
-REM set "PRINT_AGENT_RAW_CUT=1"
 
 echo.
 echo  =============================================
