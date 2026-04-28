@@ -49,6 +49,8 @@ export type GuestMenuItem = {
 export type GuestMenuCategory = {
   id: string;
   name: string;
+  /** Greek category from DB; used for emoji lookup when `name` is localized (e.g. RU/FR/PL). */
+  nameEl?: string;
   items: GuestMenuItem[];
 };
 
@@ -649,6 +651,7 @@ export function localizeGuestMenuCategories(
       const catNameEn = row?.categoryEn?.trim() || c.name;
       return {
         ...c,
+        nameEl: c.name,
         name: catNameEn,
         items: c.items.map((item) => {
           const en = demoLookup.get(`${c.name}\t${item.name}`);
@@ -672,6 +675,7 @@ export function localizeGuestMenuCategories(
       const catNameRu = row?.categoryRu?.trim() || c.name;
       return {
         ...c,
+        nameEl: c.name,
         name: catNameRu,
         items: c.items.map((item) => {
           const ru = demoLookupRu.get(`${c.name}\t${item.name}`);
@@ -695,6 +699,7 @@ export function localizeGuestMenuCategories(
       const catNameFr = row?.categoryFr?.trim() || c.name;
       return {
         ...c,
+        nameEl: c.name,
         name: catNameFr,
         items: c.items.map((item) => {
           const fr = demoLookupFr.get(`${c.name}\t${item.name}`);
@@ -718,6 +723,7 @@ export function localizeGuestMenuCategories(
       const catNamePl = row?.categoryPl?.trim() || c.name;
       return {
         ...c,
+        nameEl: c.name,
         name: catNamePl,
         items: c.items.map((item) => {
           const pl = demoLookupPl.get(`${c.name}\t${item.name}`);

@@ -61,13 +61,17 @@ const GUEST_CATEGORY_EMOJI: Record<string, string> = {
   "Specialty coffees": "✨",
 };
 
-export function guestCategoryEmoji(categoryDisplayName: string): string {
+export function guestCategoryEmoji(categoryDisplayName: string, nameEl?: string): string {
   const key = categoryDisplayName.trim();
-  return GUEST_CATEGORY_EMOJI[key] ?? "";
+  const direct = GUEST_CATEGORY_EMOJI[key];
+  if (direct) return direct;
+  const fallback = nameEl?.trim();
+  if (fallback && GUEST_CATEGORY_EMOJI[fallback]) return GUEST_CATEGORY_EMOJI[fallback];
+  return "";
 }
 
-/** Prefix "🍕 " when an emoji exists, else unchanged label. */
-export function guestCategoryLabelWithEmoji(categoryDisplayName: string): string {
-  const e = guestCategoryEmoji(categoryDisplayName);
+/** Prefix emoji when one exists for the display name or Greek `nameEl`, else unchanged label. */
+export function guestCategoryLabelWithEmoji(categoryDisplayName: string, nameEl?: string): string {
+  const e = guestCategoryEmoji(categoryDisplayName, nameEl);
   return e ? `${e} ${categoryDisplayName}` : categoryDisplayName;
 }

@@ -5,6 +5,7 @@ import {
   type GuestMenuCategory,
 } from "@/lib/guest-demo-menu-i18n";
 import { getGuestMenuUiStrings } from "@/lib/guest-menu-ui-strings";
+import { guestCategoryLabelWithEmoji } from "@/lib/guest-category-emoji";
 
 const hasCyrillic = (s: string) => /[\u0400-\u04FF]/.test(s);
 
@@ -130,5 +131,12 @@ describe("Polish guest menu (moustakallis runtime path)", () => {
   it("translates known option labels to Polish", () => {
     expect(translateDemoOptionLabel("Μέγεθος", "pl")).toBe("Rozmiar");
     expect(translateDemoOptionLabel("Χωρίς κρεμμύδια", "pl")).toMatch(/^Bez /);
+  });
+});
+
+describe("guest category emoji with localized titles", () => {
+  it("uses Greek nameEl when display name is not in the emoji map", () => {
+    expect(guestCategoryLabelWithEmoji("Zimne przekąski", "Κρύα ορεκτικά")).toMatch(/^🧊 Zimne/);
+    expect(guestCategoryLabelWithEmoji("Entrées froides", "Κρύα ορεκτικά")).toMatch(/^🧊 Entrées/);
   });
 });

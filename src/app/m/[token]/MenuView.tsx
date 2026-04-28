@@ -688,111 +688,109 @@ export function MenuView({
     <div className="flex h-[100dvh] max-h-[100dvh] min-h-0 flex-col overflow-hidden bg-surface">
       <header className="sticky top-0 z-[15] shrink-0 border-b border-border bg-surface/95 shadow-sm backdrop-blur-[6px]">
         <div className="px-4 pt-3 pb-1.5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              {tableLogoUrl && (
-                <img
-                  src={tableLogoUrl}
-                  alt=""
-                  className="h-10 w-auto max-w-[100px] object-contain object-left shrink-0"
-                />
-              )}
-              <div className="min-w-0">
-                <h1 className="line-clamp-2 break-words text-[1.35rem] font-bold leading-tight tracking-tight text-ink sm:text-xl">
-                  {restaurantName}
-                </h1>
-                <p className="mt-0.5 line-clamp-2 break-words text-base text-ink-muted sm:text-sm">
-                  {tableName}
-                </p>
-              </div>
+          <div className="flex items-start gap-3 min-w-0">
+            {tableLogoUrl && (
+              <img
+                src={tableLogoUrl}
+                alt=""
+                className="h-9 w-auto max-w-[72px] shrink-0 object-contain object-left sm:h-10 sm:max-w-[88px]"
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <h1 className="break-words text-[1.35rem] font-bold leading-snug tracking-tight text-ink sm:text-xl">
+                {restaurantName}
+              </h1>
+              <p className="mt-0.5 break-words text-base leading-snug text-ink-muted sm:text-sm">
+                {tableName}
+              </p>
             </div>
-            <div className="flex shrink-0 flex-col items-end gap-1.5">
-              <button
-                type="button"
-                onClick={() => setOrderHistoryOpen(true)}
-                className="min-h-[44px] rounded-xl border-2 border-border bg-card px-3 py-2 text-sm font-semibold text-ink shadow-sm hover:border-primary/40 hover:bg-primary/5"
+          </div>
+          <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setOrderHistoryOpen(true)}
+              className="min-h-[40px] rounded-xl border-2 border-border bg-card px-3 py-1.5 text-sm font-semibold text-ink shadow-sm hover:border-primary/40 hover:bg-primary/5"
+            >
+              {ui.yourOrders}
+            </button>
+            {bilingual ? (
+              <div
+                className="flex flex-wrap justify-end gap-1"
+                role="group"
+                aria-label={ui.menuLanguageGroupAria}
               >
-                {ui.yourOrders}
-              </button>
-              {bilingual ? (
-                <div
-                  className="flex flex-wrap justify-end gap-1.5"
-                  role="group"
-                  aria-label={ui.menuLanguageGroupAria}
+                <button
+                  type="button"
+                  aria-label={ui.langGreek}
+                  title={ui.langGreek}
+                  onClick={() => setMenuLang("el")}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
+                    menuLang === "el"
+                      ? "border-primary bg-primary/10 text-ink"
+                      : "border-border bg-card text-ink-muted hover:border-ink/20"
+                  }`}
+                  aria-pressed={menuLang === "el"}
                 >
-                  <button
-                    type="button"
-                    aria-label={ui.langGreek}
-                    title={ui.langGreek}
-                    onClick={() => setMenuLang("el")}
-                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
-                      menuLang === "el"
-                        ? "border-primary bg-primary/10 text-ink"
-                        : "border-border bg-card text-ink-muted hover:border-ink/20"
-                    }`}
-                    aria-pressed={menuLang === "el"}
-                  >
-                    <span aria-hidden>🇬🇷</span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={ui.langEnglish}
-                    title={ui.langEnglish}
-                    onClick={() => setMenuLang("en")}
-                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
-                      menuLang === "en"
-                        ? "border-primary bg-primary/10 text-ink"
-                        : "border-border bg-card text-ink-muted hover:border-ink/20"
-                    }`}
-                    aria-pressed={menuLang === "en"}
-                  >
-                    <span aria-hidden>🇬🇧</span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={ui.langRussian}
-                    title={ui.langRussian}
-                    onClick={() => setMenuLang("ru")}
-                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
-                      menuLang === "ru"
-                        ? "border-primary bg-primary/10 text-ink"
-                        : "border-border bg-card text-ink-muted hover:border-ink/20"
-                    }`}
-                    aria-pressed={menuLang === "ru"}
-                  >
-                    <span aria-hidden>🇷🇺</span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={ui.langFrench}
-                    title={ui.langFrench}
-                    onClick={() => setMenuLang("fr")}
-                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
-                      menuLang === "fr"
-                        ? "border-primary bg-primary/10 text-ink"
-                        : "border-border bg-card text-ink-muted hover:border-ink/20"
-                    }`}
-                    aria-pressed={menuLang === "fr"}
-                  >
-                    <span aria-hidden>🇫🇷</span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={ui.langPolish}
-                    title={ui.langPolish}
-                    onClick={() => setMenuLang("pl")}
-                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
-                      menuLang === "pl"
-                        ? "border-primary bg-primary/10 text-ink"
-                        : "border-border bg-card text-ink-muted hover:border-ink/20"
-                    }`}
-                    aria-pressed={menuLang === "pl"}
-                  >
-                    <span aria-hidden>🇵🇱</span>
-                  </button>
-                </div>
-              ) : null}
-            </div>
+                  <span aria-hidden>🇬🇷</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={ui.langEnglish}
+                  title={ui.langEnglish}
+                  onClick={() => setMenuLang("en")}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
+                    menuLang === "en"
+                      ? "border-primary bg-primary/10 text-ink"
+                      : "border-border bg-card text-ink-muted hover:border-ink/20"
+                  }`}
+                  aria-pressed={menuLang === "en"}
+                >
+                  <span aria-hidden>🇬🇧</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={ui.langRussian}
+                  title={ui.langRussian}
+                  onClick={() => setMenuLang("ru")}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
+                    menuLang === "ru"
+                      ? "border-primary bg-primary/10 text-ink"
+                      : "border-border bg-card text-ink-muted hover:border-ink/20"
+                  }`}
+                  aria-pressed={menuLang === "ru"}
+                >
+                  <span aria-hidden>🇷🇺</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={ui.langFrench}
+                  title={ui.langFrench}
+                  onClick={() => setMenuLang("fr")}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
+                    menuLang === "fr"
+                      ? "border-primary bg-primary/10 text-ink"
+                      : "border-border bg-card text-ink-muted hover:border-ink/20"
+                  }`}
+                  aria-pressed={menuLang === "fr"}
+                >
+                  <span aria-hidden>🇫🇷</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label={ui.langPolish}
+                  title={ui.langPolish}
+                  onClick={() => setMenuLang("pl")}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
+                    menuLang === "pl"
+                      ? "border-primary bg-primary/10 text-ink"
+                      : "border-border bg-card text-ink-muted hover:border-ink/20"
+                  }`}
+                  aria-pressed={menuLang === "pl"}
+                >
+                  <span aria-hidden>🇵🇱</span>
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="flex gap-1.5 overflow-x-auto px-4 pb-2 [-webkit-overflow-scrolling:touch]">
@@ -807,7 +805,7 @@ export function MenuView({
                   : "bg-card text-ink border border-border shadow-sm hover:border-ink/25 hover:bg-surface"
               }`}
             >
-              {guestCategoryLabelWithEmoji(c.name)}
+              {guestCategoryLabelWithEmoji(c.name, c.nameEl)}
             </button>
           ))}
         </div>
@@ -893,7 +891,7 @@ export function MenuView({
             className={catIndex > 0 ? "mt-8 border-t border-border/60 pt-6" : ""}
           >
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              {guestCategoryLabelWithEmoji(cat.name)}
+              {guestCategoryLabelWithEmoji(cat.name, cat.nameEl)}
             </h2>
             <ul className="space-y-2">
               {cat.items.map((item) => (
