@@ -98,6 +98,45 @@ function formatTicketLines(order) {
   return rows;
 }
 
+const barItems = [
+  {
+    quantity: 2,
+    name: "Aperol Spritz",
+    unitPrice: 850,
+    notes: "",
+    selectedOptionsSummary: "",
+    routedStation: "Bar",
+  },
+];
+const kitchenItems = [
+  {
+    quantity: 1,
+    name: "Τζατζίκι",
+    unitPrice: 450,
+    notes: "",
+    selectedOptionsSummary: "",
+    routedStation: "Cold kitchen",
+  },
+  {
+    quantity: 2,
+    name: "Σουβλάκι χοιρινό",
+    unitPrice: 1250,
+    notes: "No onion",
+    selectedOptionsSummary: "Μέγεθος: Large",
+    routedStation: "Kitchen",
+  },
+  {
+    quantity: 1,
+    name: "Μουσακάς",
+    unitPrice: 850,
+    notes: "",
+    selectedOptionsSummary: "",
+    routedStation: "Kitchen",
+  },
+];
+const items = STATION === "bar" ? barItems : kitchenItems;
+const stationTotalAmount = items.reduce((s, it) => s + it.unitPrice * it.quantity, 0);
+
 /** Demo payload shaped like GET /api/print-agent/pending */
 const order = {
   restaurantName: "Moustakallis Tavern",
@@ -108,45 +147,8 @@ const order = {
   ticketNumber: 42,
   id: "clsample0123456789abcdefghij",
   totalAmount: 4590,
-  stationTotalAmount: 3200,
-  items:
-    STATION === "bar"
-      ? [
-          {
-            quantity: 2,
-            name: "Aperol Spritz",
-            unitPrice: 850,
-            notes: "",
-            selectedOptionsSummary: "",
-            routedStation: "Bar",
-          },
-        ]
-      : [
-          {
-            quantity: 1,
-            name: "Τζατζίκι",
-            unitPrice: 450,
-            notes: "",
-            selectedOptionsSummary: "",
-            routedStation: "Cold kitchen",
-          },
-          {
-            quantity: 2,
-            name: "Σουβλάκι χοιρινό",
-            unitPrice: 1250,
-            notes: "No onion",
-            selectedOptionsSummary: "Μέγεθος: Large",
-            routedStation: "Kitchen",
-          },
-          {
-            quantity: 1,
-            name: "Μουσακάς",
-            unitPrice: 850,
-            notes: "",
-            selectedOptionsSummary: "",
-            routedStation: "Kitchen",
-          },
-        ],
+  stationTotalAmount,
+  items,
 };
 
 console.log(`(sample station=${STATION}, 42 chars wide — thermal text matches this layout)\n`);
