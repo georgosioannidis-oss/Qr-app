@@ -94,3 +94,41 @@ describe("French guest menu (moustakallis runtime path)", () => {
     expect(translateDemoOptionLabel("Χωρίς κρεμμύδια", "fr")).toMatch(/^Sans /);
   });
 });
+
+const hasPolishDiacritics = (s: string) => /[ąćęłńóśźż]/i.test(s);
+
+describe("Polish guest menu (moustakallis runtime path)", () => {
+  it("exposes Polish UI strings", () => {
+    const pl = getGuestMenuUiStrings("pl");
+    expect(pl.backToMenu).toBe("Powrót do menu");
+    expect(pl.langPolish).toBe("Polski");
+    expect(hasPolishDiacritics(pl.placeOrder)).toBe(true);
+  });
+
+  it("localizes categories and items from demo JSON for slug moustakallis", () => {
+    const categories: GuestMenuCategory[] = [
+      {
+        id: "cat-1",
+        name: "Κρύα ορεκτικά",
+        items: [
+          {
+            id: "item-1",
+            name: "Ταραμοσαλάτα",
+            description: "Greek desc",
+            price: 4.5,
+          },
+        ],
+      },
+    ];
+    const out = localizeGuestMenuCategories(categories, "pl", "moustakallis");
+    expect(out[0].name).toBe("Zimne przekąski");
+    expect(out[0].items[0].name).toContain("Taramo");
+    expect(out[0].items[0].description).toBeDefined();
+    expect(hasPolishDiacritics(out[0].items[0].description ?? "")).toBe(true);
+  });
+
+  it("translates known option labels to Polish", () => {
+    expect(translateDemoOptionLabel("Μέγεθος", "pl")).toBe("Rozmiar");
+    expect(translateDemoOptionLabel("Χωρίς κρεμμύδια", "pl")).toMatch(/^Bez /);
+  });
+});

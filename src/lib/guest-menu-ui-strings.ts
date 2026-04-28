@@ -1,6 +1,6 @@
 /** All customer-visible strings on `/m/[token]` when bilingual mode is on. */
 
-export type GuestMenuLang = "el" | "en" | "ru" | "fr";
+export type GuestMenuLang = "el" | "en" | "ru" | "fr" | "pl";
 
 export type GuestMenuUiStrings = {
   paymentSuccessfulCombined: string;
@@ -75,6 +75,7 @@ export type GuestMenuUiStrings = {
   langEnglish: string;
   langRussian: string;
   langFrench: string;
+  langPolish: string;
   orderHistoryItems: (count: number) => string;
   priceEachTimesQty: (unitFormatted: string, qty: number) => string;
   menuLanguageGroupAria: string;
@@ -164,6 +165,7 @@ const EN: GuestMenuUiStrings = {
   langEnglish: "English",
   langRussian: "Русский",
   langFrench: "Français",
+  langPolish: "Polski",
   orderHistoryItems: (count) => (count === 1 ? "1 item" : `${count} items`),
   priceEachTimesQty: (unit, qty) => `${unit} each × ${qty}`,
   menuLanguageGroupAria: "Menu language",
@@ -254,6 +256,7 @@ const EL: GuestMenuUiStrings = {
   langEnglish: "English",
   langRussian: "Русский",
   langFrench: "Français",
+  langPolish: "Polski",
   orderHistoryItems: (count) => (count === 1 ? "1 προϊόν" : `${count} προϊόντα`),
   priceEachTimesQty: (unit, qty) => `${unit} το καθένα × ${qty}`,
   menuLanguageGroupAria: "Γλώσσα μενού",
@@ -345,6 +348,7 @@ const RU: GuestMenuUiStrings = {
   langEnglish: "English",
   langRussian: "Русский",
   langFrench: "Français",
+  langPolish: "Polski",
   orderHistoryItems: (count) => (count === 1 ? "1 позиция" : `${count} позиций`),
   priceEachTimesQty: (unit, qty) => `${unit} за шт. × ${qty}`,
   menuLanguageGroupAria: "Язык меню",
@@ -438,14 +442,110 @@ const FR: GuestMenuUiStrings = {
   langEnglish: "English",
   langRussian: "Русский",
   langFrench: "Français",
+  langPolish: "Polski",
   orderHistoryItems: (count) => (count === 1 ? "1 article" : `${count} articles`),
   priceEachTimesQty: (unit, qty) => `${unit} l’unité × ${qty}`,
   menuLanguageGroupAria: "Langue du menu",
+};
+
+const PL: GuestMenuUiStrings = {
+  paymentSuccessfulCombined: "Płatność zakończona sukcesem. Zamówienie zostało wysłane.",
+  thankYouAfterOrder: "Zamówienie wysłane. Dziękujemy!",
+  stripePayPrompt: "Zamówienie złożone — zapłać poniżej, aby je potwierdzić.",
+  backToMenu: "Powrót do menu",
+  yourOrders: "Moje zamówienia",
+  yourOrdersHint: "Zamówienia z tego urządzenia. Dotknij, aby zobaczyć status.",
+  noOrdersYet: "Nie złożyłeś jeszcze zamówienia.",
+  couldNotLoadOrders: "Nie udało się wczytać zamówień. Spróbuj ponownie.",
+  cancel: "Anuluj",
+  emptyMenuTitle: "Brak dań do wyświetlenia",
+  emptyMenuHint:
+    "Link do stolika działa, ale restauracja nie opublikowała pozycji menu (lub są ukryte). Poproś właściciela o dodanie dań w panelu lub uruchom demo: npm run db:seed",
+  emptyMenuWrongLink:
+    "Jeśli spodziewałeś się menu, sprawdź kod QR lub adres (np. /m/table-1 w demo).",
+  orderingPausedTitle: "Chwilowo nie przyjmujemy zamówień",
+  orderingPausedHint:
+    "Kuchnia jest przeciążona. Porozmawiaj z obsługą. Pociągnij stronę w dół, aby odświeżyć.",
+  callWaiterAria: "Wezwij kelnera do stolika",
+  callWaiterCaption: "Wezwij kelnera",
+  callWaiterSent: "Obsługa została powiadomiona.",
+  callWaiterFailed: "Nie udało się połączyć z restauracją. Spróbuj za chwilę.",
+  payNow: "Zapłać",
+  viewPhoto: "Zobacz zdjęcie",
+  order: "Zamów",
+  customise: "Dostosuj",
+  addToOrder: "Dodaj",
+  close: "Zamknij",
+  yourOrder: "Twoje zamówienie",
+  swipeToRemove: "Przesuń w lewo, aby usunąć",
+  decreaseQty: "Mniej",
+  increaseQty: "Więcej",
+  remove: "Usuń",
+  total: "Suma",
+  placingOrder: "Wysyłanie zamówienia…",
+  placeOrderPay: "Zamów i zapłać",
+  howToPay: "Jak chcesz zapłacić?",
+  payCardAtTable: "Karta",
+  payCardAtTableHint: "Płatność przy stoliku (terminal)",
+  payCash: "Gotówka",
+  payCashHint: "Gotówka u obsługi",
+  choosePayment: "Wybierz sposób płatności.",
+  paymentModalSubtitle: "Dotknij opcji, aby wysłać zamówienie.",
+  viewCart: "Koszyk",
+  placeOrder: "Zamów",
+  placing: "Wysyłanie…",
+  chooseOptions: "Wybierz opcje, potem dodaj do koszyka.",
+  noteKitchen: "Uwagi dla kuchni",
+  noteOptional: "(opcjonalnie)",
+  notePlaceholder: "np. bez cebuli, alergia na orzechy…",
+  addToOrderBtn: "Dodaj do koszyka",
+  optionalExtrasHint: "Dostępne dodatki — dotknij «Dostosuj».",
+  cartEmptyHint: "Przeglądaj kategorie powyżej, aby dodać dania.",
+  cartStripHint: "Dotknij, aby zobaczyć lub zmienić zamówienie",
+  allergenTrustLine:
+    "W razie alergii lub specjalnej diety zapytaj obsługę przed zamówieniem.",
+  infoButton: "Info",
+  allergenInfoTitle: "Ikony alergenów",
+  allergenInfoImageAlt:
+    "Tabela popularnych ikon alergenów (gluten, sezam, orzechy itd.).",
+  searchMenu: "Szukaj w menu",
+  searchButton: "Szukaj",
+  searchClear: "Wyczyść",
+  searchPlaceholder: "Szukaj dań…",
+  searchNoResults: "Brak pasujących dań.",
+  menuRefreshing: "Aktualizacja menu…",
+  reorderHint: "Aby powtórzyć zamówienie, dodaj dania ponownie z menu.",
+  itemsInCart: (count) =>
+    count === 1 ? `${count} pozycja w koszyku` : `${count} pozycji w koszyku`,
+  orderStatus: (status, waiterRelayPending) => {
+    if (waiterRelayPending && status === "paid") return "Oczekiwanie na obsługę";
+    const map: Record<string, string> = {
+      pending: "Oczekiwanie na płatność",
+      paid: "Zamówienie przyjęte",
+      preparing: "Przygotowanie",
+      ready: "Gotowe do wydania",
+      delivered: "Wydane",
+      declined: "Zamówienie odrzucone",
+    };
+    return map[status] ?? status;
+  },
+  removeFromCartTitle: (name) => `Usunąć «${name}» z zamówienia?`,
+  removeFromCartBody: "Możesz dodać ponownie z menu.",
+  orderFailedGeneric: "Coś poszło nie tak",
+  langGreek: "Ελληνικά",
+  langEnglish: "English",
+  langRussian: "Русский",
+  langFrench: "Français",
+  langPolish: "Polski",
+  orderHistoryItems: (count) => (count === 1 ? "1 pozycja" : `${count} pozycji`),
+  priceEachTimesQty: (unit, qty) => `${unit} za szt. × ${qty}`,
+  menuLanguageGroupAria: "Język menu",
 };
 
 export function getGuestMenuUiStrings(lang: GuestMenuLang): GuestMenuUiStrings {
   if (lang === "el") return EL;
   if (lang === "ru") return RU;
   if (lang === "fr") return FR;
+  if (lang === "pl") return PL;
   return EN;
 }

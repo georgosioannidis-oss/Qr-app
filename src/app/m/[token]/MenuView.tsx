@@ -136,7 +136,7 @@ type Props = {
   /** Kitchen overload: block new guest orders from this QR link (staff flow unchanged). */
   guestOrderingPaused?: boolean;
   categories: Category[];
-  /** When `moustakallis` (or legacy `demo-restaurant` slug), guest can switch EL/EN/RU/FR for menu + UI. */
+  /** When `moustakallis` (or legacy `demo-restaurant` slug), guest can switch EL/EN/RU/FR/PL for menu + UI. */
   restaurantSlug?: string | null;
 };
 
@@ -192,7 +192,7 @@ export function MenuView({
     if (!bilingual || typeof window === "undefined") return;
     try {
       const s = localStorage.getItem(GUEST_MENU_LANG_KEY);
-      if (s === "en" || s === "el" || s === "ru" || s === "fr") setMenuLang(s);
+      if (s === "en" || s === "el" || s === "ru" || s === "fr" || s === "pl") setMenuLang(s);
     } catch {
       /* ignore */
     }
@@ -722,63 +722,73 @@ export function MenuView({
                 >
                   <button
                     type="button"
+                    aria-label={ui.langGreek}
+                    title={ui.langGreek}
                     onClick={() => setMenuLang("el")}
-                    className={`flex min-h-[34px] items-center gap-1 rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
                       menuLang === "el"
                         ? "border-primary bg-primary/10 text-ink"
                         : "border-border bg-card text-ink-muted hover:border-ink/20"
                     }`}
                     aria-pressed={menuLang === "el"}
                   >
-                    <span className="text-base leading-none" aria-hidden>
-                      🇬🇷
-                    </span>
-                    {ui.langGreek}
+                    <span aria-hidden>🇬🇷</span>
                   </button>
                   <button
                     type="button"
+                    aria-label={ui.langEnglish}
+                    title={ui.langEnglish}
                     onClick={() => setMenuLang("en")}
-                    className={`flex min-h-[34px] items-center gap-1 rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
                       menuLang === "en"
                         ? "border-primary bg-primary/10 text-ink"
                         : "border-border bg-card text-ink-muted hover:border-ink/20"
                     }`}
                     aria-pressed={menuLang === "en"}
                   >
-                    <span className="text-base leading-none" aria-hidden>
-                      🇬🇧
-                    </span>
-                    {ui.langEnglish}
+                    <span aria-hidden>🇬🇧</span>
                   </button>
                   <button
                     type="button"
+                    aria-label={ui.langRussian}
+                    title={ui.langRussian}
                     onClick={() => setMenuLang("ru")}
-                    className={`flex min-h-[34px] items-center gap-1 rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
                       menuLang === "ru"
                         ? "border-primary bg-primary/10 text-ink"
                         : "border-border bg-card text-ink-muted hover:border-ink/20"
                     }`}
                     aria-pressed={menuLang === "ru"}
                   >
-                    <span className="text-base leading-none" aria-hidden>
-                      🇷🇺
-                    </span>
-                    {ui.langRussian}
+                    <span aria-hidden>🇷🇺</span>
                   </button>
                   <button
                     type="button"
+                    aria-label={ui.langFrench}
+                    title={ui.langFrench}
                     onClick={() => setMenuLang("fr")}
-                    className={`flex min-h-[34px] items-center gap-1 rounded-full border-2 px-2.5 py-1 text-xs font-semibold transition-colors ${
+                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
                       menuLang === "fr"
                         ? "border-primary bg-primary/10 text-ink"
                         : "border-border bg-card text-ink-muted hover:border-ink/20"
                     }`}
                     aria-pressed={menuLang === "fr"}
                   >
-                    <span className="text-base leading-none" aria-hidden>
-                      🇫🇷
-                    </span>
-                    {ui.langFrench}
+                    <span aria-hidden>🇫🇷</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={ui.langPolish}
+                    title={ui.langPolish}
+                    onClick={() => setMenuLang("pl")}
+                    className={`flex min-h-[40px] min-w-[40px] items-center justify-center rounded-full border-2 px-2 py-1 text-lg leading-none transition-colors ${
+                      menuLang === "pl"
+                        ? "border-primary bg-primary/10 text-ink"
+                        : "border-border bg-card text-ink-muted hover:border-ink/20"
+                    }`}
+                    aria-pressed={menuLang === "pl"}
+                  >
+                    <span aria-hidden>🇵🇱</span>
                   </button>
                 </div>
               ) : null}
