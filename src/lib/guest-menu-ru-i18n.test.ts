@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   localizeGuestMenuCategories,
+  resolveGuestMenuCategoryKey,
+  sanitizeMtMenuString,
   translateDemoOptionLabel,
   type GuestMenuCategory,
 } from "@/lib/guest-demo-menu-i18n";
@@ -138,5 +140,53 @@ describe("guest category emoji with localized titles", () => {
   it("uses Greek nameEl when display name is not in the emoji map", () => {
     expect(guestCategoryLabelWithEmoji("Zimne przekąski", "Κρύα ορεκτικά")).toMatch(/^🧊 Zimne/);
     expect(guestCategoryLabelWithEmoji("Entrées froides", "Κρύα ορεκτικά")).toMatch(/^🧊 Entrées/);
+  });
+});
+
+describe("demo menu MT cleanup and category aliases", () => {
+  it("strips SDL-style <g> tags and bullets from RU strings", () => {
+    const raw =
+      '<g id="pt285">• </g> <g id="pt286">Куриные кусочки</g>';
+    expect(sanitizeMtMenuString(raw)).toBe("Куриные кусочки");
+  });
+
+  it("maps Snacks / Breakfast admin labels to Greek demo category keys", () => {
+    expect(resolveGuestMenuCategoryKey("Snacks")).toBe("Ζεστά ορεκτικά");
+    expect(resolveGuestMenuCategoryKey("Breakfast")).toBe("Καφέδες & ζεστά ροφήματα");
+    expect(resolveGuestMenuCategoryKey("Hot Starters")).toBe("Ζεστά ορεκτικά");
+  });
+
+  it("localizes items when DB category is English alias Snacks", () => {
+    const categories: GuestMenuCategory[] = [
+      {
+        id: "cat-snacks",
+        name: "Snacks",
+        items: [
+          {
+            id: "i1",
+            name: "Λουκάνικο",
+            description: "x",
+            price: 1,
+          },
+        ],
+      },
+    ];
+    const ru = localizeGuestMenuCategories(categories, "ru", "moustakallis");
+    expect(ru[0].name).not.toBe("Snacks");
+    expect(ru[0].items[0].name).not.toBe("Λουκάνικο");
+    expect(ru[0].items[0].name).toMatch(/колбас|колбаск|сосиск/i);
+  });
+
+  it("FR Napolitaine spaghetti has no XML or private-use bullets after localize", () => {
+    const categories: GuestMenuCategory[] = [
+      {
+        id: "p",
+        name: "Μακαρονάδες",
+        items: [{ id: "1", name: "Μακαρόνια ναπολιτάνα", price: 1 }],
+      },
+    ];
+    const out = localizeGuestMenuCategories(categories, "fr", "moustakallis");
+    expect(out[0].items[0].name).not.toMatch(/<g id=|[\uF0B7]/);
+    expect(out[0].items[0].name.toLowerCase()).toContain("spaghetti");
   });
 });

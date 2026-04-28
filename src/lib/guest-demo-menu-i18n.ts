@@ -18,7 +18,88 @@ export function isGuestMenuBilingualSlug(slug: string | null | undefined): boole
   return (GUEST_MENU_BILINGUAL_SLUGS as readonly string[]).includes(slug);
 }
 
-type DemoEnCategory = (typeof demoGuestMenuEn)[number];
+type DemoEnCategoryPre = (typeof demoGuestMenuEn)[number];
+
+/** Map common English (or admin) category titles to Greek `demo-guest-menu-*.json` keys. */
+const GUEST_MENU_CATEGORY_ALIASES: Record<string, string> = (() => {
+  const out: Record<string, string> = {};
+  const pairs: [string, string[]][] = [
+    ["Ζεστά ορεκτικά", ["snacks", "snack", "hot snacks"]],
+    ["Αναψυκτικά", ["refreshments", "soft drinks", "drinks", "ποτά"]],
+    ["Καφέδες & ζεστά ροφήματα", ["breakfast", "morning", "πρωινό", "coffee breakfast"]],
+  ];
+  for (const [greek, labels] of pairs) {
+    for (const l of labels) out[l.trim().toLowerCase()] = greek;
+  }
+  return out;
+})();
+
+const EN_CATEGORY_BY_NORMALIZED_EN_LABEL: Map<string, string> = (() => {
+  const m = new Map<string, string>();
+  for (const x of demoGuestMenuEn as DemoEnCategoryPre[]) {
+    const label = (x.categoryEn ?? "").trim().toLowerCase();
+    if (label) m.set(label, x.category);
+  }
+  return m;
+})();
+
+/** Resolve DB category name to Greek key used in demo JSON (handles English titles + aliases). */
+export function resolveGuestMenuCategoryKey(dbCategoryName: string): string {
+  const raw = dbCategoryName.trim();
+  if (!raw) return raw;
+  if ((demoGuestMenuEn as DemoEnCategoryPre[]).some((x) => x.category === raw)) return raw;
+  const lower = raw.toLowerCase();
+  const alias = GUEST_MENU_CATEGORY_ALIASES[lower];
+  if (alias) return alias;
+  const fromEn = EN_CATEGORY_BY_NORMALIZED_EN_LABEL.get(lower);
+  if (fromEn) return fromEn;
+  return raw;
+}
+
+/** Strip SDL/MT tags (e.g. `<g id="…">`) and leading bullets from downloaded strings. */
+export function sanitizeMtMenuString(s: string | undefined): string | undefined {
+  if (s == null) return s;
+  let t = s;
+  if (t.includes("<g id=")) {
+    t = t.replace(/<g id="[^"]*">/g, "").replace(/<\/g>/g, "");
+  }
+  t = t.replace(/^[\s\uFEFF\uF0B7\u2022•]+/u, "").trim();
+  t = t.replace(/\s{2,}/g, " ");
+  return t;
+}
+
+const DEMO_ITEM_LABEL_OVERRIDES: Record<
+  string,
+  Partial<Record<GuestMenuLang, { name?: string; description?: string }>>
+> = {
+  [`Κρύα ορεκτικά\tΕλιές`]: {
+    ru: { name: "Оливки" },
+  },
+  [`Αναψυκτικά\tSprite`]: {
+    fr: { name: "Sprite" },
+  },
+  [`Αναψυκτικά\tΜεταλλικό νερό`]: {
+    fr: { name: "Eau minérale", description: "Eau minérale." },
+  },
+  [`Αναψυκτικά\tΑεριούχο νερό`]: {
+    fr: { name: "Eau gazeuse", description: "Pétillante." },
+  },
+  [`Αναψυκτικά\tMilk shake`]: {
+    fr: { name: "Milk-shake", description: "Plusieurs saveurs." },
+  },
+  [`Αναψυκτικά\tΧυμός φρούτων`]: {
+    fr: { name: "Jus de fruits", description: "Plusieurs saveurs." },
+  },
+  [`Καφέδες & ζεστά ροφήματα\tΛάτε`]: {
+    fr: { name: "Latte" },
+  },
+};
+
+function guestMenuItemLookupKey(catKey: string, itemGreekName: string): string {
+  return `${catKey}\t${itemGreekName}`;
+}
+
+type DemoEnCategory = DemoEnCategoryPre;
 type DemoEnItem = DemoEnCategory["items"][number];
 type DemoRuCategory = (typeof demoGuestMenuRu)[number];
 type DemoRuItem = DemoRuCategory["items"][number];
@@ -647,16 +728,21 @@ export function localizeGuestMenuCategories(
   }
   if (lang === "en") {
     return categories.map((c) => {
-      const row = (demoGuestMenuEn as DemoEnCategory[]).find((x) => x.category === c.name);
+      const catKey = resolveGuestMenuCategoryKey(c.name);
+      const row = (demoGuestMenuEn as DemoEnCategory[]).find((x) => x.category === catKey);
       const catNameEn = row?.categoryEn?.trim() || c.name;
       return {
         ...c,
-        nameEl: c.name,
+        nameEl: catKey,
         name: catNameEn,
         items: c.items.map((item) => {
-          const en = demoLookup.get(`${c.name}\t${item.name}`);
-          const nameEn = en?.nameEn?.trim() || item.name;
-          const descEn = en?.descriptionEn?.trim();
+          const lk = guestMenuItemLookupKey(catKey, item.name);
+          const en = demoLookup.get(lk);
+          let nameEn = sanitizeMtMenuString(en?.nameEn?.trim()) || item.name;
+          let descEn = sanitizeMtMenuString(en?.descriptionEn?.trim());
+          const oEn = DEMO_ITEM_LABEL_OVERRIDES[lk]?.en;
+          if (oEn?.name) nameEn = oEn.name;
+          if (oEn?.description !== undefined) descEn = oEn.description;
           const description =
             descEn && descEn.length > 0 ? descEn : item.description;
           return {
@@ -671,16 +757,21 @@ export function localizeGuestMenuCategories(
   }
   if (lang === "ru") {
     return categories.map((c) => {
-      const row = (demoGuestMenuRu as DemoRuCategory[]).find((x) => x.category === c.name);
+      const catKey = resolveGuestMenuCategoryKey(c.name);
+      const row = (demoGuestMenuRu as DemoRuCategory[]).find((x) => x.category === catKey);
       const catNameRu = row?.categoryRu?.trim() || c.name;
       return {
         ...c,
-        nameEl: c.name,
+        nameEl: catKey,
         name: catNameRu,
         items: c.items.map((item) => {
-          const ru = demoLookupRu.get(`${c.name}\t${item.name}`);
-          const nameRu = ru?.nameRu?.trim() || item.name;
-          const descRu = ru?.descriptionRu?.trim();
+          const lk = guestMenuItemLookupKey(catKey, item.name);
+          const ru = demoLookupRu.get(lk);
+          let nameRu = sanitizeMtMenuString(ru?.nameRu?.trim()) || item.name;
+          let descRu = sanitizeMtMenuString(ru?.descriptionRu?.trim());
+          const oRu = DEMO_ITEM_LABEL_OVERRIDES[lk]?.ru;
+          if (oRu?.name) nameRu = oRu.name;
+          if (oRu?.description !== undefined) descRu = oRu.description;
           const description =
             descRu && descRu.length > 0 ? descRu : item.description;
           return {
@@ -695,16 +786,21 @@ export function localizeGuestMenuCategories(
   }
   if (lang === "fr") {
     return categories.map((c) => {
-      const row = (demoGuestMenuFr as DemoFrCategory[]).find((x) => x.category === c.name);
+      const catKey = resolveGuestMenuCategoryKey(c.name);
+      const row = (demoGuestMenuFr as DemoFrCategory[]).find((x) => x.category === catKey);
       const catNameFr = row?.categoryFr?.trim() || c.name;
       return {
         ...c,
-        nameEl: c.name,
+        nameEl: catKey,
         name: catNameFr,
         items: c.items.map((item) => {
-          const fr = demoLookupFr.get(`${c.name}\t${item.name}`);
-          const nameFr = fr?.nameFr?.trim() || item.name;
-          const descFr = fr?.descriptionFr?.trim();
+          const lk = guestMenuItemLookupKey(catKey, item.name);
+          const fr = demoLookupFr.get(lk);
+          let nameFr = sanitizeMtMenuString(fr?.nameFr?.trim()) || item.name;
+          let descFr = sanitizeMtMenuString(fr?.descriptionFr?.trim());
+          const oFr = DEMO_ITEM_LABEL_OVERRIDES[lk]?.fr;
+          if (oFr?.name) nameFr = oFr.name;
+          if (oFr?.description !== undefined) descFr = oFr.description;
           const description =
             descFr && descFr.length > 0 ? descFr : item.description;
           return {
@@ -719,16 +815,21 @@ export function localizeGuestMenuCategories(
   }
   if (lang === "pl") {
     return categories.map((c) => {
-      const row = (demoGuestMenuPl as DemoPlCategory[]).find((x) => x.category === c.name);
+      const catKey = resolveGuestMenuCategoryKey(c.name);
+      const row = (demoGuestMenuPl as DemoPlCategory[]).find((x) => x.category === catKey);
       const catNamePl = row?.categoryPl?.trim() || c.name;
       return {
         ...c,
-        nameEl: c.name,
+        nameEl: catKey,
         name: catNamePl,
         items: c.items.map((item) => {
-          const pl = demoLookupPl.get(`${c.name}\t${item.name}`);
-          const namePl = pl?.namePl?.trim() || item.name;
-          const descPl = pl?.descriptionPl?.trim();
+          const lk = guestMenuItemLookupKey(catKey, item.name);
+          const pl = demoLookupPl.get(lk);
+          let namePl = sanitizeMtMenuString(pl?.namePl?.trim()) || item.name;
+          let descPl = sanitizeMtMenuString(pl?.descriptionPl?.trim());
+          const oPl = DEMO_ITEM_LABEL_OVERRIDES[lk]?.pl;
+          if (oPl?.name) namePl = oPl.name;
+          if (oPl?.description !== undefined) descPl = oPl.description;
           const description =
             descPl && descPl.length > 0 ? descPl : item.description;
           return {
