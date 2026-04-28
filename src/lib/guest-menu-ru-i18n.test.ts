@@ -58,3 +58,39 @@ describe("Russian guest menu (moustakallis runtime path)", () => {
     expect(translateDemoOptionLabel("Χωρίς κρεμμύδια", "ru")).toMatch(/^Без /);
   });
 });
+
+describe("French guest menu (moustakallis runtime path)", () => {
+  it("exposes French UI strings", () => {
+    const fr = getGuestMenuUiStrings("fr");
+    expect(fr.backToMenu).toBe("Retour au menu");
+    expect(fr.langFrench).toBe("Français");
+    expect(fr.placeOrder).toContain("mand");
+  });
+
+  it("localizes categories and items from demo JSON for slug moustakallis", () => {
+    const categories: GuestMenuCategory[] = [
+      {
+        id: "cat-1",
+        name: "Κρύα ορεκτικά",
+        items: [
+          {
+            id: "item-1",
+            name: "Ταραμοσαλάτα",
+            description: "Greek desc",
+            price: 4.5,
+          },
+        ],
+      },
+    ];
+    const out = localizeGuestMenuCategories(categories, "fr", "moustakallis");
+    expect(out[0].name).not.toBe("Κρύα ορεκτικά");
+    expect(out[0].name.length).toBeGreaterThan(2);
+    expect(out[0].items[0].name).not.toBe("Ταραμοσαλάτα");
+    expect(out[0].items[0].description).toBeDefined();
+  });
+
+  it("translates known option labels to French", () => {
+    expect(translateDemoOptionLabel("Μέγεθος", "fr")).toBe("Taille");
+    expect(translateDemoOptionLabel("Χωρίς κρεμμύδια", "fr")).toMatch(/^Sans /);
+  });
+});

@@ -1,8 +1,9 @@
 /**
  * Guest QR menu localization for the seeded Moustakallis venue (`slug: moustakallis`).
- * Dish copy merges `demo-guest-menu-en.json` / `demo-guest-menu-ru.json` (by Greek category + name); option labels use phrase maps.
+ * Dish copy merges demo-guest-menu-*.json (by Greek category + name); option labels use phrase maps.
  */
 import demoGuestMenuEn from "@/data/demo-guest-menu-en.json";
+import demoGuestMenuFr from "@/data/demo-guest-menu-fr.json";
 import demoGuestMenuRu from "@/data/demo-guest-menu-ru.json";
 import type { GuestMenuLang } from "@/lib/guest-menu-ui-strings";
 
@@ -20,6 +21,8 @@ type DemoEnCategory = (typeof demoGuestMenuEn)[number];
 type DemoEnItem = DemoEnCategory["items"][number];
 type DemoRuCategory = (typeof demoGuestMenuRu)[number];
 type DemoRuItem = DemoRuCategory["items"][number];
+type DemoFrCategory = (typeof demoGuestMenuFr)[number];
+type DemoFrItem = DemoFrCategory["items"][number];
 
 type GuestOptionChoice = { id: string; label: string; priceCents: number };
 type GuestOptionGroup = {
@@ -288,31 +291,159 @@ const OPTION_PHRASE_EL_TO_RU: Record<string, string> = {
   "Σάλτσα κρέμας": "Сливочный соус",
 };
 
-function translateIngredientFragment(el: string, lang: "en" | "ru"): string {
+/** Same keys as `INGREDIENT_EL_TO_EN`; French equivalents for modifier lines. */
+const INGREDIENT_EL_TO_FR: Record<string, string> = {
+  μανιτάρια: "champignons",
+  "βούτυρο σκόρδου": "beurre à l'ail",
+  "σάλτσα κρέμας": "sauce crème",
+  φέτα: "feta",
+  μέλι: "miel",
+  βότανα: "herbes",
+  γαρίδες: "crevettes",
+  "σάλτσα ντομάτας": "sauce tomate",
+  ελαιόλαδο: "huile d'olive",
+  μύδια: "moules",
+  "λευκό κρασί": "vin blanc",
+  κολοκύθια: "courgettes",
+  αυγά: "œufs",
+  σκόρδο: "ail",
+  βούτυρο: "beurre",
+  κρεμμύδια: "oignons",
+  μελιτζάνες: "aubergines",
+  πιπεριές: "poivrons",
+  μελιτζάνα: "aubergine",
+  ρίγανη: "origan",
+  λεμόνι: "citron",
+  "σάλτσα λεμονιού": "sauce au citron",
+  ζαμπόν: "jambon",
+  μπέικον: "bacon",
+  κρεμμύδι: "oignon",
+  τυρί: "fromage",
+  λαχανικά: "légumes",
+  σουβλάκι: "souvlaki",
+  σεφταλιά: "sheftalia",
+  παϊδάκι: "côtelettes d'agneau",
+  πανσέτα: "pancetta",
+  λουκάνικο: "saucisse",
+  χαλλούμι: "halloumi",
+  "πράσινο πιπέρι": "poivron vert",
+  μουστάρδα: "moutarde",
+  κρασί: "vin",
+  "σάλτσα σκόρδου": "sauce à l'ail",
+  "σάλτσα κάρρυ": "sauce au curry",
+  ρύζι: "riz",
+  πατάτες: "pommes de terre",
+  πατάτα: "pomme de terre",
+  κολοκύθι: "courgette",
+  κιμά: "viande hachée",
+  μπεσαμέλ: "béchamel",
+  ντομάτα: "tomate",
+  τζατζίκι: "tzatziki",
+  "πράσινα φασόλια": "haricots verts",
+  καρότα: "carottes",
+  φασόλια: "haricots",
+  αγγούρι: "concombre",
+  ελιές: "olives",
+  χταπόδι: "poulpe",
+  "πράσινα λαχανικά": "légumes verts",
+  μαγιονέζα: "mayonnaise",
+  τόνο: "thon",
+  "φύλλα σαλάτας": "feuilles de salade",
+  καβούρι: "crabe",
+  "σάλτσα θαλασσινών": "sauce fruits de mer",
+  ντομάτες: "tomates",
+  ανανά: "ananas",
+  αυγό: "œuf",
+  "κρέμα γάλακτος": "crème",
+};
+
+const OPTION_PHRASE_EL_TO_FR: Record<string, string> = {
+  Μέγεθος: "Taille",
+  "Επιπλέον σάλτσα (+€2.00)": "Sauce supplémentaire (+€2,00)",
+  "Η επιπλέον σάλτσα": "Sauce supplémentaire (où servir)",
+  "Σάλτσα πιπεριού": "Sauce au poivre",
+  "Σάλτσα Νταϊάνα": "Sauce Diana",
+  "Βούτυρο σκόρδου": "Beurre à l'ail",
+  "Σάλτσα σκόρδου": "Sauce à l'ail",
+  "Σάλτσα gravy": "Sauce gravy",
+  "Από πάνω στο πιάτο": "Sur l'assiette",
+  "Προσθήκη mixer (+€1.50)": "Ajouter un mixer (+€1,50)",
+  "Προσθήκη πίτα (+€1.50)": "Ajouter une pita (+€1,50)",
+  "Αφαίρεση υλικών": "Retirer des ingrédients",
+  "Αφαίρεση ρυζιού / λαχανικών": "Sans riz / légumes",
+  "Χωρίς λαχανικά": "Sans légumes",
+  "Συνοδευτικό πατάτας": "Accompagnement pommes de terre",
+  "Προτίμηση ψησίματος": "Cuisson souhaitée",
+  Τύπος: "Type",
+  "Γεύσεις (επιλέξτε 4)": "Parfums (en choisir 4)",
+  Γεύση: "Parfum",
+  Χρώμα: "Couleur",
+  Σάλτσα: "Sauce",
+  Συνοδευτικό: "Accompagnement",
+  "Το gravy sauce": "Sauce gravy",
+  "Από πάνω": "Par-dessus",
+  "Στο πλάι": "À côté",
+  "Έξτρα τυρί": "Fromage en plus",
+  "Με τυρί (+€1.00)": "Avec fromage (+€1,00)",
+  Πιπεράτη: "Piquant",
+  Νταϊάνα: "Diana",
+  Σκόρδου: "Ail",
+  Κρέμας: "Crème",
+  Κόλα: "Cola",
+  Σόδα: "Soda",
+  Λεμονάδα: "Limonade",
+  Τόνικ: "Tonic",
+  "Χυμός πορτοκάλι": "Jus d'orange",
+  Πίτα: "Pita",
+  "Τηγανιτές πατάτες": "Frites",
+  Μπανάνα: "Banane",
+  Φράουλα: "Fraise",
+  Βανίλια: "Vanille",
+  Σοκολάτα: "Chocolat",
+  Λευκό: "Blanc",
+  Κόκκινο: "Rouge",
+  Ροζέ: "Rosé",
+  Ανάμικτος: "Mixte",
+  Μήλο: "Pomme",
+  Πορτοκάλι: "Orange",
+  "Με αυγό": "Avec œuf",
+  "Με ανανά": "Avec ananas",
+  "Σάλτσα κρέμας": "Sauce crème",
+};
+
+function translateIngredientFragment(el: string, lang: "en" | "ru" | "fr"): string {
   const key = el.trim().toLowerCase();
-  const map = lang === "ru" ? INGREDIENT_EL_TO_RU : INGREDIENT_EL_TO_EN;
+  const map =
+    lang === "ru" ? INGREDIENT_EL_TO_RU : lang === "fr" ? INGREDIENT_EL_TO_FR : INGREDIENT_EL_TO_EN;
   const t = map[key];
   return t ?? el;
 }
 
-/** Translate option group / choice labels for English or Russian guest view. */
+function optionPhraseMap(lang: GuestMenuLang): Record<string, string> {
+  if (lang === "ru") return OPTION_PHRASE_EL_TO_RU;
+  if (lang === "fr") return OPTION_PHRASE_EL_TO_FR;
+  return OPTION_PHRASE_EL_TO_EN;
+}
+
+/** Translate option group / choice labels for English, Russian, or French guest view. */
 export function translateDemoOptionLabel(el: string, lang: GuestMenuLang = "en"): string {
   if (lang === "el") return el;
   const trimmed = el.trim();
-  const phraseMap = lang === "ru" ? OPTION_PHRASE_EL_TO_RU : OPTION_PHRASE_EL_TO_EN;
+  const phraseMap = optionPhraseMap(lang);
   const direct = phraseMap[trimmed];
   if (direct) return direct;
   const wo = "Χωρίς ";
   if (trimmed.startsWith(wo)) {
     const rest = trimmed.slice(wo.length).trim();
     if (lang === "ru") return `Без ${translateIngredientFragment(rest, "ru")}`;
+    if (lang === "fr") return `Sans ${translateIngredientFragment(rest, "fr")}`;
     return `No ${translateIngredientFragment(rest, "en")}`;
   }
   return trimmed;
 }
 
 function localizeOptionGroups(groups: GuestOptionGroup[] | undefined, lang: GuestMenuLang): GuestOptionGroup[] | undefined {
-  if (!groups?.length || (lang !== "en" && lang !== "ru")) return groups;
+  if (!groups?.length || (lang !== "en" && lang !== "ru" && lang !== "fr")) return groups;
   return groups.map((g) => ({
     ...g,
     label: translateDemoOptionLabel(g.label, lang),
@@ -347,6 +478,18 @@ function buildDemoLookupRu(): Map<string, DemoRuItem> {
 
 const demoLookupRu = buildDemoLookupRu();
 
+function buildDemoLookupFr(): Map<string, DemoFrItem> {
+  const map = new Map<string, DemoFrItem>();
+  for (const cat of demoGuestMenuFr as DemoFrCategory[]) {
+    for (const it of cat.items) {
+      map.set(`${cat.category}\t${it.name}`, it);
+    }
+  }
+  return map;
+}
+
+const demoLookupFr = buildDemoLookupFr();
+
 export function localizeGuestMenuCategories(
   categories: GuestMenuCategory[],
   lang: GuestMenuLang,
@@ -378,27 +521,53 @@ export function localizeGuestMenuCategories(
       };
     });
   }
-  return categories.map((c) => {
-    const row = (demoGuestMenuRu as DemoRuCategory[]).find((x) => x.category === c.name);
-    const catNameRu = row?.categoryRu?.trim() || c.name;
-    return {
-      ...c,
-      name: catNameRu,
-      items: c.items.map((item) => {
-        const ru = demoLookupRu.get(`${c.name}\t${item.name}`);
-        const nameRu = ru?.nameRu?.trim() || item.name;
-        const descRu = ru?.descriptionRu?.trim();
-        const description =
-          descRu && descRu.length > 0 ? descRu : item.description;
-        return {
-          ...item,
-          name: nameRu,
-          description,
-          optionGroups: localizeOptionGroups(item.optionGroups, lang),
-        };
-      }),
-    };
-  });
+  if (lang === "ru") {
+    return categories.map((c) => {
+      const row = (demoGuestMenuRu as DemoRuCategory[]).find((x) => x.category === c.name);
+      const catNameRu = row?.categoryRu?.trim() || c.name;
+      return {
+        ...c,
+        name: catNameRu,
+        items: c.items.map((item) => {
+          const ru = demoLookupRu.get(`${c.name}\t${item.name}`);
+          const nameRu = ru?.nameRu?.trim() || item.name;
+          const descRu = ru?.descriptionRu?.trim();
+          const description =
+            descRu && descRu.length > 0 ? descRu : item.description;
+          return {
+            ...item,
+            name: nameRu,
+            description,
+            optionGroups: localizeOptionGroups(item.optionGroups, lang),
+          };
+        }),
+      };
+    });
+  }
+  if (lang === "fr") {
+    return categories.map((c) => {
+      const row = (demoGuestMenuFr as DemoFrCategory[]).find((x) => x.category === c.name);
+      const catNameFr = row?.categoryFr?.trim() || c.name;
+      return {
+        ...c,
+        name: catNameFr,
+        items: c.items.map((item) => {
+          const fr = demoLookupFr.get(`${c.name}\t${item.name}`);
+          const nameFr = fr?.nameFr?.trim() || item.name;
+          const descFr = fr?.descriptionFr?.trim();
+          const description =
+            descFr && descFr.length > 0 ? descFr : item.description;
+          return {
+            ...item,
+            name: nameFr,
+            description,
+            optionGroups: localizeOptionGroups(item.optionGroups, lang),
+          };
+        }),
+      };
+    });
+  }
+  return categories;
 }
 
 /** Build the comma-separated modifier line for cart / receipts from current (localized) labels. */
