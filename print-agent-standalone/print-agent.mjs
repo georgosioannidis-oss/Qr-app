@@ -6,6 +6,7 @@
 
 import { spawn } from "node:child_process";
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import net from "node:net";
 import path from "node:path";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
@@ -19,6 +20,11 @@ const API_SECRET = (process.env.PRINT_AGENT_API_SECRET || "").trim().replace(/[\
 const RESTAURANT_SLUG = (process.env.PRINT_AGENT_RESTAURANT_SLUG || "").trim().replace(/[\r\n]+/g, "");
 const POLL_MS = Math.max(3000, parseInt(process.env.PRINT_AGENT_POLL_MS || "5000", 10) || 5000);
 const PRINT_CMD = process.env.PRINT_COMMAND || "";
+const RAW_HOST = (process.env.PRINT_AGENT_RAW_HOST || "").trim();
+const RAW_PORT = (() => {
+  const n = parseInt(process.env.PRINT_AGENT_RAW_PORT || "9100", 10);
+  return Number.isFinite(n) && n > 0 ? n : 9100;
+})();
 const STATION = (process.env.PRINT_AGENT_STATION || "").trim().toLowerCase();
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
 const FONT_PATH = process.env.PRINT_AGENT_FONT_PATH || "";
@@ -261,6 +267,33 @@ function sendPdfToPrinter(pdfFilePath) {
   });
 }
 
+function sendEscPosOverTcp(lines) {
+  const text = `${lines.join("\n")}\n\n`;
+  const init = Buffer.from([0x1b, 0x40]);
+  const cut = Buffer.from([0x1d, 0x56, 0x00]);
+  const body = Buffer.from(text, "utf8");
+  const payload = Buffer.concat([init, body, cut]);
+
+  return new Promise((resolve) => {
+    const socket = net.connect({ host: RAW_HOST, port: RAW_PORT }, () => {
+      socket.write(payload, (err) => {
+        if (err) console.error("Raw print write error:", err.message);
+        socket.end();
+        resolve(!err);
+      });
+    });
+    socket.setTimeout(20_000, () => {
+      socket.destroy();
+      console.error("Raw print: connection timeout");
+      resolve(false);
+    });
+    socket.on("error", (err) => {
+      console.error("Raw print:", err.message);
+      resolve(false);
+    });
+  });
+}
+
 async function fetchPending() {
   const qs = new URLSearchParams({ station: STATION, slug: RESTAURANT_SLUG });
   const res = await fetch(`${BASE}/api/print-agent/pending?${qs}`, {
@@ -307,7 +340,13 @@ async function tick() {
     } else if (fontPath) {
       console.error(`PDF font: ${fontPath}`);
     }
-    const ok = await sendPdfToPrinter(filePath);
+    let ok;
+    if (RAW_HOST) {
+      console.log(`PDF saved: ${filePath}`);
+      ok = await sendEscPosOverTcp(formatTicketLines(printableOrder));
+    } else {
+      ok = await sendPdfToPrinter(filePath);
+    }
     if (!ok) {
       console.error("Skipping ack for", order.id, "(print failed)");
       continue;
@@ -320,11 +359,13 @@ async function tick() {
 console.error(`Print agent polling ${BASE} for ${STATION_LABELS[STATION]} every ${POLL_MS}ms`);
 console.error(`PDF output folder: ${PDF_DIR}`);
 console.error(`Ticket counter file: ${COUNTER_FILE}`);
-if (PRINT_CMD) {
+if (RAW_HOST) {
+  console.error(`Network thermal: ${RAW_HOST}:${RAW_PORT} (ESC/POS text; PDF also saved)`);
+} else if (PRINT_CMD) {
   console.error(`Print command enabled: ${PRINT_CMD}`);
   console.error('Use "{file}" placeholder to control argument position.');
 } else {
-  console.error("PRINT_COMMAND not set. Agent will only save PDF files.");
+  console.error("PRINT_COMMAND / PRINT_AGENT_RAW_HOST not set. Agent will only save PDF files.");
 }
 await tick();
 setInterval(tick, POLL_MS);

@@ -82,3 +82,10 @@ OPTIONAL
   PRINT_AGENT_FONT_PATH — path to a .ttf font for Greek / special characters
   PRINT_COMMAND         — shell command to send each PDF to the printer;
                           use {file} where the PDF path should go.
+  PRINT_AGENT_RAW_HOST  — if set, ticket text is sent over TCP to this host
+                          (e.g. network thermal printer on port 9100). PDFs
+                          are still saved to PRINT_AGENT_PDF_DIR as backup.
+  PRINT_AGENT_RAW_PORT  — TCP port (default 9100)
+
+  Moustakallis / scannorder.ink: copy START-PRINT-AGENT-MOUSTAKALLIS.example.cmd
+  to START-PRINT-AGENT-MOUSTAKALLIS.cmd, set the secret, then double-click.
