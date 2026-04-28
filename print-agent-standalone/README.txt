@@ -89,3 +89,8 @@ OPTIONAL
 
   Moustakallis / scannorder.ink: copy START-PRINT-AGENT-MOUSTAKALLIS.example.cmd
   to START-PRINT-AGENT-MOUSTAKALLIS.cmd, set the secret, then double-click.
+
+  Preview ticket layout (28-column “SEAT IN” chit, Greek→English) without API:
+    npm run print-agent-sample
+    (from full repo) or:  node print-agent.mjs --sample
+    Optional: set PRINT_AGENT_STATION=bar first for a bar sample.

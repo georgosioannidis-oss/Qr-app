@@ -29,7 +29,7 @@
     "db:seed:otter": "npx tsx prisma/seed-otter-menu.ts",
     "db:add-moustakallis-tables": "npx tsx prisma/add-moustakallis-tables-11-65.ts",
     "print-agent": "node scripts/print-agent.mjs",
-    "print-agent-sample": "node scripts/print-agent-sample-ticket.mjs",
+    "print-agent-sample": "node scripts/print-agent.mjs --sample",
     "postinstall": "node scripts/patch-next-compiled-pkg.cjs && prisma generate"
   },
   "dependencies": {
