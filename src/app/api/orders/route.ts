@@ -2,8 +2,8 @@
  * Public order API for guests. Validates `tableToken`, recomputes prices from DB (never trust client totals),
  * optional modifiers, then creates Order rows.
  *
- * - **Stripe** (restaurant `onlinePaymentEnabled` + keys + `NEXT_PUBLIC_APP_URL`): returns `checkoutUrl`; order stays `pending` until webhook sets `paid`.
- * - **Pay at table** (default): guest picks card and/or cash per venue settings; order is confirmed as `paid` with `paymentPreference`.
+ * - **Stripe** (restaurant `onlinePaymentEnabled` + keys + `NEXT_PUBLIC_APP_URL`): returns `checkoutUrl`; order stays `pending` until webhook sets `paid`. If session creation fails, order is marked `paid` like pay-at-table so ops are not stuck.
+ * - **Pay at table** (default): guest picks card and/or cash per venue settings; order is confirmed as `paid` with `paymentPreference` (no `checkoutUrl`).
  * - Staff logged into the dashboard and ordering from `/m/...` skip the waiter relay queue (same cookies; `getDashboardServerSession(req)`).
  */
 import { NextRequest, NextResponse } from "next/server";
@@ -444,8 +444,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Pay at table (or demo): confirm for kitchen — same statuses as after successful Stripe webhook.
-    if (!checkoutUrl && !useStripeCheckout) {
+    // Confirm for kitchen when the guest is not being sent to Stripe. Covers pay-at-table and the case
+    // where Stripe checkout was intended but session creation failed (avoid leaving orders stuck pending).
+    if (!checkoutUrl) {
       await prisma.order.update({
         where: { id: order.id },
         data: { status: "paid", paidAt: new Date() },

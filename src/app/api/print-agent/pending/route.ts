@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * GET /api/print-agent/pending?slug=<restaurantSlug>&station=bar|cold-kitchen|kitchen
  * Header: X-Print-Agent-Secret: <PRINT_AGENT_API_SECRET> (same value as server env)
  *
- * Orders: {@link ordersEligibleForStationPrintWhere} — not unpaid `pending`; with waiter relay on, only after send to kitchen.
+ * Orders: {@link ordersEligibleForStationPrintWhere} — active orders (not delivered/declined); not Stripe Checkout `pending`.
  */
 export async function GET(req: NextRequest) {
   const disabled = printAgentApiDisabledReason();

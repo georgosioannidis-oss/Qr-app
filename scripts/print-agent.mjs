@@ -37,29 +37,36 @@ const RAW_PORT = (() => {
   return n;
 })();
 const RAW_ASCII_ONLY = /^(1|true|yes)$/i.test(String(process.env.PRINT_AGENT_RAW_ASCII_ONLY || "").trim());
-const STATION = (process.env.PRINT_AGENT_STATION || "").trim().toLowerCase();
+const STATION_RAW = (process.env.PRINT_AGENT_STATION || "all").trim().toLowerCase();
+const USE_ALL_STATIONS = STATION_RAW === "all";
+/** `all` = poll bar, cold-kitchen, and kitchen each cycle (default). Otherwise one station only. */
+const STATION = USE_ALL_STATIONS ? "all" : STATION_RAW;
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
 const FONT_PATH = process.env.PRINT_AGENT_FONT_PATH || "";
-const COUNTER_FILE =
-  process.env.PRINT_AGENT_COUNTER_FILE || path.join(PDF_DIR, `${STATION}-ticket-counter.txt`);
+const CUSTOM_COUNTER_FILE = (process.env.PRINT_AGENT_COUNTER_FILE || "").trim();
 const STATION_LABELS = {
   bar: "BAR",
   "cold-kitchen": "COLD KITCHEN",
   kitchen: "KITCHEN",
 };
-let nextTicketNumber = null;
+const STATIONS_ALL = ["bar", "cold-kitchen", "kitchen"];
+
+function counterFileForStation(stationKey) {
+  if (CUSTOM_COUNTER_FILE && !USE_ALL_STATIONS) return CUSTOM_COUNTER_FILE;
+  return path.join(PDF_DIR, `${stationKey}-ticket-counter.txt`);
+}
 
 if (
   !SAMPLE_MODE &&
-  (!BASE || !API_SECRET || !RESTAURANT_SLUG || !STATION_LABELS[STATION])
+  (!BASE || !API_SECRET || !RESTAURANT_SLUG || (!USE_ALL_STATIONS && !STATION_LABELS[STATION]))
 ) {
   console.error(
-    "Missing PRINT_AGENT_BASE_URL (or NEXT_PUBLIC_APP_URL), PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, or PRINT_AGENT_STATION.\n" +
+    "Missing PRINT_AGENT_BASE_URL (or NEXT_PUBLIC_APP_URL), PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, or invalid PRINT_AGENT_STATION.\n" +
       "Use the same PRINT_AGENT_API_SECRET on the server and this PC (see Dashboard → Options / Branding → Auto-print).\n" +
-      "  PRINT_AGENT_BASE_URL=https://your-site.com   (no path after the domain)\n" +
+      "  PRINT_AGENT_BASE_URL=https://your-site.com   (must match where guests place orders)\n" +
       "  PRINT_AGENT_API_SECRET=long-random-shared-secret\n" +
       "  PRINT_AGENT_RESTAURANT_SLUG=your-dashboard-slug\n" +
-      "  PRINT_AGENT_STATION=bar | cold-kitchen | kitchen\n" +
+      "  PRINT_AGENT_STATION=all | bar | cold-kitchen | kitchen   (default: all — one PC catches every station)\n" +
       "  PRINT_AGENT_PDF_DIR=./print-agent-pdfs\n" +
       "  npm start"
   );
@@ -729,7 +736,8 @@ function formatTicketLines(order) {
   rows.push(sep);
   rows.push("");
 
-  if (STATION === "bar") {
+  const ticketStation = order.station;
+  if (ticketStation === "bar") {
     if (order.items.length > 0) {
       rows.push("Bar");
       rows.push("-".repeat("Bar".length));

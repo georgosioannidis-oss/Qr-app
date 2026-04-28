@@ -37,29 +37,36 @@ const RAW_PORT = (() => {
   return n;
 })();
 const RAW_ASCII_ONLY = /^(1|true|yes)$/i.test(String(process.env.PRINT_AGENT_RAW_ASCII_ONLY || "").trim());
-const STATION = (process.env.PRINT_AGENT_STATION || "").trim().toLowerCase();
+const STATION_RAW = (process.env.PRINT_AGENT_STATION || "all").trim().toLowerCase();
+const USE_ALL_STATIONS = STATION_RAW === "all";
+/** `all` = poll bar, cold-kitchen, and kitchen each cycle (default). Otherwise one station only. */
+const STATION = USE_ALL_STATIONS ? "all" : STATION_RAW;
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
 const FONT_PATH = process.env.PRINT_AGENT_FONT_PATH || "";
-const COUNTER_FILE =
-  process.env.PRINT_AGENT_COUNTER_FILE || path.join(PDF_DIR, `${STATION}-ticket-counter.txt`);
+const CUSTOM_COUNTER_FILE = (process.env.PRINT_AGENT_COUNTER_FILE || "").trim();
 const STATION_LABELS = {
   bar: "BAR",
   "cold-kitchen": "COLD KITCHEN",
   kitchen: "KITCHEN",
 };
-let nextTicketNumber = null;
+const STATIONS_ALL = ["bar", "cold-kitchen", "kitchen"];
+
+function counterFileForStation(stationKey) {
+  if (CUSTOM_COUNTER_FILE && !USE_ALL_STATIONS) return CUSTOM_COUNTER_FILE;
+  return path.join(PDF_DIR, `${stationKey}-ticket-counter.txt`);
+}
 
 if (
   !SAMPLE_MODE &&
-  (!BASE || !API_SECRET || !RESTAURANT_SLUG || !STATION_LABELS[STATION])
+  (!BASE || !API_SECRET || !RESTAURANT_SLUG || (!USE_ALL_STATIONS && !STATION_LABELS[STATION]))
 ) {
   console.error(
-    "Missing PRINT_AGENT_BASE_URL (or NEXT_PUBLIC_APP_URL), PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, or PRINT_AGENT_STATION.\n" +
+    "Missing PRINT_AGENT_BASE_URL (or NEXT_PUBLIC_APP_URL), PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, or invalid PRINT_AGENT_STATION.\n" +
       "Use the same PRINT_AGENT_API_SECRET on the server and this PC (see Dashboard → Options / Branding → Auto-print).\n" +
-      "  PRINT_AGENT_BASE_URL=https://your-site.com   (no path after the domain)\n" +
+      "  PRINT_AGENT_BASE_URL=https://your-site.com   (must match where guests place orders)\n" +
       "  PRINT_AGENT_API_SECRET=long-random-shared-secret\n" +
       "  PRINT_AGENT_RESTAURANT_SLUG=your-dashboard-slug\n" +
-      "  PRINT_AGENT_STATION=bar | cold-kitchen | kitchen\n" +
+      "  PRINT_AGENT_STATION=all | bar | cold-kitchen | kitchen   (default: all — one PC catches every station)\n" +
       "  PRINT_AGENT_PDF_DIR=./print-agent-pdfs\n" +
       "  npm start"
   );
@@ -729,7 +736,8 @@ function formatTicketLines(order) {
   rows.push(sep);
   rows.push("");
 
-  if (STATION === "bar") {
+  const ticketStation = order.station;
+  if (ticketStation === "bar") {
     if (order.items.length > 0) {
       rows.push("Bar");
       rows.push("-".repeat("Bar".length));
@@ -777,7 +785,7 @@ function buildTicketFileName(order) {
   const ts = new Date(order.createdAt).toISOString().replace(/[:.]/g, "-");
   const table = sanitizeFilePart(order.tableName);
   const idShort = sanitizeFilePart(order.id).slice(0, 10);
-  const station = sanitizeFilePart(STATION);
+  const station = sanitizeFilePart(order.station);
   return `${ts}_${station}_${table}_${idShort}.pdf`;
 }
 
@@ -842,9 +850,9 @@ async function writeTicketPdf(order) {
   return { filePath, fontPath: rendered.fontPath, usingUnicode: rendered.usingUnicode };
 }
 
-async function readLastTicketNumber() {
+async function readLastTicketNumber(counterFile) {
   try {
-    const raw = await readFile(COUNTER_FILE, "utf8");
+    const raw = await readFile(counterFile, "utf8");
     const n = Number.parseInt(raw.trim(), 10);
     return Number.isFinite(n) && n > 0 ? n : 0;
   } catch {
@@ -852,15 +860,18 @@ async function readLastTicketNumber() {
   }
 }
 
-async function reserveNextTicketNumber() {
-  if (nextTicketNumber == null) {
-    const last = await readLastTicketNumber();
-    nextTicketNumber = last + 1;
+const nextTicketByStation = new Map();
+
+async function reserveNextTicketNumber(stationKey) {
+  const counterFile = counterFileForStation(stationKey);
+  if (!nextTicketByStation.has(stationKey)) {
+    const last = await readLastTicketNumber(counterFile);
+    nextTicketByStation.set(stationKey, last + 1);
   }
-  const current = nextTicketNumber;
-  nextTicketNumber += 1;
-  await mkdir(path.dirname(COUNTER_FILE), { recursive: true });
-  await writeFile(COUNTER_FILE, String(current), "utf8");
+  const current = nextTicketByStation.get(stationKey);
+  nextTicketByStation.set(stationKey, current + 1);
+  await mkdir(path.dirname(counterFile), { recursive: true });
+  await writeFile(counterFile, String(current), "utf8");
   return current;
 }
 
@@ -942,8 +953,8 @@ async function sendToPrinter(pdfFilePath, order) {
   return sendPdfToPrinter(pdfFilePath);
 }
 
-async function fetchPending() {
-  const qs = new URLSearchParams({ station: STATION, slug: RESTAURANT_SLUG });
+async function fetchPending(stationKey) {
+  const qs = new URLSearchParams({ station: stationKey, slug: RESTAURANT_SLUG });
   const res = await fetch(`${BASE}/api/print-agent/pending?${qs}`, {
     headers: { "X-Print-Agent-Secret": API_SECRET },
   });
@@ -963,7 +974,7 @@ async function fetchPending() {
   return Array.isArray(data.orders) ? data.orders : [];
 }
 
-async function ack(orderId) {
+async function ack(orderId, stationKey) {
   const qs = new URLSearchParams({ slug: RESTAURANT_SLUG });
   const res = await fetch(`${BASE}/api/print-agent/ack?${qs}`, {
     method: "POST",
@@ -971,7 +982,7 @@ async function ack(orderId) {
       "X-Print-Agent-Secret": API_SECRET,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ orderId, stationKey: STATION }),
+    body: JSON.stringify({ orderId, stationKey }),
   });
   return res.ok;
 }
@@ -983,32 +994,38 @@ async function tick() {
   if (ticking) return;
   ticking = true;
   try {
-    const orders = await fetchPending();
-    if (orders == null) return;
-    if (orders.length === 0 && !loggedNoOrdersHint) {
+    const stationList = USE_ALL_STATIONS ? STATIONS_ALL : [STATION];
+    let pendingTotal = 0;
+    for (const stationKey of stationList) {
+      const orders = await fetchPending(stationKey);
+      if (orders == null) return;
+      pendingTotal += orders.length;
+      for (const order of orders) {
+        const ticketNumber = await reserveNextTicketNumber(stationKey);
+        const printableOrder = { ...order, ticketNumber };
+        const { filePath, fontPath, usingUnicode } = await writeTicketPdf(printableOrder);
+        if (!usingUnicode) {
+          console.error("Unicode font not found; ticket text may show ? characters.");
+        } else if (fontPath) {
+          console.error(`PDF font: ${fontPath}`);
+        }
+        const ok = await sendToPrinter(filePath, printableOrder);
+        if (!ok) {
+          console.error("Skipping ack for", order.id, "(print failed)");
+          continue;
+        }
+        const acked = await ack(order.id, stationKey);
+        if (!acked) console.error("Ack failed for", order.id, "(will retry next poll)");
+      }
+    }
+    if (pendingTotal === 0 && !loggedNoOrdersHint) {
       loggedNoOrdersHint = true;
       console.error(
-        "Poll OK — no tickets yet. Kitchen only sees orders that are already in the kitchen flow (status not \"pending\"), " +
-          "sent to kitchen if waiter relay is on, not yet printed for this station, and with at least one item routed to kitchen/cold kitchen (not bar-only). " +
-          "PDFs appear in your folder only when a ticket is printed."
+        "Poll OK — no tickets yet. Check: (1) PRINT_AGENT_BASE_URL is the same site where the order was placed; " +
+          "(2) card orders stay \"pending\" until Stripe marks them paid; " +
+          "(3) server has PRINT_AGENT_API_SECRET set and matches this PC; " +
+          "(4) slug matches Dashboard. With PRINT_AGENT_STATION=all, bar and kitchen tickets are both fetched."
       );
-    }
-    for (const order of orders) {
-      const ticketNumber = await reserveNextTicketNumber();
-      const printableOrder = { ...order, ticketNumber };
-      const { filePath, fontPath, usingUnicode } = await writeTicketPdf(printableOrder);
-      if (!usingUnicode) {
-        console.error("Unicode font not found; ticket text may show ? characters.");
-      } else if (fontPath) {
-        console.error(`PDF font: ${fontPath}`);
-      }
-      const ok = await sendToPrinter(filePath, printableOrder);
-      if (!ok) {
-        console.error("Skipping ack for", order.id, "(print failed)");
-        continue;
-      }
-      const acked = await ack(order.id);
-      if (!acked) console.error("Ack failed for", order.id, "(will retry next poll)");
     }
   } finally {
     ticking = false;
@@ -1070,9 +1087,15 @@ if (SAMPLE_MODE) {
   process.exit(0);
 }
 
-console.error(`Print agent polling ${BASE} for ${STATION_LABELS[STATION]} every ${POLL_MS}ms`);
+console.error(
+  `Print agent polling ${BASE} for ${USE_ALL_STATIONS ? "BAR + COLD KITCHEN + KITCHEN" : STATION_LABELS[STATION]} every ${POLL_MS}ms`
+);
 console.error(`PDF output folder: ${PDF_DIR}`);
-console.error(`Ticket counter file: ${COUNTER_FILE}`);
+console.error(
+  USE_ALL_STATIONS
+    ? `Ticket counters: ${PDF_DIR}/*-ticket-counter.txt (one file per station)`
+    : `Ticket counter file: ${counterFileForStation(STATION)}`
+);
 if (RAW_HOST) {
   console.error(`Network raw print: ${RAW_HOST}:${RAW_PORT}`);
   if (RAW_ASCII_ONLY) console.error("Raw print: PRINT_AGENT_RAW_ASCII_ONLY — non-Latin chars may become ?");

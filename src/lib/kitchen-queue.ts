@@ -13,13 +13,23 @@ export function ordersInKitchenQueueWhere(restaurantId: string): Prisma.OrderWhe
 }
 
 /**
- * Orders the station print agent may fetch / ack: same pipeline as {@link ordersInKitchenQueueWhere},
- * but never unpaid `pending` (e.g. guest still in Stripe checkout). When wait-staff relay is on,
- * the kitchen predicate already requires `waiterRelayAt` (send to kitchen / accept) before an order
- * appears — staff orders from `/m/...` while logged in set `waiterRelayAt` at creation.
+ * Orders the station print agent may fetch / ack (any restaurant).
+ *
+ * Prints as soon as the order exists — **no `paid` status required** (cash/card at table, relay, etc.).
+ * Excludes only:
+ * - finished orders (`delivered`, `declined`)
+ * - guests still paying online: `pending` with a `stripeSessionId` (Stripe Checkout in progress)
  */
 export function ordersEligibleForStationPrintWhere(restaurantId: string): Prisma.OrderWhereInput {
   return {
-    AND: [ordersInKitchenQueueWhere(restaurantId), { status: { not: "pending" } }],
+    AND: [
+      { restaurantId },
+      { status: { notIn: ["delivered", "declined"] } },
+      {
+        NOT: {
+          AND: [{ status: "pending" }, { stripeSessionId: { not: null } }],
+        },
+      },
+    ],
   };
 }
