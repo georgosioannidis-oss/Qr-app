@@ -42,9 +42,10 @@ type Order = {
 };
 
 function paymentSummary(order: Order): string | null {
+  /** Stripe Checkout always sets `stripeSessionId`; show online pay before pay-at-table labels. */
+  if (order.stripeSessionId) return "Pay: Online card";
   if (order.paymentPreference === "card") return "Pay: Card at table";
   if (order.paymentPreference === "cash") return "Pay: Cash";
-  if (order.stripeSessionId) return "Pay: Online card";
   return null;
 }
 

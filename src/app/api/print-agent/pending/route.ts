@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ordersEligibleForStationPrintWhere } from "@/lib/kitchen-queue";
+import { ordersForStationPrintAgent } from "@/lib/kitchen-queue";
 import { printAgentApiDisabledReason, restaurantForPrintAgentRequest } from "@/lib/print-agent-auth";
 import {
   isPrintStationKey,
@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * GET /api/print-agent/pending?slug=<restaurantSlug>&station=bar|cold-kitchen|kitchen
  * Header: X-Print-Agent-Secret: <PRINT_AGENT_API_SECRET> (same value as server env)
  *
- * Orders: {@link ordersEligibleForStationPrintWhere} — active orders (not delivered/declined); not Stripe Checkout `pending`.
+ * Orders: {@link ordersForStationPrintAgent} — kitchen-visible orders; not Stripe Checkout `pending`; respects waiter relay.
  */
 export async function GET(req: NextRequest) {
   const disabled = printAgentApiDisabledReason();
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   const orders = await prisma.order.findMany({
     where: {
-      AND: [ordersEligibleForStationPrintWhere(restaurant.id)],
+      AND: [ordersForStationPrintAgent(restaurant.id)],
     },
     orderBy: { createdAt: "asc" },
     take: 25,
@@ -108,5 +108,13 @@ export async function GET(req: NextRequest) {
     })
     .filter((o) => o.items.length > 0);
 
-  return NextResponse.json({ orders: payload, station: stationKey });
+  return NextResponse.json({
+    orders: payload,
+    station: stationKey,
+    venue: {
+      slug: (slug ?? "").trim(),
+      name: restaurant.name,
+      waiterRelayEnabled: restaurant.waiterRelayEnabled,
+    },
+  });
 }

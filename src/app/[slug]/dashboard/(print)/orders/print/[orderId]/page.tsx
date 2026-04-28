@@ -37,9 +37,9 @@ export default async function PrintOrderPage({
   }
 
   let paymentSummary: string | null = null;
-  if (order.paymentPreference === "card") paymentSummary = "Card at table";
+  if (order.stripeSessionId) paymentSummary = "Online card";
+  else if (order.paymentPreference === "card") paymentSummary = "Card at table";
   else if (order.paymentPreference === "cash") paymentSummary = "Cash";
-  else if (order.stripeSessionId) paymentSummary = "Online card";
 
   const payload: PrintOrderPayload = {
     id: order.id,

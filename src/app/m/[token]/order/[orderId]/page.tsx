@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { confirmOrderPaidIfStripeSessionComplete } from "@/lib/confirm-order-paid-from-stripe-session";
 import { prisma } from "@/lib/prisma";
 import { OrderStatusView } from "./OrderStatusView";
 
@@ -13,6 +14,10 @@ export default async function OrderStatusPage({
 }) {
   const { token, orderId } = await params;
   const { paid } = await searchParams;
+
+  if (paid === "1") {
+    await confirmOrderPaidIfStripeSessionComplete(orderId);
+  }
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, table: { token } },

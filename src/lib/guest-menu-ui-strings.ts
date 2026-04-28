@@ -42,6 +42,8 @@ export type GuestMenuUiStrings = {
   payCashHint: string;
   choosePayment: string;
   paymentModalSubtitle: string;
+  /** Pay-at-table modal: place order without card/cash hint (order still sends immediately). */
+  placeOrderWithoutPayPreference: string;
   viewCart: string;
   placeOrder: string;
   placing: string;
@@ -122,7 +124,8 @@ const EN: GuestMenuUiStrings = {
   payCash: "Cash",
   payCashHint: "Pay with cash to staff",
   choosePayment: "Choose how you will pay.",
-  paymentModalSubtitle: "Tap an option to place your order.",
+  paymentModalSubtitle: "Optional — tells staff if you plan to pay by card or cash at the table. Your order sends either way.",
+  placeOrderWithoutPayPreference: "Send order without selecting",
   viewCart: "View cart",
   placeOrder: "Place order",
   placing: "Placing…",
@@ -212,7 +215,9 @@ const EL: GuestMenuUiStrings = {
   payCash: "Μετρητά",
   payCashHint: "Πληρωμή στο προσωπικό",
   choosePayment: "Επιλέξτε τρόπο πληρωμής.",
-  paymentModalSubtitle: "Πατήστε μια επιλογή για να στείλετε την παραγγελία.",
+  paymentModalSubtitle:
+    "Προαιρετικό — ενημερώνει το προσωπικό αν σκοπεύετε κάρτα ή μετρητά στο τραπέζι. Η παραγγελία στέλνεται ούτως ή άλλως.",
+  placeOrderWithoutPayPreference: "Αποστολή χωρίς επιλογή",
   viewCart: "Καλάθι",
   placeOrder: "Αποστολή παραγγελίας",
   placing: "Αποστολή…",
@@ -303,7 +308,9 @@ const RU: GuestMenuUiStrings = {
   payCash: "Наличные",
   payCashHint: "Наличными персоналу",
   choosePayment: "Выберите способ оплаты.",
-  paymentModalSubtitle: "Нажмите вариант, чтобы отправить заказ.",
+  paymentModalSubtitle:
+    "По желанию — подскажет персоналу, картой или наличными планируете оплатить за столом. Заказ отправится в любом случае.",
+  placeOrderWithoutPayPreference: "Отправить без выбора",
   viewCart: "Корзина",
   placeOrder: "Заказать",
   placing: "Отправка…",
@@ -396,7 +403,9 @@ const FR: GuestMenuUiStrings = {
   payCash: "Espèces",
   payCashHint: "Espèces au personnel",
   choosePayment: "Choisissez un mode de paiement.",
-  paymentModalSubtitle: "Touchez une option pour envoyer votre commande.",
+  paymentModalSubtitle:
+    "Facultatif — indique au personnel si vous prévoyez carte ou espèces à table. La commande part dans tous les cas.",
+  placeOrderWithoutPayPreference: "Envoyer sans choisir",
   viewCart: "Panier",
   placeOrder: "Commander",
   placing: "Envoi…",
@@ -490,7 +499,9 @@ const PL: GuestMenuUiStrings = {
   payCash: "Gotówka",
   payCashHint: "Gotówka u obsługi",
   choosePayment: "Wybierz sposób płatności.",
-  paymentModalSubtitle: "Dotknij opcji, aby wysłać zamówienie.",
+  paymentModalSubtitle:
+    "Opcjonalnie — informuje obsługę, czy planujesz kartą czy gotówką przy stoliku. Zamówienie i tak zostanie wysłane.",
+  placeOrderWithoutPayPreference: "Wyślij bez wyboru",
   viewCart: "Koszyk",
   placeOrder: "Zamów",
   placing: "Wysyłanie…",

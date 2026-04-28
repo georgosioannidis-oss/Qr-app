@@ -464,16 +464,6 @@ export function MenuView({
 
   const submitOrder = async (paymentPreference?: "card" | "cash") => {
     if (cart.length === 0) return;
-    if (!usesOnlineCheckout) {
-      const needsPick =
-        payAtTableCardEnabled &&
-        payAtTableCashEnabled &&
-        (paymentPreference !== "card" && paymentPreference !== "cash");
-      if (needsPick) {
-        toast.error(ui.choosePayment);
-        return;
-      }
-    }
     setIsPlacing(true);
 
     const savedCart = [...cart];
@@ -1368,6 +1358,14 @@ export function MenuView({
                   <span className="block text-base font-bold text-ink sm:text-lg">{ui.payCash}</span>
                   <span className="mt-0.5 block text-xs leading-snug text-ink-muted sm:text-sm">{ui.payCashHint}</span>
                 </div>
+              </button>
+              <button
+                type="button"
+                disabled={isPlacing}
+                onClick={() => void submitOrder()}
+                className="w-full min-h-[52px] rounded-2xl border-2 border-dashed border-border bg-surface text-base font-semibold text-ink-muted hover:border-primary/40 hover:text-ink hover:bg-primary/[0.04] disabled:opacity-50"
+              >
+                {ui.placeOrderWithoutPayPreference}
               </button>
             </div>
             {isPlacing ? (

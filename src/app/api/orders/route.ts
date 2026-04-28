@@ -3,7 +3,7 @@
  * optional modifiers, then creates Order rows.
  *
  * - **Stripe** (restaurant `onlinePaymentEnabled` + keys + `NEXT_PUBLIC_APP_URL`): returns `checkoutUrl`; order stays `pending` until webhook sets `paid`. If session creation fails, order is marked `paid` like pay-at-table so ops are not stuck.
- * - **Pay at table** (default): guest picks card and/or cash per venue settings; order is confirmed as `paid` with `paymentPreference` (no `checkoutUrl`).
+ * - **Pay at table** (default): order is confirmed as `paid` immediately (no `checkoutUrl`). Optional `paymentPreference` is only for staff display, never required and does not affect Stripe or kitchen routing.
  * - Staff logged into the dashboard and ordering from `/m/...` skip the waiter relay queue (same cookies; `getDashboardServerSession(req)`).
  */
 import { NextRequest, NextResponse } from "next/server";
@@ -364,19 +364,17 @@ export async function POST(req: NextRequest) {
         paymentPreference = "cash";
       } else {
         const p = typeof prefRaw === "string" ? prefRaw.trim() : "";
-        if (p !== "card" && p !== "cash") {
-          return NextResponse.json(
-            { error: "Choose how you will pay: card or cash." },
-            { status: 400 }
-          );
+        if (p === "card" || p === "cash") {
+          if (p === "card" && !cardOk) {
+            return NextResponse.json({ error: "Card payment is not offered for this venue." }, { status: 400 });
+          }
+          if (p === "cash" && !cashOk) {
+            return NextResponse.json({ error: "Cash payment is not offered for this venue." }, { status: 400 });
+          }
+          paymentPreference = p;
+        } else {
+          paymentPreference = null;
         }
-        if (p === "card" && !cardOk) {
-          return NextResponse.json({ error: "Card payment is not offered for this venue." }, { status: 400 });
-        }
-        if (p === "cash" && !cashOk) {
-          return NextResponse.json({ error: "Cash payment is not offered for this venue." }, { status: 400 });
-        }
-        paymentPreference = p;
       }
     }
 

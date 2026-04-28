@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { ordersEligibleForStationPrintWhere } from "@/lib/kitchen-queue";
+import { ordersForStationPrintAgent } from "@/lib/kitchen-queue";
 import { printAgentApiDisabledReason, restaurantForPrintAgentRequest } from "@/lib/print-agent-auth";
 import { isPrintStationKey } from "@/lib/print-station-routing";
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   const order = await prisma.order.findFirst({
     where: {
-      AND: [{ id: orderId }, ordersEligibleForStationPrintWhere(restaurant.id)],
+      AND: [{ id: orderId }, ordersForStationPrintAgent(restaurant.id)],
     },
     select: { id: true },
   });

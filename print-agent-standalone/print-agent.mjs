@@ -37,12 +37,35 @@ const RAW_PORT = (() => {
   return n;
 })();
 const RAW_ASCII_ONLY = /^(1|true|yes)$/i.test(String(process.env.PRINT_AGENT_RAW_ASCII_ONLY || "").trim());
-const STATION_RAW = (process.env.PRINT_AGENT_STATION || "all").trim().toLowerCase();
+
+/** Same station keys as the server API; accepts spaced labels (e.g. cold kitchen). */
+function normalizePrintAgentStation(value) {
+  const t = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/_/g, "-")
+    .replace(/\s+/g, " ");
+  if (t === "all") return "all";
+  if (t === "bar") return "bar";
+  if (t === "kitchen") return "kitchen";
+  if (
+    t === "cold-kitchen" ||
+    t === "cold kitchen" ||
+    t === "cold kicthen" ||
+    (t.includes("cold") && t.includes("kitchen"))
+  ) {
+    return "cold-kitchen";
+  }
+  return t.replace(/ /g, "-");
+}
+
+const STATION_RAW = normalizePrintAgentStation(process.env.PRINT_AGENT_STATION || "all");
 const USE_ALL_STATIONS = STATION_RAW === "all";
 /** `all` = poll bar, cold-kitchen, and kitchen each cycle (default). Otherwise one station only. */
 const STATION = USE_ALL_STATIONS ? "all" : STATION_RAW;
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
 const FONT_PATH = process.env.PRINT_AGENT_FONT_PATH || "";
+/** If set, counter files are `<parent dir>/<station>-ticket-counter.txt` (same layout as PRINT_AGENT_STATION=all). */
 const CUSTOM_COUNTER_FILE = (process.env.PRINT_AGENT_COUNTER_FILE || "").trim();
 const STATION_LABELS = {
   bar: "BAR",
@@ -52,7 +75,10 @@ const STATION_LABELS = {
 const STATIONS_ALL = ["bar", "cold-kitchen", "kitchen"];
 
 function counterFileForStation(stationKey) {
-  if (CUSTOM_COUNTER_FILE && !USE_ALL_STATIONS) return CUSTOM_COUNTER_FILE;
+  if (CUSTOM_COUNTER_FILE) {
+    const resolved = path.resolve(CUSTOM_COUNTER_FILE);
+    return path.join(path.dirname(resolved), `${stationKey}-ticket-counter.txt`);
+  }
   return path.join(PDF_DIR, `${stationKey}-ticket-counter.txt`);
 }
 
@@ -66,7 +92,7 @@ if (
       "  PRINT_AGENT_BASE_URL=https://your-site.com   (must match where guests place orders)\n" +
       "  PRINT_AGENT_API_SECRET=long-random-shared-secret\n" +
       "  PRINT_AGENT_RESTAURANT_SLUG=your-dashboard-slug\n" +
-      "  PRINT_AGENT_STATION=all | bar | cold-kitchen | kitchen   (default: all — one PC catches every station)\n" +
+      "  PRINT_AGENT_STATION=all | bar | cold-kitchen | kitchen (or \"cold kitchen\")   (default: all — one PC catches every station)\n" +
       "  PRINT_AGENT_PDF_DIR=./print-agent-pdfs\n" +
       "  npm start"
   );
@@ -953,6 +979,8 @@ async function sendToPrinter(pdfFilePath, order) {
   return sendPdfToPrinter(pdfFilePath);
 }
 
+let loggedVenueFromServer = false;
+
 async function fetchPending(stationKey) {
   const qs = new URLSearchParams({ station: stationKey, slug: RESTAURANT_SLUG });
   const res = await fetch(`${BASE}/api/print-agent/pending?${qs}`, {
@@ -971,6 +999,12 @@ async function fetchPending(stationKey) {
     return null;
   }
   const data = await res.json();
+  if (!loggedVenueFromServer && data.venue && typeof data.venue.name === "string") {
+    loggedVenueFromServer = true;
+    console.error(
+      `Server venue: ${data.venue.name} (slug in API: "${data.venue.slug}") — if this is not your restaurant, fix PRINT_AGENT_RESTAURANT_SLUG. Relay: ${data.venue.waiterRelayEnabled ? "on" : "off"}.`
+    );
+  }
   return Array.isArray(data.orders) ? data.orders : [];
 }
 
