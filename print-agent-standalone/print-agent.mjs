@@ -977,6 +977,7 @@ async function ack(orderId) {
 }
 
 let ticking = false;
+let loggedNoOrdersHint = false;
 
 async function tick() {
   if (ticking) return;
@@ -984,6 +985,14 @@ async function tick() {
   try {
     const orders = await fetchPending();
     if (orders == null) return;
+    if (orders.length === 0 && !loggedNoOrdersHint) {
+      loggedNoOrdersHint = true;
+      console.error(
+        "Poll OK — no tickets yet. Kitchen only sees orders that are already in the kitchen flow (status not \"pending\"), " +
+          "sent to kitchen if waiter relay is on, not yet printed for this station, and with at least one item routed to kitchen/cold kitchen (not bar-only). " +
+          "PDFs appear in your folder only when a ticket is printed."
+      );
+    }
     for (const order of orders) {
       const ticketNumber = await reserveNextTicketNumber();
       const printableOrder = { ...order, ticketNumber };
@@ -1072,7 +1081,9 @@ if (RAW_HOST) {
   console.error(`Print command enabled: ${PRINT_CMD}`);
   console.error('Use "{file}" placeholder to control argument position.');
 } else {
-  console.error("No PRINT_AGENT_RAW_HOST or PRINT_COMMAND — agent only saves PDF files.");
+  console.error(
+    "PDF-only mode: each ticket is saved under the PDF folder above when the server returns an order (no printer needed)."
+  );
 }
 await tick();
 setInterval(tick, POLL_MS);

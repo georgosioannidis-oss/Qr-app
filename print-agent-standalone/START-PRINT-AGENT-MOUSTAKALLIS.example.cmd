@@ -24,20 +24,23 @@ if not exist "node_modules\" (
 )
 
 set "PRINT_AGENT_BASE_URL=https://scannorder.ink"
-set "PRINT_AGENT_API_SECRET=PASTE_SAME_SECRET_AS_SERVER_DOT_ENV"
+set "PRINT_AGENT_API_SECRET=fHt+Oz12X7yywZf/Y34nQpyFVMzZ2AN4ZnE+nuDRwIOrlDUOKvJ4tfACj3koMDR0"
 set "PRINT_AGENT_RESTAURANT_SLUG=moustakallis"
 set "PRINT_AGENT_STATION=kitchen"
 set "PRINT_AGENT_PDF_DIR=%USERPROFILE%\print-agent-pdfs"
 set "PRINT_AGENT_FONT_PATH=C:\Windows\Fonts\arial.ttf"
-set "PRINT_AGENT_RAW_HOST=192.168.11.66"
-set "PRINT_AGENT_RAW_PORT=9100"
+
 
 echo.
 echo  =============================================
-echo   QR Menu — Moustakallis KITCHEN print agent
-echo   Site:     %PRINT_AGENT_BASE_URL%
-echo   Printer:  %PRINT_AGENT_RAW_HOST%:%PRINT_AGENT_RAW_PORT% ^(TCP^)
-echo   PDFs:     %PRINT_AGENT_PDF_DIR%
+echo   QR Menu - Moustakallis KITCHEN print agent
+echo   Site:  %PRINT_AGENT_BASE_URL%
+echo   PDFs:  %PRINT_AGENT_PDF_DIR%
+if defined PRINT_AGENT_RAW_HOST (
+  echo   Printer TCP: %PRINT_AGENT_RAW_HOST%:%PRINT_AGENT_RAW_PORT%
+) else (
+  echo   Printer: none ^(PDF-only test mode^)
+)
 echo  =============================================
 echo.
 

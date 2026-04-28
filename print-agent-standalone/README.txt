@@ -94,3 +94,10 @@ OPTIONAL
     npm run print-agent-sample
     (from full repo) or:  node print-agent.mjs --sample
     Optional: set PRINT_AGENT_STATION=bar first for a bar sample.
+
+  No PDFs / “not picking up” orders:
+    • Live site must have PRINT_AGENT_API_SECRET set and the PC must use the same secret + slug.
+    • Kitchen agent only receives orders that are already in the kitchen pipeline (not unpaid
+      “pending”), and if waiter relay is on, after staff send the order to the kitchen.
+    • The order must include at least one line routed to kitchen or cold kitchen (not bar-only).
+    • After a ticket is printed once, it is “acked” and will not appear again for that station.
