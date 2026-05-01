@@ -1001,9 +1001,16 @@ async function fetchPending(stationKey) {
   const data = await res.json();
   if (!loggedVenueFromServer && data.venue && typeof data.venue.name === "string") {
     loggedVenueFromServer = true;
+    const online =
+      data.venue.onlinePaymentEnabled === true ? "guest online card ON" : "guest online card OFF";
     console.error(
-      `Server venue: ${data.venue.name} (slug in API: "${data.venue.slug}") — if this is not your restaurant, fix PRINT_AGENT_RESTAURANT_SLUG. Relay: ${data.venue.waiterRelayEnabled ? "on" : "off"}.`
+      `Server venue: ${data.venue.name} (slug in API: "${data.venue.slug}") — fix PRINT_AGENT_RESTAURANT_SLUG if wrong. Waiter relay: ${data.venue.waiterRelayEnabled ? "on" : "off"}. ${online} (printing is not gated on payment).`
     );
+    if (data.venue.waiterRelayEnabled === true) {
+      console.error(
+        "Waiter relay is on: orders print only after staff accepts them on the dashboard."
+      );
+    }
   }
   return Array.isArray(data.orders) ? data.orders : [];
 }
@@ -1055,10 +1062,10 @@ async function tick() {
     if (pendingTotal === 0 && !loggedNoOrdersHint) {
       loggedNoOrdersHint = true;
       console.error(
-        "Poll OK — no tickets yet. Check: (1) PRINT_AGENT_BASE_URL is the same site where the order was placed; " +
-          "(2) card orders stay \"pending\" until Stripe marks them paid; " +
-          "(3) server has PRINT_AGENT_API_SECRET set and matches this PC; " +
-          "(4) slug matches Dashboard. With PRINT_AGENT_STATION=all, bar and kitchen tickets are both fetched."
+        "Poll OK — no tickets yet. Check: (1) same site as orders (e.g. scannorder.ink); " +
+          "(2) waiter relay off, or staff accepted the order (relay on); " +
+          "(3) server PRINT_AGENT_API_SECRET matches this PC; " +
+          "(4) slug matches dashboard (see venue line above). PRINT_AGENT_STATION=all polls bar + cold-kitchen + kitchen."
       );
     }
   } finally {

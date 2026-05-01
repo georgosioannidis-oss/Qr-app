@@ -34,6 +34,12 @@ model Restaurant {
   prepTimeEstimateMinutes Int?
   /// When true, guest QR menus cannot place new orders (kitchen overload). Staff dashboard unchanged.
   guestQrOrderingPaused Boolean @default(false)
+  /// VAT rate as an integer percentage (e.g. 19 for 19%). 0 = no VAT / not configured.
+  vatRate      Int      @default(0)
+  /// JSON array of enabled locale codes, e.g. ["el","en","de"]. Empty = no language switcher shown.
+  enabledLocales String @default("[]")
+  /// Primary/source language staff write menu content in (e.g. "el"). Translations are from this language.
+  defaultLocale  String @default("el")
   createdAt    DateTime @default(now())
 
   users          RestaurantUser[]
@@ -113,6 +119,8 @@ model Table {
   guestQrOrderingPaused Boolean @default(false)
   /// Set when the guest taps “Call waiter” on the menu; staff clears after visiting the table.
   waiterCalledAt DateTime?
+  /// Incremented when staff mark the table as ready for new guests; invalidates any existing guest QR cookie.
+  orderingWindowNonce Int @default(0)
 
   orders Order[]
 
@@ -134,7 +142,8 @@ model MenuCategory {
   stationId    String?
   station      Station? @relation(fields: [stationId], references: [id], onDelete: SetNull)
 
-  items MenuItem[]
+  items        MenuItem[]
+  translations MenuCategoryTranslation[]
 
   @@index([restaurantId])
   @@index([stationId])
@@ -159,9 +168,35 @@ model MenuItem {
   stationId    String?
   station      Station? @relation(fields: [stationId], references: [id], onDelete: SetNull)
 
-  orderItems OrderItem[]
+  orderItems   OrderItem[]
+  translations MenuItemTranslation[]
 
   @@index([stationId])
+}
+
+model MenuItemTranslation {
+  id           String   @id @default(cuid())
+  menuItemId   String
+  menuItem     MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  locale       String
+  name         String
+  description  String?
+  /// Translated option groups JSON (same structure as MenuItem.optionGroups).
+  optionGroups String?
+
+  @@unique([menuItemId, locale])
+  @@index([menuItemId])
+}
+
+model MenuCategoryTranslation {
+  id             String       @id @default(cuid())
+  menuCategoryId String
+  menuCategory   MenuCategory @relation(fields: [menuCategoryId], references: [id], onDelete: Cascade)
+  locale         String
+  name           String
+
+  @@unique([menuCategoryId, locale])
+  @@index([menuCategoryId])
 }
 
 /// Preparation station for order routing (e.g. Bar, Kitchen, Grill). Per-restaurant.
@@ -200,6 +235,8 @@ model Order {
   billPaidAt DateTime?
   /// Opaque per-device ID so guests only see their own orders in "Your orders" (localStorage on the phone).
   guestSessionId String?
+  /// True when placed by a logged-in staff member via the dashboard manual-order flow.
+  isStaffOrder Boolean @default(false)
 
   items OrderItem[]
   stationAcks OrderStationPrintAck[]
@@ -217,7 +254,7 @@ model OrderStationPrintAck {
   order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   restaurantId String
   restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  /// bar | cold-kitchen | kitchen
+  /// Station.id of the station that printed this order line.
   stationKey   String
   printedAt    DateTime @default(now())
 

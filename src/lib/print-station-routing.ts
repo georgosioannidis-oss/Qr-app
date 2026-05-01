@@ -1,5 +1,10 @@
 export type PrintStationKey = "bar" | "cold-kitchen" | "kitchen";
 
+/** Stable URL-safe slug derived from a Station.name — used as PRINT_AGENT_STATION value. */
+export function stationSlug(name: string): string {
+  return name.toLowerCase().trim().replace(/\s+/g, "-");
+}
+
 function normalizeStationLabel(name: string | null | undefined): string | null {
   if (name == null) return null;
   const t = name.trim().toLowerCase().replace(/\s+/g, " ");
@@ -34,4 +39,19 @@ export function printStationLabel(station: PrintStationKey): string {
 
 export function isPrintStationKey(value: string): value is PrintStationKey {
   return value === "bar" || value === "cold-kitchen" || value === "kitchen";
+}
+
+/**
+ * Whether an order line appears when polling {@link PrintStationKey} for tickets.
+ * - **bar**: only bar-routed lines.
+ * - **cold-kitchen** and **kitchen**: the same food pool (every non-bar line), matching combined prep queues.
+ *
+ * Order-level gates (kitchen queue, waiter relay) are identical for bar, cold-kitchen, and kitchen; the print agent does not filter orders by payment (`ordersForStationPrintAgent` in `kitchen-queue.ts`).
+ */
+export function lineMatchesPrintStationPoll(
+  itemStation: PrintStationKey,
+  pollStation: PrintStationKey
+): boolean {
+  if (pollStation === "bar") return itemStation === "bar";
+  return itemStation !== "bar";
 }

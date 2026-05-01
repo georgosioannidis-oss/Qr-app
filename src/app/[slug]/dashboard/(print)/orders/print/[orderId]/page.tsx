@@ -24,7 +24,7 @@ export default async function PrintOrderPage({
     where: { id: orderId, restaurantId: session.user.restaurantId },
     include: {
       table: { select: { name: true } },
-      restaurant: { select: { name: true } },
+      restaurant: { select: { name: true, vatRate: true } },
       items: {
         include: { menuItem: { select: { name: true } } },
         orderBy: { id: "asc" },
@@ -41,6 +41,10 @@ export default async function PrintOrderPage({
   else if (order.paymentPreference === "card") paymentSummary = "Card at table";
   else if (order.paymentPreference === "cash") paymentSummary = "Cash";
 
+  const vatRate = order.restaurant.vatRate ?? 0;
+  const netAmount = Math.round(order.totalAmount / (1 + vatRate / 100));
+  const vatAmount = order.totalAmount - netAmount;
+
   const payload: PrintOrderPayload = {
     id: order.id,
     restaurantName: order.restaurant.name,
@@ -48,6 +52,9 @@ export default async function PrintOrderPage({
     status: order.status,
     createdAt: order.createdAt.toISOString(),
     totalAmount: order.totalAmount,
+    vatRate,
+    netAmount,
+    vatAmount,
     paymentSummary,
     billPaidAt: order.billPaidAt?.toISOString() ?? null,
     items: order.items.map((row) => ({

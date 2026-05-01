@@ -215,18 +215,22 @@ export async function POST(req: NextRequest) {
     if (!table) {
       return NextResponse.json({ error: "Invalid table" }, { status: 404 });
     }
-    if (!hasGuestQrAccess(req, tableToken)) {
+    const staffSession = await getDashboardServerSession(req);
+    let isStaffOrder = false;
+    let staffSkipsWaiterRelay = false;
+    if (staffSession?.user?.restaurantId === table.restaurantId) {
+      const denied = await requireWaitStaffApiAccess(staffSession);
+      if (denied === null) {
+        isStaffOrder = true;
+        staffSkipsWaiterRelay = true;
+      }
+    }
+
+    if (!isStaffOrder && !hasGuestQrAccess(req, tableToken, table.orderingWindowNonce)) {
       return NextResponse.json(
         { error: "QR session expired. Please scan your table QR code again." },
         { status: 403 }
       );
-    }
-
-    const session = await getDashboardServerSession(req);
-    let staffSkipsWaiterRelay = false;
-    if (session?.user?.restaurantId === table.restaurantId) {
-      const denied = await requireWaitStaffApiAccess(session);
-      staffSkipsWaiterRelay = denied === null;
     }
 
     if (
@@ -391,6 +395,7 @@ export async function POST(req: NextRequest) {
         paymentPreference,
         waiterRelayAt,
         guestSessionId,
+        isStaffOrder,
         items: {
           create: validatedLines.map((i) => ({
             menuItemId: i.menuItemId,

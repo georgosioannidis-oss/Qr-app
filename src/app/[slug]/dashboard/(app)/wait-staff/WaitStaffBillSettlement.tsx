@@ -34,10 +34,22 @@ function formatWhen(iso: string) {
 
 export function WaitStaffBillSettlement() {
   const [orders, setOrders] = useState<OpenBillOrder[]>([]);
+  const [vatRate, setVatRate] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyLine, setBusyLine] = useState<{ orderId: string; lineId: string } | null>(null);
   const [busyAllOrderId, setBusyAllOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/dashboard/restaurant")
+      .then((r) => r.json())
+      .then((d: unknown) => {
+        if (d && typeof d === "object" && "vatRate" in d && typeof (d as { vatRate: unknown }).vatRate === "number") {
+          setVatRate((d as { vatRate: number }).vatRate);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -181,7 +193,21 @@ export function WaitStaffBillSettlement() {
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-lg font-bold tabular-nums text-ink">{formatPrice(order.totalAmount)}</span>
+                <div className="text-right">
+                  {vatRate > 0 ? (
+                    <>
+                      <p className="text-xs text-ink-muted tabular-nums">
+                        Subtotal (excl. VAT): {formatPrice(Math.round(order.totalAmount / (1 + vatRate / 100)))}
+                      </p>
+                      <p className="text-xs text-ink-muted tabular-nums">
+                        VAT {vatRate}%: {formatPrice(order.totalAmount - Math.round(order.totalAmount / (1 + vatRate / 100)))}
+                      </p>
+                    </>
+                  ) : null}
+                  <p className="text-lg font-bold tabular-nums text-ink">
+                    {vatRate > 0 ? `Total (incl. VAT): ` : ""}{formatPrice(order.totalAmount)}
+                  </p>
+                </div>
                 <button
                   type="button"
                   disabled={isAllBusy}

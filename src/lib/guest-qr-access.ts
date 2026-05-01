@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import type { NextRequest } from "next/server";
 
-const ACCESS_WINDOW_SECONDS = 30 * 60;
+const ACCESS_WINDOW_SECONDS = 20 * 60;
 
 export const GUEST_QR_ACCESS_COOKIE = "qr_menu_access";
 export const GUEST_QR_ACCESS_MAX_AGE_SEC = ACCESS_WINDOW_SECONDS;
@@ -49,14 +49,19 @@ export function isValidQrProof(tableToken: string, proof: string | null | undefi
   }
 }
 
-export function createAccessToken(tableToken: string, now = Date.now()) {
+export function createAccessToken(tableToken: string, nonce: number, now = Date.now()) {
   const exp = Math.floor(now / 1000) + ACCESS_WINDOW_SECONDS;
-  const payload = base64url(`${tableToken}|${exp}`);
+  const payload = base64url(`${tableToken}|${exp}|${nonce}`);
   const mac = sign(payload);
   return `${payload}.${mac}`;
 }
 
-export function verifyAccessToken(tableToken: string, token: string | null | undefined, now = Date.now()) {
+export function verifyAccessToken(
+  tableToken: string,
+  nonce: number,
+  token: string | null | undefined,
+  now = Date.now()
+) {
   if (!token || typeof token !== "string") return false;
   const [payload, mac] = token.split(".");
   if (!payload || !mac) return false;
@@ -64,16 +69,19 @@ export function verifyAccessToken(tableToken: string, token: string | null | und
   if (!safeEqual(mac, expectedMac)) return false;
   try {
     const decoded = unbase64url(payload);
-    const [tokenTable, expRaw] = decoded.split("|");
+    const parts = decoded.split("|");
+    if (parts.length !== 3) return false;
+    const [tokenTable, expRaw, nonceRaw] = parts;
     const exp = Number(expRaw);
     if (tokenTable !== tableToken || !Number.isFinite(exp)) return false;
+    if (String(nonce) !== nonceRaw) return false;
     return Math.floor(now / 1000) <= exp;
   } catch {
     return false;
   }
 }
 
-export function hasGuestQrAccess(req: NextRequest, tableToken: string) {
+export function hasGuestQrAccess(req: NextRequest, tableToken: string, nonce: number) {
   const value = req.cookies.get(GUEST_QR_ACCESS_COOKIE)?.value;
-  return verifyAccessToken(tableToken, value);
+  return verifyAccessToken(tableToken, nonce, value);
 }

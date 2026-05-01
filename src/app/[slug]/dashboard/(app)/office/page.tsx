@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import nextDynamic from "next/dynamic";
+import { OfficeReportDownload } from "./OfficeReportDownload";
+import { OfficeResetSection } from "./OfficeResetSection";
 import { getDashboardServerSession } from "@/lib/auth-server";
 import { isDatabaseConnectionError } from "@/lib/database-connection-error";
 import { prisma } from "@/lib/prisma";
@@ -339,6 +341,8 @@ export default async function OfficePage({
         </div>
       </section>
 
+      <OfficeReportDownload />
+
       <div className="grid gap-8 lg:grid-cols-2">
         <section>
           <h2 className="text-sm font-bold uppercase tracking-wide text-ink-muted mb-4">Best sellers (30 days)</h2>
@@ -427,6 +431,8 @@ export default async function OfficePage({
           )}
         </div>
       </section>
+
+      <OfficeResetSection />
 
       <OfficeStaffShell
         staffMayEditMenuTables={restaurantPrefs?.staffMayEditMenuTables === true}

@@ -25,13 +25,23 @@ const menuInclude = {
       payAtTableCardEnabled: true,
       payAtTableCashEnabled: true,
       guestQrOrderingPaused: true,
+      enabledLocales: true,
+      defaultLocale: true,
       menuCategories: {
         where: { isAvailable: true },
         orderBy: { sortOrder: "asc" as const },
         include: {
+          translations: {
+            select: { locale: true, name: true },
+          },
           items: {
             where: { isAvailable: true },
             orderBy: { sortOrder: "asc" as const },
+            include: {
+              translations: {
+                select: { locale: true, name: true, description: true, optionGroups: true },
+              },
+            },
           },
         },
       },
@@ -45,7 +55,7 @@ export function isCustomerMenuIndexPath(pathname: string): boolean {
   return /^\/m\/[^/]+$/.test(norm);
 }
 
-/** Full table + menu tree; deduped per request when layout and page both call it. */
+/** Full table + menu tree with translations; deduped per request when layout and page both call it. */
 export const loadCustomerTableWithMenuByToken = cache(async (token: string) => {
   return prisma.table.findUnique({
     where: { token },

@@ -38,41 +38,27 @@ const RAW_PORT = (() => {
 })();
 const RAW_ASCII_ONLY = /^(1|true|yes)$/i.test(String(process.env.PRINT_AGENT_RAW_ASCII_ONLY || "").trim());
 
-/** Same station keys as the server API; accepts spaced labels (e.g. cold kitchen). */
+/** Normalise PRINT_AGENT_STATION: lowercase, spaces→hyphens, underscores→hyphens. */
 function normalizePrintAgentStation(value) {
   const t = String(value ?? "")
     .trim()
     .toLowerCase()
     .replace(/_/g, "-")
-    .replace(/\s+/g, " ");
-  if (t === "all") return "all";
-  if (t === "bar") return "bar";
-  if (t === "kitchen") return "kitchen";
-  if (
-    t === "cold-kitchen" ||
-    t === "cold kitchen" ||
-    t === "cold kicthen" ||
-    (t.includes("cold") && t.includes("kitchen"))
-  ) {
-    return "cold-kitchen";
-  }
-  return t.replace(/ /g, "-");
+    .replace(/\s+/g, "-");
+  return t || "all";
 }
 
 const STATION_RAW = normalizePrintAgentStation(process.env.PRINT_AGENT_STATION || "all");
 const USE_ALL_STATIONS = STATION_RAW === "all";
-/** `all` = poll bar, cold-kitchen, and kitchen each cycle (default). Otherwise one station only. */
+/** `all` = poll every station for this restaurant each cycle. Otherwise one station slug only. */
 const STATION = USE_ALL_STATIONS ? "all" : STATION_RAW;
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
 const FONT_PATH = process.env.PRINT_AGENT_FONT_PATH || "";
 /** If set, counter files are `<parent dir>/<station>-ticket-counter.txt` (same layout as PRINT_AGENT_STATION=all). */
 const CUSTOM_COUNTER_FILE = (process.env.PRINT_AGENT_COUNTER_FILE || "").trim();
-const STATION_LABELS = {
-  bar: "BAR",
-  "cold-kitchen": "COLD KITCHEN",
-  kitchen: "KITCHEN",
-};
-const STATIONS_ALL = ["bar", "cold-kitchen", "kitchen"];
+
+/** Populated after startup discovery — list of station slugs this agent polls. */
+let ACTIVE_STATIONS = [];
 
 function counterFileForStation(stationKey) {
   if (CUSTOM_COUNTER_FILE) {
@@ -82,17 +68,14 @@ function counterFileForStation(stationKey) {
   return path.join(PDF_DIR, `${stationKey}-ticket-counter.txt`);
 }
 
-if (
-  !SAMPLE_MODE &&
-  (!BASE || !API_SECRET || !RESTAURANT_SLUG || (!USE_ALL_STATIONS && !STATION_LABELS[STATION]))
-) {
+if (!SAMPLE_MODE && (!BASE || !API_SECRET || !RESTAURANT_SLUG)) {
   console.error(
-    "Missing PRINT_AGENT_BASE_URL (or NEXT_PUBLIC_APP_URL), PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, or invalid PRINT_AGENT_STATION.\n" +
+    "Missing PRINT_AGENT_BASE_URL (or NEXT_PUBLIC_APP_URL), PRINT_AGENT_API_SECRET, or PRINT_AGENT_RESTAURANT_SLUG.\n" +
       "Use the same PRINT_AGENT_API_SECRET on the server and this PC (see Dashboard → Options / Branding → Auto-print).\n" +
-      "  PRINT_AGENT_BASE_URL=https://your-site.com   (must match where guests place orders)\n" +
+      "  PRINT_AGENT_BASE_URL=https://your-site.com\n" +
       "  PRINT_AGENT_API_SECRET=long-random-shared-secret\n" +
       "  PRINT_AGENT_RESTAURANT_SLUG=your-dashboard-slug\n" +
-      "  PRINT_AGENT_STATION=all | bar | cold-kitchen | kitchen (or \"cold kitchen\")   (default: all — one PC catches every station)\n" +
+      "  PRINT_AGENT_STATION=all | <station-slug>   (default: all — one PC catches every station)\n" +
       "  PRINT_AGENT_PDF_DIR=./print-agent-pdfs\n" +
       "  npm start"
   );
@@ -979,6 +962,28 @@ async function sendToPrinter(pdfFilePath, order) {
   return sendPdfToPrinter(pdfFilePath);
 }
 
+/** Fetches the station list for this restaurant from the server. Called once on startup. */
+async function fetchStations() {
+  const qs = new URLSearchParams({ slug: RESTAURANT_SLUG });
+  const res = await fetch(`${BASE}/api/print-agent/stations?${qs}`, {
+    headers: { "X-Print-Agent-Secret": API_SECRET },
+  });
+  if (res.status === 401) {
+    console.error("Unauthorized — check PRINT_AGENT_API_SECRET and PRINT_AGENT_RESTAURANT_SLUG.");
+    return null;
+  }
+  if (res.status === 503) {
+    console.error("Server not configured — set PRINT_AGENT_API_SECRET on the server and redeploy.");
+    return null;
+  }
+  if (!res.ok) {
+    console.error("stations HTTP", res.status, await res.text());
+    return null;
+  }
+  const data = await res.json();
+  return Array.isArray(data.stations) ? data.stations : null;
+}
+
 let loggedVenueFromServer = false;
 
 async function fetchPending(stationKey) {
@@ -1001,9 +1006,16 @@ async function fetchPending(stationKey) {
   const data = await res.json();
   if (!loggedVenueFromServer && data.venue && typeof data.venue.name === "string") {
     loggedVenueFromServer = true;
+    const online =
+      data.venue.onlinePaymentEnabled === true ? "guest online card ON" : "guest online card OFF";
     console.error(
-      `Server venue: ${data.venue.name} (slug in API: "${data.venue.slug}") — if this is not your restaurant, fix PRINT_AGENT_RESTAURANT_SLUG. Relay: ${data.venue.waiterRelayEnabled ? "on" : "off"}.`
+      `Server venue: ${data.venue.name} (slug in API: "${data.venue.slug}") — fix PRINT_AGENT_RESTAURANT_SLUG if wrong. Waiter relay: ${data.venue.waiterRelayEnabled ? "on" : "off"}. ${online} (printing is not gated on payment).`
     );
+    if (data.venue.waiterRelayEnabled === true) {
+      console.error(
+        "Waiter relay is on: orders print only after staff accepts them on the dashboard."
+      );
+    }
   }
   return Array.isArray(data.orders) ? data.orders : [];
 }
@@ -1028,7 +1040,7 @@ async function tick() {
   if (ticking) return;
   ticking = true;
   try {
-    const stationList = USE_ALL_STATIONS ? STATIONS_ALL : [STATION];
+    const stationList = ACTIVE_STATIONS;
     let pendingTotal = 0;
     for (const stationKey of stationList) {
       const orders = await fetchPending(stationKey);
@@ -1055,10 +1067,11 @@ async function tick() {
     if (pendingTotal === 0 && !loggedNoOrdersHint) {
       loggedNoOrdersHint = true;
       console.error(
-        "Poll OK — no tickets yet. Check: (1) PRINT_AGENT_BASE_URL is the same site where the order was placed; " +
-          "(2) card orders stay \"pending\" until Stripe marks them paid; " +
-          "(3) server has PRINT_AGENT_API_SECRET set and matches this PC; " +
-          "(4) slug matches Dashboard. With PRINT_AGENT_STATION=all, bar and kitchen tickets are both fetched."
+        "Poll OK — no tickets yet. Check: (1) same site as orders (e.g. scannorder.ink); " +
+          "(2) waiter relay off, or staff accepted the order (relay on); " +
+          "(3) server PRINT_AGENT_API_SECRET matches this PC; " +
+          "(4) slug matches dashboard (see venue line above); " +
+          "(5) menu items are assigned to this station (unassigned items are excluded)."
       );
     }
   } finally {
@@ -1069,8 +1082,8 @@ async function tick() {
 if (SAMPLE_MODE) {
   const mockOrder = {
     id: "clsample0123456789abcdefghij",
-    station: STATION,
-    stationLabel: STATION_LABELS[STATION],
+    station: STATION === "all" ? "kitchen" : STATION,
+    stationLabel: STATION === "all" ? "Kitchen" : STATION,
     restaurantName: "Moustakallis Tavern",
     tableName: "Table 5",
     status: "in_kitchen",
@@ -1121,14 +1134,41 @@ if (SAMPLE_MODE) {
   process.exit(0);
 }
 
+// Discover stations from server before starting poll loop
+if (!SAMPLE_MODE) {
+  const discovered = await fetchStations();
+  if (!discovered || discovered.length === 0) {
+    console.error(
+      "Could not fetch station list from server — check PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, and that stations are configured in the dashboard."
+    );
+    process.exit(1);
+  }
+  if (USE_ALL_STATIONS) {
+    ACTIVE_STATIONS = discovered.map((s) => s.slug);
+    console.error(`Stations discovered: ${ACTIVE_STATIONS.join(", ")}`);
+  } else {
+    const match = discovered.find((s) => s.slug === STATION);
+    if (!match) {
+      console.error(
+        `Station "${STATION}" not found for this restaurant. Available: ${discovered.map((s) => s.slug).join(", ")}`
+      );
+      process.exit(1);
+    }
+    ACTIVE_STATIONS = [STATION];
+    console.error(`Station: ${match.name} (slug: ${STATION})`);
+  }
+} else {
+  ACTIVE_STATIONS = [STATION === "all" ? "kitchen" : STATION];
+}
+
 console.error(
-  `Print agent polling ${BASE} for ${USE_ALL_STATIONS ? "BAR + COLD KITCHEN + KITCHEN" : STATION_LABELS[STATION]} every ${POLL_MS}ms`
+  `Print agent polling ${BASE} for [${ACTIVE_STATIONS.join(", ")}] every ${POLL_MS}ms`
 );
 console.error(`PDF output folder: ${PDF_DIR}`);
 console.error(
-  USE_ALL_STATIONS
+  ACTIVE_STATIONS.length > 1
     ? `Ticket counters: ${PDF_DIR}/*-ticket-counter.txt (one file per station)`
-    : `Ticket counter file: ${counterFileForStation(STATION)}`
+    : `Ticket counter file: ${counterFileForStation(ACTIVE_STATIONS[0])}`
 );
 if (RAW_HOST) {
   console.error(`Network raw print: ${RAW_HOST}:${RAW_PORT}`);

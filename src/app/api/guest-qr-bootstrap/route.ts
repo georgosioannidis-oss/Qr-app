@@ -6,9 +6,10 @@ import {
   isValidQrProof,
 } from "@/lib/guest-qr-access";
 import { publicAppOriginFromRequest } from "@/lib/staff-invite-url";
+import { prisma } from "@/lib/prisma";
 
 /**
- * Sets the httpOnly guest menu session cookie (30m) after a valid table QR proof.
+ * Sets the httpOnly guest menu session cookie (20m) after a valid table QR proof.
  * Must run in a Route Handler — Server Components cannot set cookies in Next.js 15+.
  */
 export async function GET(req: NextRequest) {
@@ -21,12 +22,18 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  const table = await prisma.table.findUnique({
+    where: { token },
+    select: { orderingWindowNonce: true },
+  });
+  const nonce = table?.orderingWindowNonce ?? 0;
+
   /** Avoid `req.url` when reverse-proxy → Node uses 127.0.0.1 (customers would get sent to localhost). */
   const origin = publicAppOriginFromRequest(req);
   const dest = new URL(`/m/${encodeURIComponent(token)}`, `${origin}/`);
   dest.search = "";
   const res = NextResponse.redirect(dest);
-  res.cookies.set(GUEST_QR_ACCESS_COOKIE, createAccessToken(token), {
+  res.cookies.set(GUEST_QR_ACCESS_COOKIE, createAccessToken(token, nonce), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

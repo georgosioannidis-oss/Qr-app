@@ -1,6 +1,6 @@
-/** All customer-visible strings on `/m/[token]` when bilingual mode is on. */
+/** All customer-visible strings on `/m/[token]` when language switcher is active. */
 
-export type GuestMenuLang = "el" | "en" | "ru" | "fr" | "pl";
+export type GuestMenuLang = "el" | "en" | "sr" | "ru" | "fr" | "pl" | "de" | "es" | "zh" | "tr";
 
 export type GuestMenuUiStrings = {
   paymentSuccessfulCombined: string;
@@ -42,7 +42,6 @@ export type GuestMenuUiStrings = {
   payCashHint: string;
   choosePayment: string;
   paymentModalSubtitle: string;
-  /** Pay-at-table modal: place order without card/cash hint (order still sends immediately). */
   placeOrderWithoutPayPreference: string;
   viewCart: string;
   placeOrder: string;
@@ -56,13 +55,11 @@ export type GuestMenuUiStrings = {
   cartEmptyHint: string;
   cartStripHint: string;
   allergenTrustLine: string;
-  searchMenu: string;
-  /** Opens allergen reference infographic. */
   infoButton: string;
   allergenInfoTitle: string;
   allergenInfoImageAlt: string;
-  /** Compact header control — opens search sheet. */
   searchButton: string;
+  searchMenu: string;
   searchClear: string;
   searchPlaceholder: string;
   searchNoResults: string;
@@ -78,9 +75,20 @@ export type GuestMenuUiStrings = {
   langRussian: string;
   langFrench: string;
   langPolish: string;
+  langGerman: string;
+  langSerbian: string;
+  langSpanish: string;
+  langChinese: string;
+  langTurkish: string;
   orderHistoryItems: (count: number) => string;
   priceEachTimesQty: (unitFormatted: string, qty: number) => string;
   menuLanguageGroupAria: string;
+};
+
+const LANG_NAMES = {
+  langGreek: "Ελληνικά", langEnglish: "English", langRussian: "Русский",
+  langFrench: "Français", langPolish: "Polski", langGerman: "Deutsch",
+  langSerbian: "Srpski", langSpanish: "Español", langChinese: "中文", langTurkish: "Türkçe",
 };
 
 const EN: GuestMenuUiStrings = {
@@ -94,16 +102,14 @@ const EN: GuestMenuUiStrings = {
   couldNotLoadOrders: "Could not load orders. Try again.",
   cancel: "Cancel",
   emptyMenuTitle: "No dishes to show yet",
-  emptyMenuHint:
-    "This table link works, but the restaurant hasn’t published any menu items (or they’re all hidden). Ask the owner to add items in the dashboard, or run the demo seed: npm run db:seed",
-  emptyMenuWrongLink: "If you expected a menu, check the QR link or URL (e.g. /m/table-1 for the demo).",
+  emptyMenuHint: "This table link works, but the restaurant hasn't published any menu items (or they're all hidden).",
+  emptyMenuWrongLink: "If you expected a menu, check the QR link or URL.",
   orderingPausedTitle: "Not taking orders right now",
-  orderingPausedHint:
-    "The kitchen is at capacity. Please speak to a member of staff if you need anything. Pull down on this page to refresh.",
+  orderingPausedHint: "The kitchen is at capacity. Please speak to a member of staff. Pull down to refresh.",
   callWaiterAria: "Call waiter to your table",
   callWaiterCaption: "Call a waiter",
-  callWaiterSent: "We’ve let the staff know someone will come by.",
-  callWaiterFailed: "Couldn’t reach the restaurant. Try again in a moment.",
+  callWaiterSent: "We've let the staff know someone will come by.",
+  callWaiterFailed: "Couldn't reach the restaurant. Try again in a moment.",
   payNow: "Pay now",
   viewPhoto: "View photo",
   order: "Order",
@@ -151,24 +157,13 @@ const EN: GuestMenuUiStrings = {
   itemsInCart: (count) => (count === 1 ? `${count} item in cart` : `${count} items in cart`),
   orderStatus: (status, waiterRelayPending) => {
     if (waiterRelayPending && status === "paid") return "Waiting for staff";
-    const map: Record<string, string> = {
-      pending: "Awaiting payment",
-      paid: "Order accepted",
-      preparing: "Preparing",
-      ready: "Ready for pickup",
-      delivered: "Delivered",
-      declined: "Order declined",
-    };
+    const map: Record<string, string> = { pending: "Awaiting payment", paid: "Order accepted", preparing: "Preparing", ready: "Ready for pickup", delivered: "Delivered", declined: "Order declined" };
     return map[status] ?? status;
   },
-  removeFromCartTitle: (name) => `Remove “${name}” from your order?`,
+  removeFromCartTitle: (name) => `Remove "${name}" from your order?`,
   removeFromCartBody: "You can add it again from the menu.",
   orderFailedGeneric: "Something went wrong",
-  langGreek: "Ελληνικά",
-  langEnglish: "English",
-  langRussian: "Русский",
-  langFrench: "Français",
-  langPolish: "Polski",
+  ...LANG_NAMES,
   orderHistoryItems: (count) => (count === 1 ? "1 item" : `${count} items`),
   priceEachTimesQty: (unit, qty) => `${unit} each × ${qty}`,
   menuLanguageGroupAria: "Menu language",
@@ -185,12 +180,10 @@ const EL: GuestMenuUiStrings = {
   couldNotLoadOrders: "Δεν ήταν δυνατή η φόρτωση. Δοκιμάστε ξανά.",
   cancel: "Άκυρο",
   emptyMenuTitle: "Δεν υπάρχουν πιάτα ακόμη",
-  emptyMenuHint:
-    "Ο σύνδεσμος λειτουργεί, αλλά δεν έχει δημοσιευτεί μενού (ή όλα είναι κρυφά). Ζητήστε από τον ιδιοκτήτη να προσθέσει πιάτα, ή τρέξτε το demo: npm run db:seed",
-  emptyMenuWrongLink: "Αν περιμένατε μενού, ελέγξτε το QR ή τη διεύθυνση (π.χ. /m/table-1 για το demo).",
+  emptyMenuHint: "Ο σύνδεσμος λειτουργεί, αλλά δεν έχει δημοσιευτεί μενού (ή όλα είναι κρυφά).",
+  emptyMenuWrongLink: "Αν περιμένατε μενού, ελέγξτε το QR ή τη διεύθυνση.",
   orderingPausedTitle: "Δεν δεχόμαστε τώρα παραγγελίες",
-  orderingPausedHint:
-    "Η κουζίνα είναι πλήρης. Μιλήστε με το προσωπικό. Σύρετε προς τα κάτω για ανανέωση.",
+  orderingPausedHint: "Η κουζίνα είναι πλήρης. Μιλήστε με το προσωπικό. Σύρετε προς τα κάτω για ανανέωση.",
   callWaiterAria: "Κλήση σερβιτόρου στο τραπέζι σας",
   callWaiterCaption: "Καλέστε σερβιτόρο",
   callWaiterSent: "Ενημερώθηκε το προσωπικό.",
@@ -215,8 +208,7 @@ const EL: GuestMenuUiStrings = {
   payCash: "Μετρητά",
   payCashHint: "Πληρωμή στο προσωπικό",
   choosePayment: "Επιλέξτε τρόπο πληρωμής.",
-  paymentModalSubtitle:
-    "Προαιρετικό — ενημερώνει το προσωπικό αν σκοπεύετε κάρτα ή μετρητά στο τραπέζι. Η παραγγελία στέλνεται ούτως ή άλλως.",
+  paymentModalSubtitle: "Προαιρετικό — ενημερώνει το προσωπικό αν σκοπεύετε κάρτα ή μετρητά στο τραπέζι. Η παραγγελία στέλνεται ούτως ή άλλως.",
   placeOrderWithoutPayPreference: "Αποστολή χωρίς επιλογή",
   viewCart: "Καλάθι",
   placeOrder: "Αποστολή παραγγελίας",
@@ -240,28 +232,16 @@ const EL: GuestMenuUiStrings = {
   searchNoResults: "Δεν βρέθηκαν πιάτα.",
   menuRefreshing: "Ενημέρωση μενού…",
   reorderHint: "Για να επαναλάβετε μια παλιά παραγγελία, προσθέστε ξανά τα πιάτα από το μενού.",
-  itemsInCart: (count) =>
-    count === 1 ? `${count} προϊόν στο καλάθι` : `${count} προϊόντα στο καλάθι`,
+  itemsInCart: (count) => count === 1 ? `${count} προϊόν στο καλάθι` : `${count} προϊόντα στο καλάθι`,
   orderStatus: (status, waiterRelayPending) => {
     if (waiterRelayPending && status === "paid") return "Αναμονή για το προσωπικό";
-    const map: Record<string, string> = {
-      pending: "Αναμονή πληρωμής",
-      paid: "Η παραγγελία εγκρίθηκε",
-      preparing: "Προετοιμασία",
-      ready: "Έτοιμο για παραλαβή",
-      delivered: "Παραδόθηκε",
-      declined: "Η παραγγελία απορρίφθηκε",
-    };
+    const map: Record<string, string> = { pending: "Αναμονή πληρωμής", paid: "Η παραγγελία εγκρίθηκε", preparing: "Προετοιμασία", ready: "Έτοιμο για παραλαβή", delivered: "Παραδόθηκε", declined: "Η παραγγελία απορρίφθηκε" };
     return map[status] ?? status;
   },
   removeFromCartTitle: (name) => `Αφαίρεση «${name}» από την παραγγελία;`,
   removeFromCartBody: "Μπορείτε να το προσθέσετε ξανά από το μενού.",
   orderFailedGeneric: "Κάτι πήγε στραβά",
-  langGreek: "Ελληνικά",
-  langEnglish: "English",
-  langRussian: "Русский",
-  langFrench: "Français",
-  langPolish: "Polski",
+  ...LANG_NAMES,
   orderHistoryItems: (count) => (count === 1 ? "1 προϊόν" : `${count} προϊόντα`),
   priceEachTimesQty: (unit, qty) => `${unit} το καθένα × ${qty}`,
   menuLanguageGroupAria: "Γλώσσα μενού",
@@ -278,12 +258,10 @@ const RU: GuestMenuUiStrings = {
   couldNotLoadOrders: "Не удалось загрузить заказы. Попробуйте снова.",
   cancel: "Отмена",
   emptyMenuTitle: "Пока нет блюд",
-  emptyMenuHint:
-    "Ссылка на стол работает, но ресторан не опубликовал позиции меню (или все скрыты). Попросите владельца добавить блюда в панели или выполните демо: npm run db:seed",
-  emptyMenuWrongLink: "Если вы ожидали меню, проверьте QR или адрес (например /m/table-1 в демо).",
+  emptyMenuHint: "Ссылка на стол работает, но ресторан не опубликовал позиции меню (или все скрыты).",
+  emptyMenuWrongLink: "Если вы ожидали меню, проверьте QR или адрес.",
   orderingPausedTitle: "Сейчас заказы не принимаем",
-  orderingPausedHint:
-    "Кухня перегружена. Обратитесь к персоналу. Потяните страницу вниз, чтобы обновить.",
+  orderingPausedHint: "Кухня перегружена. Обратитесь к персоналу. Потяните страницу вниз, чтобы обновить.",
   callWaiterAria: "Вызвать официанта к столу",
   callWaiterCaption: "Вызвать официанта",
   callWaiterSent: "Персонал уведомлён.",
@@ -308,8 +286,7 @@ const RU: GuestMenuUiStrings = {
   payCash: "Наличные",
   payCashHint: "Наличными персоналу",
   choosePayment: "Выберите способ оплаты.",
-  paymentModalSubtitle:
-    "По желанию — подскажет персоналу, картой или наличными планируете оплатить за столом. Заказ отправится в любом случае.",
+  paymentModalSubtitle: "По желанию — подскажет персоналу, картой или наличными планируете оплатить за столом. Заказ отправится в любом случае.",
   placeOrderWithoutPayPreference: "Отправить без выбора",
   viewCart: "Корзина",
   placeOrder: "Заказать",
@@ -325,8 +302,7 @@ const RU: GuestMenuUiStrings = {
   allergenTrustLine: "При аллергиях или особом питании уточните у персонала до заказа.",
   infoButton: "Инфо",
   allergenInfoTitle: "Значки пищевых аллергенов",
-  allergenInfoImageAlt:
-    "Таблица распространённых значков аллергенов (глютен, кунжут, орехи и др.).",
+  allergenInfoImageAlt: "Таблица распространённых значков аллергенов (глютен, кунжут, орехи и др.).",
   searchMenu: "Поиск в меню",
   searchButton: "Поиск",
   searchClear: "Сброс",
@@ -334,28 +310,16 @@ const RU: GuestMenuUiStrings = {
   searchNoResults: "Ничего не найдено.",
   menuRefreshing: "Обновление меню…",
   reorderHint: "Чтобы повторить прошлый заказ, снова добавьте блюда из меню.",
-  itemsInCart: (count) =>
-    count === 1 ? `${count} позиция в корзине` : `${count} позиций в корзине`,
+  itemsInCart: (count) => count === 1 ? `${count} позиция в корзине` : `${count} позиций в корзине`,
   orderStatus: (status, waiterRelayPending) => {
     if (waiterRelayPending && status === "paid") return "Ожидание персонала";
-    const map: Record<string, string> = {
-      pending: "Ожидание оплаты",
-      paid: "Заказ принят",
-      preparing: "Готовится",
-      ready: "Готово к подаче",
-      delivered: "Подано",
-      declined: "Заказ отклонён",
-    };
+    const map: Record<string, string> = { pending: "Ожидание оплаты", paid: "Заказ принят", preparing: "Готовится", ready: "Готово к подаче", delivered: "Подано", declined: "Заказ отклонён" };
     return map[status] ?? status;
   },
   removeFromCartTitle: (name) => `Убрать «${name}» из заказа?`,
   removeFromCartBody: "Вы сможете снова добавить из меню.",
   orderFailedGeneric: "Что-то пошло не так",
-  langGreek: "Ελληνικά",
-  langEnglish: "English",
-  langRussian: "Русский",
-  langFrench: "Français",
-  langPolish: "Polski",
+  ...LANG_NAMES,
   orderHistoryItems: (count) => (count === 1 ? "1 позиция" : `${count} позиций`),
   priceEachTimesQty: (unit, qty) => `${unit} за шт. × ${qty}`,
   menuLanguageGroupAria: "Язык меню",
@@ -368,17 +332,14 @@ const FR: GuestMenuUiStrings = {
   backToMenu: "Retour au menu",
   yourOrders: "Mes commandes",
   yourOrdersHint: "Commandes passées sur cet appareil. Touchez pour le statut.",
-  noOrdersYet: "Vous n’avez pas encore commandé.",
+  noOrdersYet: "Vous n'avez pas encore commandé.",
   couldNotLoadOrders: "Impossible de charger les commandes. Réessayez.",
   cancel: "Annuler",
   emptyMenuTitle: "Aucun plat pour le moment",
-  emptyMenuHint:
-    "Ce lien de table fonctionne, mais le restaurant n’a publié aucun plat (ou ils sont tous masqués). Demandez au gérant d’ajouter des plats dans le tableau de bord, ou lancez la démo : npm run db:seed",
-  emptyMenuWrongLink:
-    "Si vous attendiez un menu, vérifiez le QR ou l’URL (ex. /m/table-1 pour la démo).",
+  emptyMenuHint: "Ce lien de table fonctionne, mais le restaurant n'a publié aucun plat (ou ils sont tous masqués).",
+  emptyMenuWrongLink: "Si vous attendiez un menu, vérifiez le QR ou l'URL.",
   orderingPausedTitle: "Commandes suspendues",
-  orderingPausedHint:
-    "La cuisine est saturée. Parlez au personnel. Tirez la page vers le bas pour actualiser.",
+  orderingPausedHint: "La cuisine est saturée. Parlez au personnel. Tirez la page vers le bas pour actualiser.",
   callWaiterAria: "Appeler le serveur à votre table",
   callWaiterCaption: "Appeler un serveur",
   callWaiterSent: "Le personnel a été prévenu.",
@@ -403,8 +364,7 @@ const FR: GuestMenuUiStrings = {
   payCash: "Espèces",
   payCashHint: "Espèces au personnel",
   choosePayment: "Choisissez un mode de paiement.",
-  paymentModalSubtitle:
-    "Facultatif — indique au personnel si vous prévoyez carte ou espèces à table. La commande part dans tous les cas.",
+  paymentModalSubtitle: "Facultatif — indique au personnel si vous prévoyez carte ou espèces à table. La commande part dans tous les cas.",
   placeOrderWithoutPayPreference: "Envoyer sans choisir",
   viewCart: "Panier",
   placeOrder: "Commander",
@@ -417,12 +377,10 @@ const FR: GuestMenuUiStrings = {
   optionalExtrasHint: "Suppléments disponibles — touchez « Personnaliser ».",
   cartEmptyHint: "Parcourez les catégories ci-dessus pour ajouter des plats.",
   cartStripHint: "Touchez pour voir ou modifier votre commande",
-  allergenTrustLine:
-    "En cas d’allergies ou de régime particulier, demandez au personnel avant de commander.",
+  allergenTrustLine: "En cas d'allergies ou de régime particulier, demandez au personnel avant de commander.",
   infoButton: "Infos",
   allergenInfoTitle: "Icônes des allergènes",
-  allergenInfoImageAlt:
-    "Schéma des icônes d’allergènes courants (gluten, sésame, fruits à coque, etc.).",
+  allergenInfoImageAlt: "Schéma des icônes d'allergènes courants (gluten, sésame, fruits à coque, etc.).",
   searchMenu: "Rechercher dans le menu",
   searchButton: "Recherche",
   searchClear: "Effacer",
@@ -430,30 +388,18 @@ const FR: GuestMenuUiStrings = {
   searchNoResults: "Aucun plat ne correspond.",
   menuRefreshing: "Mise à jour du menu…",
   reorderHint: "Pour recommander un plat, ajoutez-le à nouveau depuis le menu.",
-  itemsInCart: (count) =>
-    count === 1 ? `${count} article dans le panier` : `${count} articles dans le panier`,
+  itemsInCart: (count) => count === 1 ? `${count} article dans le panier` : `${count} articles dans le panier`,
   orderStatus: (status, waiterRelayPending) => {
     if (waiterRelayPending && status === "paid") return "En attente du personnel";
-    const map: Record<string, string> = {
-      pending: "En attente de paiement",
-      paid: "Commande acceptée",
-      preparing: "En préparation",
-      ready: "Prêt à servir",
-      delivered: "Servi",
-      declined: "Commande refusée",
-    };
+    const map: Record<string, string> = { pending: "En attente de paiement", paid: "Commande acceptée", preparing: "En préparation", ready: "Prêt à servir", delivered: "Servi", declined: "Commande refusée" };
     return map[status] ?? status;
   },
   removeFromCartTitle: (name) => `Retirer « ${name} » de la commande ?`,
-  removeFromCartBody: "Vous pourrez l’ajouter à nouveau depuis le menu.",
-  orderFailedGeneric: "Une erreur s’est produite",
-  langGreek: "Ελληνικά",
-  langEnglish: "English",
-  langRussian: "Русский",
-  langFrench: "Français",
-  langPolish: "Polski",
+  removeFromCartBody: "Vous pourrez l'ajouter à nouveau depuis le menu.",
+  orderFailedGeneric: "Une erreur s'est produite",
+  ...LANG_NAMES,
   orderHistoryItems: (count) => (count === 1 ? "1 article" : `${count} articles`),
-  priceEachTimesQty: (unit, qty) => `${unit} l’unité × ${qty}`,
+  priceEachTimesQty: (unit, qty) => `${unit} l'unité × ${qty}`,
   menuLanguageGroupAria: "Langue du menu",
 };
 
@@ -468,13 +414,10 @@ const PL: GuestMenuUiStrings = {
   couldNotLoadOrders: "Nie udało się wczytać zamówień. Spróbuj ponownie.",
   cancel: "Anuluj",
   emptyMenuTitle: "Brak dań do wyświetlenia",
-  emptyMenuHint:
-    "Link do stolika działa, ale restauracja nie opublikowała pozycji menu (lub są ukryte). Poproś właściciela o dodanie dań w panelu lub uruchom demo: npm run db:seed",
-  emptyMenuWrongLink:
-    "Jeśli spodziewałeś się menu, sprawdź kod QR lub adres (np. /m/table-1 w demo).",
+  emptyMenuHint: "Link do stolika działa, ale restauracja nie opublikowała pozycji menu (lub są ukryte).",
+  emptyMenuWrongLink: "Jeśli spodziewałeś się menu, sprawdź kod QR lub adres.",
   orderingPausedTitle: "Chwilowo nie przyjmujemy zamówień",
-  orderingPausedHint:
-    "Kuchnia jest przeciążona. Porozmawiaj z obsługą. Pociągnij stronę w dół, aby odświeżyć.",
+  orderingPausedHint: "Kuchnia jest przeciążona. Porozmawiaj z obsługą. Pociągnij stronę w dół, aby odświeżyć.",
   callWaiterAria: "Wezwij kelnera do stolika",
   callWaiterCaption: "Wezwij kelnera",
   callWaiterSent: "Obsługa została powiadomiona.",
@@ -499,8 +442,7 @@ const PL: GuestMenuUiStrings = {
   payCash: "Gotówka",
   payCashHint: "Gotówka u obsługi",
   choosePayment: "Wybierz sposób płatności.",
-  paymentModalSubtitle:
-    "Opcjonalnie — informuje obsługę, czy planujesz kartą czy gotówką przy stoliku. Zamówienie i tak zostanie wysłane.",
+  paymentModalSubtitle: "Opcjonalnie — informuje obsługę, czy planujesz kartą czy gotówką przy stoliku. Zamówienie i tak zostanie wysłane.",
   placeOrderWithoutPayPreference: "Wyślij bez wyboru",
   viewCart: "Koszyk",
   placeOrder: "Zamów",
@@ -513,12 +455,10 @@ const PL: GuestMenuUiStrings = {
   optionalExtrasHint: "Dostępne dodatki — dotknij «Dostosuj».",
   cartEmptyHint: "Przeglądaj kategorie powyżej, aby dodać dania.",
   cartStripHint: "Dotknij, aby zobaczyć lub zmienić zamówienie",
-  allergenTrustLine:
-    "W razie alergii lub specjalnej diety zapytaj obsługę przed zamówieniem.",
+  allergenTrustLine: "W razie alergii lub specjalnej diety zapytaj obsługę przed zamówieniem.",
   infoButton: "Info",
   allergenInfoTitle: "Ikony alergenów",
-  allergenInfoImageAlt:
-    "Tabela popularnych ikon alergenów (gluten, sezam, orzechy itd.).",
+  allergenInfoImageAlt: "Tabela popularnych ikon alergenów (gluten, sezam, orzechy itd.).",
   searchMenu: "Szukaj w menu",
   searchButton: "Szukaj",
   searchClear: "Wyczyść",
@@ -526,37 +466,420 @@ const PL: GuestMenuUiStrings = {
   searchNoResults: "Brak pasujących dań.",
   menuRefreshing: "Aktualizacja menu…",
   reorderHint: "Aby powtórzyć zamówienie, dodaj dania ponownie z menu.",
-  itemsInCart: (count) =>
-    count === 1 ? `${count} pozycja w koszyku` : `${count} pozycji w koszyku`,
+  itemsInCart: (count) => count === 1 ? `${count} pozycja w koszyku` : `${count} pozycji w koszyku`,
   orderStatus: (status, waiterRelayPending) => {
     if (waiterRelayPending && status === "paid") return "Oczekiwanie na obsługę";
-    const map: Record<string, string> = {
-      pending: "Oczekiwanie na płatność",
-      paid: "Zamówienie przyjęte",
-      preparing: "Przygotowanie",
-      ready: "Gotowe do wydania",
-      delivered: "Wydane",
-      declined: "Zamówienie odrzucone",
-    };
+    const map: Record<string, string> = { pending: "Oczekiwanie na płatność", paid: "Zamówienie przyjęte", preparing: "Przygotowanie", ready: "Gotowe do wydania", delivered: "Wydane", declined: "Zamówienie odrzucone" };
     return map[status] ?? status;
   },
   removeFromCartTitle: (name) => `Usunąć «${name}» z zamówienia?`,
   removeFromCartBody: "Możesz dodać ponownie z menu.",
   orderFailedGeneric: "Coś poszło nie tak",
-  langGreek: "Ελληνικά",
-  langEnglish: "English",
-  langRussian: "Русский",
-  langFrench: "Français",
-  langPolish: "Polski",
+  ...LANG_NAMES,
   orderHistoryItems: (count) => (count === 1 ? "1 pozycja" : `${count} pozycji`),
   priceEachTimesQty: (unit, qty) => `${unit} za szt. × ${qty}`,
   menuLanguageGroupAria: "Język menu",
 };
 
-export function getGuestMenuUiStrings(lang: GuestMenuLang): GuestMenuUiStrings {
+const DE: GuestMenuUiStrings = {
+  paymentSuccessfulCombined: "Zahlung erfolgreich. Ihre Bestellung wurde gesendet.",
+  thankYouAfterOrder: "Bestellung gesendet. Danke!",
+  stripePayPrompt: "Bestellung aufgegeben — zahlen Sie unten, um zu bestätigen.",
+  backToMenu: "Zurück zur Speisekarte",
+  yourOrders: "Meine Bestellungen",
+  yourOrdersHint: "Bestellungen von diesem Gerät. Tippen für Status.",
+  noOrdersYet: "Sie haben noch keine Bestellung aufgegeben.",
+  couldNotLoadOrders: "Bestellungen konnten nicht geladen werden. Erneut versuchen.",
+  cancel: "Abbrechen",
+  emptyMenuTitle: "Noch keine Gerichte",
+  emptyMenuHint: "Dieser Tischlink funktioniert, aber das Restaurant hat noch keine Menüpunkte veröffentlicht.",
+  emptyMenuWrongLink: "Falls Sie ein Menü erwartet haben, prüfen Sie den QR-Code oder die URL.",
+  orderingPausedTitle: "Derzeit keine Bestellungen",
+  orderingPausedHint: "Die Küche ist ausgelastet. Sprechen Sie das Personal an. Seite nach unten ziehen.",
+  callWaiterAria: "Kellner an Ihren Tisch rufen",
+  callWaiterCaption: "Kellner rufen",
+  callWaiterSent: "Das Personal wurde benachrichtigt.",
+  callWaiterFailed: "Verbindung fehlgeschlagen. Gleich erneut versuchen.",
+  payNow: "Jetzt zahlen",
+  viewPhoto: "Foto ansehen",
+  order: "Bestellen",
+  customise: "Anpassen",
+  addToOrder: "Hinzufügen",
+  close: "Schließen",
+  yourOrder: "Ihre Bestellung",
+  swipeToRemove: "Links wischen zum Entfernen",
+  decreaseQty: "Menge verringern",
+  increaseQty: "Menge erhöhen",
+  remove: "Entfernen",
+  total: "Gesamt",
+  placingOrder: "Bestellung wird aufgegeben…",
+  placeOrderPay: "Bestellen und zahlen",
+  howToPay: "Wie möchten Sie zahlen?",
+  payCardAtTable: "Karte",
+  payCardAtTableHint: "Zahlung am Tisch (Terminal)",
+  payCash: "Bar",
+  payCashHint: "Barzahlung beim Personal",
+  choosePayment: "Zahlungsart wählen.",
+  paymentModalSubtitle: "Optional — teilt dem Personal mit, ob Sie mit Karte oder bar zahlen möchten. Bestellung wird in jedem Fall gesendet.",
+  placeOrderWithoutPayPreference: "Ohne Auswahl senden",
+  viewCart: "Warenkorb",
+  placeOrder: "Bestellen",
+  placing: "Senden…",
+  chooseOptions: "Optionen wählen, dann zur Bestellung hinzufügen.",
+  noteKitchen: "Hinweis für die Küche",
+  noteOptional: "(optional)",
+  notePlaceholder: "z.B. ohne Zwiebeln, Nussallergie…",
+  addToOrderBtn: "Zur Bestellung hinzufügen",
+  optionalExtrasHint: "Optionale Extras verfügbar — tippen Sie auf Anpassen.",
+  cartEmptyHint: "Wählen Sie oben eine Kategorie, um Gerichte hinzuzufügen.",
+  cartStripHint: "Tippen, um Bestellung anzusehen oder zu ändern",
+  allergenTrustLine: "Bei Allergien oder Unverträglichkeiten vor der Bestellung das Personal fragen.",
+  infoButton: "Info",
+  allergenInfoTitle: "Lebensmittelallergen-Symbole",
+  allergenInfoImageAlt: "Übersicht der gängigen Allergen-Symbole (Gluten, Sesam, Nüsse u.a.).",
+  searchMenu: "Speisekarte durchsuchen",
+  searchButton: "Suche",
+  searchClear: "Löschen",
+  searchPlaceholder: "Gerichte suchen…",
+  searchNoResults: "Keine Gerichte gefunden.",
+  menuRefreshing: "Menü wird aktualisiert…",
+  reorderHint: "Um eine frühere Bestellung zu wiederholen, Gerichte erneut aus dem Menü hinzufügen.",
+  itemsInCart: (count) => count === 1 ? `${count} Artikel im Warenkorb` : `${count} Artikel im Warenkorb`,
+  orderStatus: (status, waiterRelayPending) => {
+    if (waiterRelayPending && status === "paid") return "Warten auf Personal";
+    const map: Record<string, string> = { pending: "Warte auf Zahlung", paid: "Bestellung angenommen", preparing: "Wird zubereitet", ready: "Abholbereit", delivered: "Geliefert", declined: "Bestellung abgelehnt" };
+    return map[status] ?? status;
+  },
+  removeFromCartTitle: (name) => `„${name}" aus der Bestellung entfernen?`,
+  removeFromCartBody: "Sie können es erneut aus dem Menü hinzufügen.",
+  orderFailedGeneric: "Etwas ist schiefgelaufen",
+  ...LANG_NAMES,
+  orderHistoryItems: (count) => (count === 1 ? "1 Artikel" : `${count} Artikel`),
+  priceEachTimesQty: (unit, qty) => `${unit} pro Stück × ${qty}`,
+  menuLanguageGroupAria: "Menüsprache",
+};
+
+const SR: GuestMenuUiStrings = {
+  paymentSuccessfulCombined: "Plaćanje uspešno. Vaša porudžbina je poslata.",
+  thankYouAfterOrder: "Porudžbina poslata. Hvala!",
+  stripePayPrompt: "Porudžbina je primljena — platite ispod da biste potvrdili.",
+  backToMenu: "Nazad na meni",
+  yourOrders: "Moje porudžbine",
+  yourOrdersHint: "Porudžbine sa ovog uređaja. Dodirnite za status.",
+  noOrdersYet: "Još niste naručili ništa.",
+  couldNotLoadOrders: "Porudžbine se ne mogu učitati. Pokušajte ponovo.",
+  cancel: "Otkaži",
+  emptyMenuTitle: "Nema jela za prikaz",
+  emptyMenuHint: "Ova veza za sto radi, ali restoran nije objavio stavke menija.",
+  emptyMenuWrongLink: "Ako ste očekivali meni, proverite QR kod ili URL.",
+  orderingPausedTitle: "Trenutno ne primamo porudžbine",
+  orderingPausedHint: "Kuhinja je zauzeta. Obratite se osoblju. Prevucite nadole za osvežavanje.",
+  callWaiterAria: "Pozovi konobara za vaš sto",
+  callWaiterCaption: "Pozovi konobara",
+  callWaiterSent: "Osoblje je obavešteno.",
+  callWaiterFailed: "Nije moguće kontaktirati restoran. Pokušajte za trenutak.",
+  payNow: "Plati odmah",
+  viewPhoto: "Pogledaj foto",
+  order: "Naruči",
+  customise: "Prilagodi",
+  addToOrder: "Dodaj",
+  close: "Zatvori",
+  yourOrder: "Vaša porudžbina",
+  swipeToRemove: "Prevucite levo za uklanjanje",
+  decreaseQty: "Smanji količinu",
+  increaseQty: "Povećaj količinu",
+  remove: "Ukloni",
+  total: "Ukupno",
+  placingOrder: "Slanje porudžbine…",
+  placeOrderPay: "Naruči i plati",
+  howToPay: "Kako ćete platiti?",
+  payCardAtTable: "Kartica",
+  payCardAtTableHint: "Plaćanje za stolom (terminal)",
+  payCash: "Gotovina",
+  payCashHint: "Gotovinom osoblju",
+  choosePayment: "Izaberite način plaćanja.",
+  paymentModalSubtitle: "Opcionalno — obaveštava osoblje da li planirate karticom ili gotovinom za stolom. Porudžbina se šalje u svakom slučaju.",
+  placeOrderWithoutPayPreference: "Pošalji bez izbora",
+  viewCart: "Korpa",
+  placeOrder: "Naruči",
+  placing: "Slanje…",
+  chooseOptions: "Izaberite opcije, zatim dodajte u porudžbinu.",
+  noteKitchen: "Napomena za kuhinju",
+  noteOptional: "(opciono)",
+  notePlaceholder: "npr. bez luka, alergija na orašaste plodove…",
+  addToOrderBtn: "Dodaj u porudžbinu",
+  optionalExtrasHint: "Dostupni opcionalni dodaci — dodirnite Prilagodi.",
+  cartEmptyHint: "Pregledajte kategorije iznad da dodate jela.",
+  cartStripHint: "Dodirnite za pregled ili izmenu porudžbine",
+  allergenTrustLine: "Za alergije ili posebnu ishranu, pitajte osoblje pre naručivanja.",
+  infoButton: "Info",
+  allergenInfoTitle: "Ikone alergena u hrani",
+  allergenInfoImageAlt: "Grafikon uobičajenih ikona alergena (gluten, susam, orašasti plodovi i dr.).",
+  searchMenu: "Pretraži meni",
+  searchButton: "Pretraga",
+  searchClear: "Obriši",
+  searchPlaceholder: "Traži jela…",
+  searchNoResults: "Nema odgovarajućih jela.",
+  menuRefreshing: "Ažuriranje menija…",
+  reorderHint: "Za ponavljanje prethodne porudžbine, ponovo dodajte jela iz menija.",
+  itemsInCart: (count) => count === 1 ? `${count} stavka u korpi` : `${count} stavki u korpi`,
+  orderStatus: (status, waiterRelayPending) => {
+    if (waiterRelayPending && status === "paid") return "Čeka osoblje";
+    const map: Record<string, string> = { pending: "Čeka plaćanje", paid: "Porudžbina prihvaćena", preparing: "Priprema se", ready: "Spremno za preuzimanje", delivered: "Dostavljeno", declined: "Porudžbina odbijena" };
+    return map[status] ?? status;
+  },
+  removeFromCartTitle: (name) => `Ukloniti „${name}" iz porudžbine?`,
+  removeFromCartBody: "Možete je ponovo dodati iz menija.",
+  orderFailedGeneric: "Nešto je pošlo naopako",
+  ...LANG_NAMES,
+  orderHistoryItems: (count) => (count === 1 ? "1 stavka" : `${count} stavki`),
+  priceEachTimesQty: (unit, qty) => `${unit} po kom × ${qty}`,
+  menuLanguageGroupAria: "Jezik menija",
+};
+
+const ES: GuestMenuUiStrings = {
+  paymentSuccessfulCombined: "Pago exitoso. Su pedido ha sido enviado.",
+  thankYouAfterOrder: "Pedido enviado. ¡Gracias!",
+  stripePayPrompt: "Pedido realizado — pague abajo para confirmar.",
+  backToMenu: "Volver al menú",
+  yourOrders: "Mis pedidos",
+  yourOrdersHint: "Pedidos desde este dispositivo. Toca para ver el estado.",
+  noOrdersYet: "Aún no has realizado ningún pedido.",
+  couldNotLoadOrders: "No se pudieron cargar los pedidos. Inténtalo de nuevo.",
+  cancel: "Cancelar",
+  emptyMenuTitle: "No hay platos disponibles",
+  emptyMenuHint: "Este enlace de mesa funciona, pero el restaurante aún no ha publicado elementos del menú.",
+  emptyMenuWrongLink: "Si esperabas un menú, comprueba el código QR o la URL.",
+  orderingPausedTitle: "No se aceptan pedidos ahora",
+  orderingPausedHint: "La cocina está saturada. Habla con el personal. Tira hacia abajo para actualizar.",
+  callWaiterAria: "Llamar al camarero a tu mesa",
+  callWaiterCaption: "Llamar al camarero",
+  callWaiterSent: "El personal ha sido notificado.",
+  callWaiterFailed: "No se pudo contactar con el restaurante. Inténtalo en un momento.",
+  payNow: "Pagar ahora",
+  viewPhoto: "Ver foto",
+  order: "Pedir",
+  customise: "Personalizar",
+  addToOrder: "Añadir",
+  close: "Cerrar",
+  yourOrder: "Tu pedido",
+  swipeToRemove: "Desliza a la izquierda para eliminar",
+  decreaseQty: "Disminuir cantidad",
+  increaseQty: "Aumentar cantidad",
+  remove: "Eliminar",
+  total: "Total",
+  placingOrder: "Realizando pedido…",
+  placeOrderPay: "Pedir y pagar",
+  howToPay: "¿Cómo vas a pagar?",
+  payCardAtTable: "Tarjeta",
+  payCardAtTableHint: "Pago en mesa (terminal)",
+  payCash: "Efectivo",
+  payCashHint: "Pago en efectivo al personal",
+  choosePayment: "Elige cómo quieres pagar.",
+  paymentModalSubtitle: "Opcional — informa al personal si planeas pagar con tarjeta o efectivo en mesa. El pedido se envía de todos modos.",
+  placeOrderWithoutPayPreference: "Enviar sin seleccionar",
+  viewCart: "Carrito",
+  placeOrder: "Realizar pedido",
+  placing: "Enviando…",
+  chooseOptions: "Elige las opciones y añade al pedido.",
+  noteKitchen: "Nota para la cocina",
+  noteOptional: "(opcional)",
+  notePlaceholder: "ej. sin cebolla, alergia a los frutos secos…",
+  addToOrderBtn: "Añadir al pedido",
+  optionalExtrasHint: "Extras opcionales disponibles — toca Personalizar.",
+  cartEmptyHint: "Explora las categorías de arriba para añadir platos.",
+  cartStripHint: "Toca para revisar o cambiar tu pedido",
+  allergenTrustLine: "Si tienes alergias o dieta especial, pregunta al personal antes de pedir.",
+  infoButton: "Info",
+  allergenInfoTitle: "Iconos de alérgenos alimentarios",
+  allergenInfoImageAlt: "Gráfico de iconos de alérgenos comunes (gluten, sésamo, frutos secos, etc.).",
+  searchMenu: "Buscar en el menú",
+  searchButton: "Buscar",
+  searchClear: "Limpiar",
+  searchPlaceholder: "Buscar platos…",
+  searchNoResults: "No hay platos que coincidan.",
+  menuRefreshing: "Actualizando menú…",
+  reorderHint: "Para repetir un pedido anterior, añade los platos de nuevo desde el menú.",
+  itemsInCart: (count) => count === 1 ? `${count} artículo en el carrito` : `${count} artículos en el carrito`,
+  orderStatus: (status, waiterRelayPending) => {
+    if (waiterRelayPending && status === "paid") return "Esperando al personal";
+    const map: Record<string, string> = { pending: "En espera de pago", paid: "Pedido aceptado", preparing: "Preparando", ready: "Listo para recoger", delivered: "Entregado", declined: "Pedido rechazado" };
+    return map[status] ?? status;
+  },
+  removeFromCartTitle: (name) => `¿Eliminar «${name}» del pedido?`,
+  removeFromCartBody: "Puedes añadirlo de nuevo desde el menú.",
+  orderFailedGeneric: "Algo salió mal",
+  ...LANG_NAMES,
+  orderHistoryItems: (count) => (count === 1 ? "1 artículo" : `${count} artículos`),
+  priceEachTimesQty: (unit, qty) => `${unit} c/u × ${qty}`,
+  menuLanguageGroupAria: "Idioma del menú",
+};
+
+const ZH: GuestMenuUiStrings = {
+  paymentSuccessfulCombined: "付款成功。您的订单已发送。",
+  thankYouAfterOrder: "订单已发送。谢谢！",
+  stripePayPrompt: "订单已下达——请在下方付款以确认。",
+  backToMenu: "返回菜单",
+  yourOrders: "我的订单",
+  yourOrdersHint: "来自此设备的订单。点击查看状态。",
+  noOrdersYet: "您还没有下过任何订单。",
+  couldNotLoadOrders: "无法加载订单。请重试。",
+  cancel: "取消",
+  emptyMenuTitle: "暂无菜品",
+  emptyMenuHint: "此餐桌链接有效，但餐厅尚未发布任何菜单项目。",
+  emptyMenuWrongLink: "如果您期望看到菜单，请检查二维码或网址。",
+  orderingPausedTitle: "暂不接受订单",
+  orderingPausedHint: "厨房已满。请联系工作人员。下拉刷新。",
+  callWaiterAria: "呼叫服务员到您的桌位",
+  callWaiterCaption: "呼叫服务员",
+  callWaiterSent: "已通知工作人员。",
+  callWaiterFailed: "无法联系餐厅。请稍后重试。",
+  payNow: "立即付款",
+  viewPhoto: "查看照片",
+  order: "点餐",
+  customise: "定制",
+  addToOrder: "添加",
+  close: "关闭",
+  yourOrder: "您的订单",
+  swipeToRemove: "向左滑动删除",
+  decreaseQty: "减少数量",
+  increaseQty: "增加数量",
+  remove: "删除",
+  total: "合计",
+  placingOrder: "正在下单…",
+  placeOrderPay: "下单并付款",
+  howToPay: "您将如何付款？",
+  payCardAtTable: "刷卡",
+  payCardAtTableHint: "在桌位付款（刷卡机）",
+  payCash: "现金",
+  payCashHint: "向工作人员付现金",
+  choosePayment: "选择付款方式。",
+  paymentModalSubtitle: "可选——告知工作人员您计划用卡还是现金付款。订单无论如何都会发送。",
+  placeOrderWithoutPayPreference: "不选择直接发送",
+  viewCart: "购物车",
+  placeOrder: "下单",
+  placing: "发送中…",
+  chooseOptions: "选择选项，然后添加到订单。",
+  noteKitchen: "厨房备注",
+  noteOptional: "（可选）",
+  notePlaceholder: "例如：不加洋葱，坚果过敏…",
+  addToOrderBtn: "添加到订单",
+  optionalExtrasHint: "有可选附加项——点击定制选择。",
+  cartEmptyHint: "浏览上方类别以添加菜品。",
+  cartStripHint: "点击查看或更改您的订单",
+  allergenTrustLine: "如有过敏或特殊饮食需求，请在点餐前询问工作人员。",
+  infoButton: "信息",
+  allergenInfoTitle: "食品过敏原图标",
+  allergenInfoImageAlt: "常见食品过敏原图标图表（麸质、芝麻、坚果等）。",
+  searchMenu: "搜索菜单",
+  searchButton: "搜索",
+  searchClear: "清除",
+  searchPlaceholder: "搜索菜品…",
+  searchNoResults: "没有符合的菜品。",
+  menuRefreshing: "正在更新菜单…",
+  reorderHint: "要重复之前的订单，请从菜单中再次添加菜品。",
+  itemsInCart: (count) => `购物车中 ${count} 件商品`,
+  orderStatus: (status, waiterRelayPending) => {
+    if (waiterRelayPending && status === "paid") return "等待工作人员";
+    const map: Record<string, string> = { pending: "等待付款", paid: "订单已接受", preparing: "准备中", ready: "可以取餐", delivered: "已送达", declined: "订单已拒绝" };
+    return map[status] ?? status;
+  },
+  removeFromCartTitle: (name) => `从订单中删除"${name}"？`,
+  removeFromCartBody: "您可以从菜单中重新添加。",
+  orderFailedGeneric: "出现了问题",
+  ...LANG_NAMES,
+  orderHistoryItems: (count) => count === 1 ? "1 件商品" : `${count} 件商品`,
+  priceEachTimesQty: (unit, qty) => `${unit} 每份 × ${qty}`,
+  menuLanguageGroupAria: "菜单语言",
+};
+
+const TR: GuestMenuUiStrings = {
+  paymentSuccessfulCombined: "Ödeme başarılı. Siparişiniz gönderildi.",
+  thankYouAfterOrder: "Sipariş gönderildi. Teşekkürler!",
+  stripePayPrompt: "Sipariş verildi — onaylamak için aşağıdan ödeme yapın.",
+  backToMenu: "Menüye dön",
+  yourOrders: "Siparişlerim",
+  yourOrdersHint: "Bu cihazdan verilen siparişler. Durum için dokunun.",
+  noOrdersYet: "Henüz sipariş vermediniz.",
+  couldNotLoadOrders: "Siparişler yüklenemedi. Tekrar deneyin.",
+  cancel: "İptal",
+  emptyMenuTitle: "Henüz yemek yok",
+  emptyMenuHint: "Bu masa bağlantısı çalışıyor, ancak restoran henüz menü öğesi yayınlamadı.",
+  emptyMenuWrongLink: "Menü bekliyorsanız, QR kodu veya URL'yi kontrol edin.",
+  orderingPausedTitle: "Şu an sipariş alınmıyor",
+  orderingPausedHint: "Mutfak dolu. Personelle konuşun. Sayfayı aşağı çekin.",
+  callWaiterAria: "Masanıza garson çağırın",
+  callWaiterCaption: "Garson çağır",
+  callWaiterSent: "Personel bilgilendirildi.",
+  callWaiterFailed: "Restorana ulaşılamadı. Bir dakika sonra tekrar deneyin.",
+  payNow: "Şimdi öde",
+  viewPhoto: "Fotoğrafı gör",
+  order: "Sipariş",
+  customise: "Özelleştir",
+  addToOrder: "Ekle",
+  close: "Kapat",
+  yourOrder: "Siparişiniz",
+  swipeToRemove: "Kaldırmak için sola kaydırın",
+  decreaseQty: "Miktarı azalt",
+  increaseQty: "Miktarı artır",
+  remove: "Kaldır",
+  total: "Toplam",
+  placingOrder: "Sipariş veriliyor…",
+  placeOrderPay: "Sipariş ver ve öde",
+  howToPay: "Nasıl ödeyeceksiniz?",
+  payCardAtTable: "Kart",
+  payCardAtTableHint: "Masada ödeme (terminal)",
+  payCash: "Nakit",
+  payCashHint: "Personele nakit ödeme",
+  choosePayment: "Ödeme yöntemi seçin.",
+  paymentModalSubtitle: "İsteğe bağlı — masada kart mı yoksa nakit mi ödeyeceğinizi personele bildirir. Sipariş her halükarda gönderilir.",
+  placeOrderWithoutPayPreference: "Seçmeden gönder",
+  viewCart: "Sepet",
+  placeOrder: "Sipariş ver",
+  placing: "Gönderiliyor…",
+  chooseOptions: "Seçenekleri belirleyin, ardından siparişe ekleyin.",
+  noteKitchen: "Mutfak için not",
+  noteOptional: "(isteğe bağlı)",
+  notePlaceholder: "ör. soğansız, fındık alerjisi…",
+  addToOrderBtn: "Siparişe ekle",
+  optionalExtrasHint: "İsteğe bağlı ekstralar mevcut — Özelleştir'e dokunun.",
+  cartEmptyHint: "Yemek eklemek için yukarıdaki kategorilere göz atın.",
+  cartStripHint: "Siparişi görüntülemek veya değiştirmek için dokunun",
+  allergenTrustLine: "Alerjiniz veya özel diyetiniz varsa, sipariş vermeden önce personele sorun.",
+  infoButton: "Bilgi",
+  allergenInfoTitle: "Gıda alerjen simgeleri",
+  allergenInfoImageAlt: "Yaygın gıda alerjen simgelerinin tablosu (gluten, susam, fındık vb.).",
+  searchMenu: "Menüde ara",
+  searchButton: "Ara",
+  searchClear: "Temizle",
+  searchPlaceholder: "Yemek ara…",
+  searchNoResults: "Aramanızla eşleşen yemek yok.",
+  menuRefreshing: "Menü güncelleniyor…",
+  reorderHint: "Önceki bir siparişi tekrarlamak için yemekleri menüden tekrar ekleyin.",
+  itemsInCart: (count) => count === 1 ? `Sepette ${count} ürün` : `Sepette ${count} ürün`,
+  orderStatus: (status, waiterRelayPending) => {
+    if (waiterRelayPending && status === "paid") return "Personel bekleniyor";
+    const map: Record<string, string> = { pending: "Ödeme bekleniyor", paid: "Sipariş kabul edildi", preparing: "Hazırlanıyor", ready: "Teslim almaya hazır", delivered: "Teslim edildi", declined: "Sipariş reddedildi" };
+    return map[status] ?? status;
+  },
+  removeFromCartTitle: (name) => `"${name}" siparişten kaldırılsın mı?`,
+  removeFromCartBody: "Menüden tekrar ekleyebilirsiniz.",
+  orderFailedGeneric: "Bir şeyler ters gitti",
+  ...LANG_NAMES,
+  orderHistoryItems: (count) => (count === 1 ? "1 ürün" : `${count} ürün`),
+  priceEachTimesQty: (unit, qty) => `${unit} adet × ${qty}`,
+  menuLanguageGroupAria: "Menü dili",
+};
+
+export function getGuestMenuUiStrings(lang: string): GuestMenuUiStrings {
   if (lang === "el") return EL;
   if (lang === "ru") return RU;
   if (lang === "fr") return FR;
   if (lang === "pl") return PL;
+  if (lang === "de") return DE;
+  if (lang === "sr") return SR;
+  if (lang === "es") return ES;
+  if (lang === "zh") return ZH;
+  if (lang === "tr") return TR;
   return EN;
 }

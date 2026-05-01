@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { confirmDestructiveAction } from "@/lib/confirm-destructive";
@@ -22,6 +23,9 @@ type SectionRow = {
 };
 
 export function WaitStaffTablePicker() {
+  const params = useParams();
+  const slug = typeof params?.slug === "string" ? params.slug : "";
+
   const [sections, setSections] = useState<SectionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,8 +118,8 @@ export function WaitStaffTablePicker() {
       <h2 className="text-lg font-semibold text-ink">Tables</h2>
       <p className="mt-1 text-sm text-ink-muted">
         A <strong className="text-violet-700 dark:text-violet-300">purple</strong> table means a guest tapped{" "}
-        <strong>Call waiter</strong>. Tap the bar on that table after you visit to clear it. Use the table name link to
-        open the guest menu in a new tab.
+        <strong>Call waiter</strong>. Tap the bar on that table after you visit to clear it. Use{" "}
+        <strong>Take order</strong> to place an order on behalf of the guest.
       </p>
 
       {loading ? (
@@ -169,6 +173,14 @@ export function WaitStaffTablePicker() {
                         >
                           {t.name}
                         </Link>
+                        {slug ? (
+                          <Link
+                            href={`/${slug}/dashboard/wait-staff/order/${t.token}`}
+                            className="flex min-h-[36px] w-full items-center justify-center rounded-xl border-2 border-primary/40 bg-primary/5 px-2 py-1.5 text-center text-xs font-semibold text-primary hover:bg-primary/10"
+                          >
+                            Take order
+                          </Link>
+                        ) : null}
                       </li>
                     );
                   })}

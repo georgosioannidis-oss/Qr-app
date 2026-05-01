@@ -22,6 +22,7 @@ export function BrandingPageClient() {
     payAtTableCardEnabled?: boolean;
     payAtTableCashEnabled?: boolean;
     prepTimeEstimateMinutes?: number | null;
+    vatRate?: number;
   } | null>(null);
 
   useEffect(() => {
@@ -127,6 +128,7 @@ export function BrandingPageClient() {
         initialPayAtTableCardEnabled={data.payAtTableCardEnabled}
         initialPayAtTableCashEnabled={data.payAtTableCashEnabled}
         initialPrepTimeEstimateMinutes={data.prepTimeEstimateMinutes ?? null}
+        initialVatRate={data.vatRate ?? 0}
       />
       <PrintAgentSection restaurantSlug={data.slug} />
     </div>

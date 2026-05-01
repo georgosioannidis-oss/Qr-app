@@ -13,30 +13,11 @@ export function ordersInKitchenQueueWhere(restaurantId: string): Prisma.OrderWhe
 }
 
 /**
- * Payment / lifecycle gate for print (no waiter relay): excludes finished orders and
- * Stripe Checkout still in progress (`pending` + `stripeSessionId`).
- */
-export function ordersEligibleForStationPrintWhere(restaurantId: string): Prisma.OrderWhereInput {
-  return {
-    AND: [
-      { restaurantId },
-      { status: { notIn: ["delivered", "declined"] } },
-      {
-        NOT: {
-          AND: [{ status: "pending" }, { stripeSessionId: { not: null } }],
-        },
-      },
-    ],
-  };
-}
-
-/**
- * Orders the station print agent may fetch / ack: same rules as the dashboard kitchen list.
- * - **Wait staff relay off** (`waiterRelayEnabled: false`): prints as soon as the guest order exists (and passes {@link ordersEligibleForStationPrintWhere}).
- * - **Relay on**: prints only after wait staff accepts (`waiterRelayAt` set). Guest `paymentPreference` is display-only and does not affect this.
+ * Orders the station print agent may fetch / ack: **same rules as the dashboard kitchen list**
+ * (not filtered on Stripe, `paid`, or guest payment preference).
+ * - **Wait staff relay off** (`waiterRelayEnabled: false`): prints as soon as the guest order exists (`waiterRelayAt` set at creation).
+ * - **Relay on**: prints only after wait staff accepts (`waiterRelayAt` set).
  */
 export function ordersForStationPrintAgent(restaurantId: string): Prisma.OrderWhereInput {
-  return {
-    AND: [ordersEligibleForStationPrintWhere(restaurantId), ordersInKitchenQueueWhere(restaurantId)],
-  };
+  return ordersInKitchenQueueWhere(restaurantId);
 }

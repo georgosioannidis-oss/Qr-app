@@ -1996,6 +1996,7 @@ function ItemEditForm({
       </div>
 
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border/80 pt-4">
+        <TranslateItemButton itemId={item.id} />
         <button
           type="button"
           onClick={onCancel}
@@ -2020,5 +2021,53 @@ function ItemEditForm({
         </button>
       </div>
     </form>
+  );
+}
+
+function TranslateItemButton({ itemId }: { itemId: string }) {
+  const [translating, setTranslating] = useState(false);
+  const handleTranslate = async () => {
+    setTranslating(true);
+    try {
+      const res = await fetch("/api/dashboard/menu/translate-item", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId }),
+      });
+      const t = await res.text();
+      let d: { translatedLocales?: string[]; error?: string } = {};
+      try { if (t) d = JSON.parse(t); } catch { /* ignore */ }
+      if (!res.ok) {
+        toast.error(d.error ?? "Translation failed");
+        return;
+      }
+      const count = d.translatedLocales?.length ?? 0;
+      if (count === 0) {
+        toast.success("No other languages configured — add them in Options → Guest menu languages.");
+      } else {
+        toast.success(`Translated to ${count} language${count === 1 ? "" : "s"}.`);
+      }
+    } catch {
+      toast.error("Translation request failed");
+    } finally {
+      setTranslating(false);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleTranslate}
+      disabled={translating}
+      className="inline-flex items-center gap-1.5 rounded-xl border-2 border-primary/30 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10 disabled:opacity-50"
+    >
+      {translating ? (
+        <>
+          <Spinner className="h-3.5 w-3.5 border-primary border-t-transparent" />
+          Translating…
+        </>
+      ) : (
+        "Translate"
+      )}
+    </button>
   );
 }

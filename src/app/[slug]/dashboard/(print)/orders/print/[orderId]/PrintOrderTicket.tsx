@@ -10,6 +10,9 @@ export type PrintOrderPayload = {
   status: string;
   createdAt: string;
   totalAmount: number;
+  vatRate: number;
+  netAmount: number;
+  vatAmount: number;
   paymentSummary?: string | null;
   billPaidAt?: string | null;
   items: Array<{
@@ -126,8 +129,19 @@ export function PrintOrderTicket({
           })}
         </ul>
 
-        <footer className="border-t-2 border-neutral-900 pt-4">
-          <p className="text-right text-xl font-black tabular-nums">Total {formatPrice(order.totalAmount)}</p>
+        <footer className="border-t-2 border-neutral-900 pt-4 space-y-1">
+          <div className="flex justify-between text-sm text-neutral-700">
+            <span>Subtotal (excl. VAT)</span>
+            <span className="tabular-nums">{formatPrice(order.netAmount)}</span>
+          </div>
+          <div className="flex justify-between text-sm text-neutral-700">
+            <span>VAT {order.vatRate}%</span>
+            <span className="tabular-nums">{formatPrice(order.vatAmount)}</span>
+          </div>
+          <div className="flex justify-between pt-1 border-t border-neutral-300 text-xl font-black">
+            <span>Total (incl. VAT)</span>
+            <span className="tabular-nums">{formatPrice(order.totalAmount)}</span>
+          </div>
         </footer>
       </article>
     </>

@@ -37,6 +37,7 @@ type Order = {
   paymentPreference?: string | null;
   stripeSessionId?: string | null;
   billPaidAt?: string | null;
+  isStaffOrder?: boolean;
   table: { name: string; token: string };
   items: OrderItem[];
 };
@@ -603,6 +604,11 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <OrderStatusBadge status={order.status ?? "pending"} />
+                {order.isStaffOrder && (
+                  <span className="rounded-full px-2.5 py-1 text-xs font-semibold ring-1 bg-sky-100 text-sky-950 ring-sky-700/40 group-data-[theme=dark]/dashboard:bg-sky-950/35 group-data-[theme=dark]/dashboard:text-sky-50 group-data-[theme=dark]/dashboard:ring-sky-500/45">
+                    Staff order
+                  </span>
+                )}
                 {payLine ? (
                   <span
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${

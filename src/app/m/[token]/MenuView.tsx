@@ -21,7 +21,14 @@ import {
   type GuestMenuItem as Item,
 } from "@/lib/guest-demo-menu-i18n";
 import { guestCategoryLabelWithEmoji } from "@/lib/guest-category-emoji";
-import { getGuestMenuUiStrings, type GuestMenuLang, type GuestMenuUiStrings } from "@/lib/guest-menu-ui-strings";
+import { getGuestMenuUiStrings, type GuestMenuUiStrings } from "@/lib/guest-menu-ui-strings";
+import { SUPPORTED_LOCALES } from "@/lib/locale-config";
+import { parseGuestMenuOptionGroups } from "@/lib/parse-guest-menu-option-groups";
+
+export type TranslationMap = {
+  items: Record<string, Record<string, { name: string; description?: string; optionGroups?: string }>>;
+  categories: Record<string, Record<string, { name: string }>>;
+};
 
 const GUEST_MENU_LANG_KEY = "guestMenuDemoLang";
 
@@ -138,6 +145,14 @@ type Props = {
   categories: Category[];
   /** When `moustakallis` (or legacy `demo-restaurant` slug), guest can switch EL/EN/RU/FR/PL for menu + UI. */
   restaurantSlug?: string | null;
+  /** When true, order is submitted as a staff manual order — bypasses QR cookie requirement server-side. */
+  isStaffOrder?: boolean;
+  /** Locale codes this restaurant has enabled, e.g. ["el","en","de"]. Empty = no switcher shown. */
+  enabledLocales?: string[];
+  /** The restaurant's source/default locale — used as fallback when a translation is missing. */
+  defaultLocale?: string;
+  /** All available translations keyed by itemId/categoryId → locale → translated fields. */
+  translationMap?: TranslationMap;
 };
 
 export function MenuView({
@@ -152,6 +167,10 @@ export function MenuView({
   guestOrderingPaused = false,
   categories,
   restaurantSlug = null,
+  isStaffOrder = false,
+  enabledLocales = [],
+  defaultLocale = "el",
+  translationMap,
 }: Props) {
   const formatPrice = useCallback(
     (cents: number) =>
@@ -186,34 +205,44 @@ export function MenuView({
   const [pullDistance, setPullDistance] = useState(0);
   const [callWaiterBusy, setCallWaiterBusy] = useState(false);
 
-  const bilingual = useMemo(() => isGuestMenuBilingualSlug(restaurantSlug), [restaurantSlug]);
-  const [menuLang, setMenuLang] = useState<GuestMenuLang>("el");
-  useEffect(() => {
-    if (!bilingual || typeof window === "undefined") return;
-    try {
-      const s = localStorage.getItem(GUEST_MENU_LANG_KEY);
-      if (s === "en" || s === "el" || s === "ru" || s === "fr" || s === "pl") setMenuLang(s);
-    } catch {
-      /* ignore */
-    }
-  }, [bilingual]);
-  useEffect(() => {
-    if (!bilingual || typeof window === "undefined") return;
-    try {
-      localStorage.setItem(GUEST_MENU_LANG_KEY, menuLang);
-    } catch {
-      /* ignore */
-    }
-  }, [bilingual, menuLang]);
+  // --- Language / translation system ---
+  // Real DB-backed translations take priority; legacy demo bilingual is kept as fallback for demo slugs.
+  const demoMode = useMemo(() => isGuestMenuBilingualSlug(restaurantSlug), [restaurantSlug]);
+  const hasMultipleLocales = enabledLocales.length > 1;
+  const [menuLang, setMenuLang] = useState<string>(defaultLocale);
+
   const ui = useMemo(
-    () => getGuestMenuUiStrings(bilingual ? menuLang : "en"),
-    [bilingual, menuLang]
+    () => getGuestMenuUiStrings(hasMultipleLocales ? menuLang : demoMode ? menuLang : "en"),
+    [hasMultipleLocales, demoMode, menuLang]
   );
-  const localizedCategories = useMemo(
-    () =>
-      bilingual ? localizeGuestMenuCategories(categories, menuLang, restaurantSlug) : categories,
-    [bilingual, categories, menuLang, restaurantSlug]
-  );
+
+  // Build localized categories: prefer DB translations, fall back to demo system, then originals.
+  const localizedCategories = useMemo(() => {
+    if (hasMultipleLocales && translationMap && menuLang !== defaultLocale) {
+      return categories.map((cat) => {
+        const catT = translationMap.categories[cat.id]?.[menuLang];
+        return {
+          ...cat,
+          name: catT?.name ?? cat.name,
+          items: cat.items.map((item) => {
+            const itemT = translationMap.items[item.id]?.[menuLang];
+            if (!itemT) return item;
+            const translatedOptionGroups = itemT.optionGroups
+              ? (parseGuestMenuOptionGroups(itemT.optionGroups) ?? item.optionGroups)
+              : item.optionGroups;
+            return {
+              ...item,
+              name: itemT.name,
+              description: itemT.description ?? item.description,
+              optionGroups: translatedOptionGroups,
+            };
+          }),
+        };
+      });
+    }
+    if (demoMode) return localizeGuestMenuCategories(categories, menuLang as never, restaurantSlug);
+    return categories;
+  }, [hasMultipleLocales, demoMode, translationMap, categories, menuLang, defaultLocale, restaurantSlug]);
   const displayCategories = useMemo(() => {
     const q = menuSearch.trim().toLowerCase();
     if (!q) return localizedCategories;
@@ -230,7 +259,7 @@ export function MenuView({
   }, [localizedCategories, menuSearch]);
 
   useEffect(() => {
-    if (!bilingual) return;
+    if (!hasMultipleLocales && !demoMode) return;
     setCart((prev) =>
       prev.map((line) => {
         const item = findGuestItemById(localizedCategories, line.id);
@@ -244,7 +273,7 @@ export function MenuView({
         };
       })
     );
-  }, [bilingual, menuLang, localizedCategories]);
+  }, [hasMultipleLocales, demoMode, menuLang, localizedCategories]);
 
   /** Set on the client only — avoids SSR/localStorage mismatch and hydration issues. */
   const [guestSessionId, setGuestSessionId] = useState("");
@@ -264,7 +293,7 @@ export function MenuView({
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    if (bilingual) {
+    if (hasMultipleLocales || demoMode) {
       document.documentElement.lang = menuLang;
       return;
     }
@@ -272,7 +301,7 @@ export function MenuView({
     if (nav && /^[a-z]{2}$/i.test(nav)) {
       document.documentElement.lang = nav.toLowerCase();
     }
-  }, [bilingual, menuLang]);
+  }, [hasMultipleLocales, demoMode, menuLang]);
 
   const callWaiter = useCallback(async () => {
     setCallWaiterBusy(true);
@@ -479,6 +508,7 @@ export function MenuView({
       })),
       totalAmount: totalCents,
       guestSessionId: guestSessionId || undefined,
+      isStaffOrder: isStaffOrder || undefined,
     };
     if (!usesOnlineCheckout && paymentPreference) {
       payload.paymentPreference = paymentPreference;
@@ -703,82 +733,34 @@ export function MenuView({
             >
               {ui.yourOrders}
             </button>
-            {bilingual ? (
+            {(hasMultipleLocales || demoMode) ? (
               <div
                 className="flex flex-wrap justify-end gap-1"
                 role="group"
                 aria-label={ui.menuLanguageGroupAria}
               >
-                <button
-                  type="button"
-                  aria-label={ui.langGreek}
-                  title={ui.langGreek}
-                  onClick={() => setMenuLang("el")}
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
-                    menuLang === "el"
-                      ? "border-primary bg-primary/10 text-ink"
-                      : "border-border bg-card text-ink-muted hover:border-ink/20"
-                  }`}
-                  aria-pressed={menuLang === "el"}
-                >
-                  <span aria-hidden>🇬🇷</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={ui.langEnglish}
-                  title={ui.langEnglish}
-                  onClick={() => setMenuLang("en")}
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
-                    menuLang === "en"
-                      ? "border-primary bg-primary/10 text-ink"
-                      : "border-border bg-card text-ink-muted hover:border-ink/20"
-                  }`}
-                  aria-pressed={menuLang === "en"}
-                >
-                  <span aria-hidden>🇬🇧</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={ui.langRussian}
-                  title={ui.langRussian}
-                  onClick={() => setMenuLang("ru")}
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
-                    menuLang === "ru"
-                      ? "border-primary bg-primary/10 text-ink"
-                      : "border-border bg-card text-ink-muted hover:border-ink/20"
-                  }`}
-                  aria-pressed={menuLang === "ru"}
-                >
-                  <span aria-hidden>🇷🇺</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={ui.langFrench}
-                  title={ui.langFrench}
-                  onClick={() => setMenuLang("fr")}
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
-                    menuLang === "fr"
-                      ? "border-primary bg-primary/10 text-ink"
-                      : "border-border bg-card text-ink-muted hover:border-ink/20"
-                  }`}
-                  aria-pressed={menuLang === "fr"}
-                >
-                  <span aria-hidden>🇫🇷</span>
-                </button>
-                <button
-                  type="button"
-                  aria-label={ui.langPolish}
-                  title={ui.langPolish}
-                  onClick={() => setMenuLang("pl")}
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
-                    menuLang === "pl"
-                      ? "border-primary bg-primary/10 text-ink"
-                      : "border-border bg-card text-ink-muted hover:border-ink/20"
-                  }`}
-                  aria-pressed={menuLang === "pl"}
-                >
-                  <span aria-hidden>🇵🇱</span>
-                </button>
+                {(hasMultipleLocales ? enabledLocales : ["el","en","ru","fr","pl"]).map((code) => {
+                  const loc = SUPPORTED_LOCALES.find((l) => l.code === code);
+                  if (!loc) return null;
+                  const isActive = menuLang === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      aria-label={loc.nativeName}
+                      title={loc.nativeName}
+                      onClick={() => setMenuLang(code)}
+                      aria-pressed={isActive}
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border px-0 py-0 text-[0.95rem] leading-none transition-colors sm:h-9 sm:w-9 sm:text-[1.05rem] ${
+                        isActive
+                          ? "border-primary bg-primary/10 text-ink"
+                          : "border-border bg-card text-ink-muted hover:border-ink/20"
+                      }`}
+                    >
+                      <span aria-hidden>{loc.flag}</span>
+                    </button>
+                  );
+                })}
               </div>
             ) : null}
           </div>

@@ -32,6 +32,9 @@ export async function GET() {
         payAtTableCardEnabled: true,
         payAtTableCashEnabled: true,
         prepTimeEstimateMinutes: true,
+        vatRate: true,
+        enabledLocales: true,
+        defaultLocale: true,
       },
     });
 
@@ -67,6 +70,7 @@ export async function PATCH(req: NextRequest) {
     payAtTableCardEnabled?: boolean;
     payAtTableCashEnabled?: boolean;
     prepTimeEstimateMinutes?: number | null | string;
+    vatRate?: number | null | string;
   };
   try {
     body = await req.json();
@@ -99,6 +103,7 @@ export async function PATCH(req: NextRequest) {
       payAtTableCardEnabled?: boolean;
       payAtTableCashEnabled?: boolean;
       prepTimeEstimateMinutes?: number | null;
+      vatRate?: number;
     } = {};
 
     if (body.logoUrl !== undefined) {
@@ -170,6 +175,19 @@ export async function PATCH(req: NextRequest) {
           );
         }
         data.prepTimeEstimateMinutes = Math.round(n);
+      }
+    }
+
+    if (body.vatRate !== undefined) {
+      const raw = body.vatRate;
+      if (raw === null || raw === "" || (typeof raw === "string" && raw.trim() === "")) {
+        data.vatRate = 0;
+      } else {
+        const n = typeof raw === "number" ? raw : Number(typeof raw === "string" ? raw.trim() : raw);
+        if (!Number.isFinite(n) || !Number.isInteger(n) || n < 0 || n > 100) {
+          return NextResponse.json({ error: "vatRate must be an integer between 0 and 100" }, { status: 400 });
+        }
+        data.vatRate = n;
       }
     }
 
@@ -247,6 +265,7 @@ export async function PATCH(req: NextRequest) {
         payAtTableCardEnabled: true,
         payAtTableCashEnabled: true,
         prepTimeEstimateMinutes: true,
+        vatRate: true,
       },
     });
 

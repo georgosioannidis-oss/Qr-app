@@ -11,59 +11,12 @@ import { isGuestQrOrderingBlocked } from "@/lib/guest-ordering-pause";
 import { cookies } from "next/headers";
 import { GUEST_QR_ACCESS_COOKIE, isValidQrProof, verifyAccessToken } from "@/lib/guest-qr-access";
 import { ensureMinTwoPeopleOptionGroup } from "@/lib/min-two-people-option";
+import { parseGuestMenuOptionGroups } from "@/lib/parse-guest-menu-option-groups";
+import { parseEnabledLocales } from "@/lib/locale-config";
 import { MenuView } from "./MenuView";
+import type { TranslationMap } from "./MenuView";
 
 export const revalidate = 30;
-
-/** DB JSON can be a string, wrong shape, or non-array; never pass non-arrays into the menu UI. */
-function parseGuestMenuOptionGroups(raw: unknown):
-  | {
-      id: string;
-      label: string;
-      required: boolean;
-      type: "single" | "multi";
-      choices: { id: string; label: string; priceCents: number }[];
-    }[]
-  | undefined {
-  if (raw == null) return undefined;
-  let v: unknown = raw;
-  if (typeof v === "string") {
-    try {
-      v = JSON.parse(v);
-    } catch {
-      return undefined;
-    }
-  }
-  if (!Array.isArray(v) || v.length === 0) return undefined;
-  const out: NonNullable<ReturnType<typeof parseGuestMenuOptionGroups>> = [];
-  for (const entry of v) {
-    if (!entry || typeof entry !== "object") continue;
-    const g = entry as Record<string, unknown>;
-    const id = typeof g.id === "string" ? g.id : "";
-    const label = typeof g.label === "string" ? g.label : "";
-    if (!id || !label) continue;
-    const required = g.required === true;
-    const type: "single" | "multi" = g.type === "multi" ? "multi" : "single";
-    const choicesRaw = g.choices;
-    if (!Array.isArray(choicesRaw)) continue;
-    const choices: { id: string; label: string; priceCents: number }[] = [];
-    for (const c of choicesRaw) {
-      if (!c || typeof c !== "object") continue;
-      const ch = c as Record<string, unknown>;
-      const cid = typeof ch.id === "string" ? ch.id : "";
-      const cl = typeof ch.label === "string" ? ch.label : "";
-      if (!cid || !cl) continue;
-      const priceCents =
-        typeof ch.priceCents === "number" && Number.isFinite(ch.priceCents)
-          ? Math.round(ch.priceCents)
-          : 0;
-      choices.push({ id: cid, label: cl, priceCents });
-    }
-    if (choices.length === 0) continue;
-    out.push({ id, label, required, type, choices });
-  }
-  return out.length > 0 ? out : undefined;
-}
 
 export default async function TableMenuPage({
   params,
@@ -85,6 +38,7 @@ export default async function TableMenuPage({
   const jar = await cookies();
   const hasCurrentAccess = verifyAccessToken(
     token,
+    table.orderingWindowNonce,
     jar.get(GUEST_QR_ACCESS_COOKIE)?.value
   );
   if (!hasCurrentAccess) {
@@ -93,11 +47,37 @@ export default async function TableMenuPage({
         <div className="max-w-md w-full rounded-3xl border border-border bg-card p-8 shadow-sm text-center">
           <h2 className="text-xl font-bold text-ink mb-3 leading-snug">Scan table QR to order</h2>
           <p className="text-base leading-relaxed text-ink-muted sm:text-sm">
-            Your ordering access has expired. Scan the QR code at your table again to start a new 30-minute session.
+            Your ordering access has expired. Scan the QR code at your table again to start a new 20-minute session.
           </p>
         </div>
       </div>
     );
+  }
+
+  const enabledLocales = parseEnabledLocales(table.restaurant.enabledLocales);
+  const defaultLocale = table.restaurant.defaultLocale ?? "el";
+
+  // Build translation map from loaded data
+  const translationMap: TranslationMap = { items: {}, categories: {} };
+  for (const cat of table.restaurant.menuCategories) {
+    if (cat.translations.length > 0) {
+      translationMap.categories[cat.id] = {};
+      for (const t of cat.translations) {
+        translationMap.categories[cat.id][t.locale] = { name: t.name };
+      }
+    }
+    for (const item of cat.items) {
+      if (item.translations.length > 0) {
+        translationMap.items[item.id] = {};
+        for (const t of item.translations) {
+          translationMap.items[item.id][t.locale] = {
+            name: t.name,
+            description: t.description ?? undefined,
+            optionGroups: t.optionGroups ?? undefined,
+          };
+        }
+      }
+    }
   }
 
   const menu = table.restaurant.menuCategories.filter((c) => c.items.length > 0);
@@ -119,6 +99,9 @@ export default async function TableMenuPage({
           sectionPaused: table.tableSection?.guestQrOrderingPaused === true,
           tablePaused: table.guestQrOrderingPaused === true,
         })}
+        enabledLocales={enabledLocales}
+        defaultLocale={defaultLocale}
+        translationMap={translationMap}
         categories={menu.map((c) => ({
         id: c.id,
         name: c.name,

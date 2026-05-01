@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { SUPPORTED_LOCALES } from "@/lib/locale-config";
 
 /** When false, owners see a notice and cannot enable “Pay online with card”; saves always persist `onlinePaymentEnabled: false`. */
 const GUEST_ONLINE_CARD_PAYMENT_AVAILABLE = false;
@@ -33,6 +34,7 @@ export function BrandingForm({
   initialPayAtTableCardEnabled,
   initialPayAtTableCashEnabled,
   initialPrepTimeEstimateMinutes,
+  initialVatRate,
 }: {
   initialName: string;
   initialLogoUrl: string;
@@ -45,6 +47,7 @@ export function BrandingForm({
   initialPayAtTableCardEnabled?: boolean;
   initialPayAtTableCashEnabled?: boolean;
   initialPrepTimeEstimateMinutes?: number | null;
+  initialVatRate?: number;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +74,9 @@ export function BrandingForm({
       ? String(initialPrepTimeEstimateMinutes)
       : ""
   );
+  const [vatRate, setVatRate] = useState(
+    initialVatRate != null && initialVatRate > 0 ? String(initialVatRate) : ""
+  );
   const [showCustomColor, setShowCustomColor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -92,6 +98,9 @@ export function BrandingForm({
         ? String(initialPrepTimeEstimateMinutes)
         : ""
     );
+    setVatRate(
+      initialVatRate != null && initialVatRate > 0 ? String(initialVatRate) : ""
+    );
   }, [
     initialName,
     initialLogoUrl,
@@ -104,6 +113,7 @@ export function BrandingForm({
     initialPayAtTableCardEnabled,
     initialPayAtTableCashEnabled,
     initialPrepTimeEstimateMinutes,
+    initialVatRate,
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -126,6 +136,15 @@ export function BrandingForm({
       }
       prepTimeEstimateMinutes = n;
     }
+    let vatRateValue: number = 0;
+    if (vatRate.trim() !== "") {
+      const n = parseInt(vatRate.trim(), 10);
+      if (!Number.isFinite(n) || n < 0 || n > 100) {
+        toast.error("VAT rate must be between 0 and 100, or leave blank for 0%.");
+        return;
+      }
+      vatRateValue = n;
+    }
     setSaving(true);
     setMessage(null);
     try {
@@ -145,6 +164,7 @@ export function BrandingForm({
           payAtTableCardEnabled,
           payAtTableCashEnabled,
           prepTimeEstimateMinutes,
+          vatRate: vatRateValue,
         }),
       });
       const text = await res.text();
@@ -367,6 +387,30 @@ export function BrandingForm({
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-ink mb-1">VAT rate</h2>
+        <p className="text-ink-muted mb-4 text-sm">
+          Enter your venue&apos;s VAT rate as a whole number (e.g. <strong className="text-ink">19</strong> for 19%).
+          Menu prices are treated as VAT-inclusive. The printed full-order ticket and bill settlement view will show a
+          breakdown: <em>Subtotal (excl. VAT)</em>, <em>VAT %</em>, and <em>Total (incl. VAT)</em>. Leave blank or set
+          to 0 to show the breakdown with 0% VAT.
+        </p>
+        <label className="block">
+          <span className="text-sm font-medium text-ink">VAT rate (%)</span>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            inputMode="numeric"
+            placeholder="e.g. 19"
+            value={vatRate}
+            onChange={(e) => setVatRate(e.target.value)}
+            className="mt-2 w-full max-w-xs rounded-xl border-2 border-border bg-card px-4 py-2.5 text-ink focus:border-primary focus:outline-none"
+          />
+          <span className="mt-1 block text-xs text-ink-muted">0–100, or leave blank for 0%.</span>
+        </label>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
         <h2 className="text-base font-semibold text-ink mb-1">Guest payments</h2>
         <p className="text-ink-muted mb-4 text-sm">
           {GUEST_ONLINE_CARD_PAYMENT_AVAILABLE
@@ -526,6 +570,8 @@ export function BrandingForm({
         />
       </div>
 
+      <LanguageConfigSection />
+
       <button
         type="submit"
         disabled={saving}
@@ -541,5 +587,167 @@ export function BrandingForm({
         )}
       </button>
     </form>
+  );
+}
+
+function LanguageConfigSection() {
+  const [unlocked, setUnlocked] = useState(false);
+  const [secret, setSecret] = useState("");
+  const [secretConfigured, setSecretConfigured] = useState(true);
+  const [enabledLocales, setEnabledLocales] = useState<string[]>([]);
+  const [defaultLocale, setDefaultLocale] = useState("el");
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dashboard/restaurant/languages");
+      if (!res.ok) return;
+      const d = await res.json() as { enabledLocales: string[]; defaultLocale: string; secretConfigured: boolean };
+      setEnabledLocales(d.enabledLocales ?? []);
+      setDefaultLocale(d.defaultLocale ?? "el");
+      setSecretConfigured(d.secretConfigured ?? false);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const handleUnlock = () => {
+    if (secret.trim()) setUnlocked(true);
+    else toast.error("Enter the language unlock secret.");
+  };
+
+  const toggleLocale = (code: string) => {
+    setEnabledLocales((prev) =>
+      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]
+    );
+  };
+
+  const handleSave = async () => {
+    if (enabledLocales.length > 0 && !enabledLocales.includes(defaultLocale)) {
+      toast.error("The default language must be in the enabled list.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/dashboard/restaurant/languages", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ secret: secret.trim(), enabledLocales, defaultLocale }),
+      });
+      const t = await res.text();
+      let d: { error?: string } = {};
+      try { if (t) d = JSON.parse(t); } catch { /* ignore */ }
+      if (!res.ok) { toast.error(d.error ?? "Failed to save"); return; }
+      toast.success("Languages saved");
+      setUnlocked(false);
+      setSecret("");
+      await load();
+    } catch { toast.error("Request failed"); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <h2 className="text-base font-semibold text-ink mb-1">Guest menu languages</h2>
+      <p className="text-sm text-ink-muted mb-4">
+        Choose which languages guests can switch between on the menu. Translations are generated from the
+        default language via Google Translate when you click <strong className="text-ink">Translate</strong>{" "}
+        on a menu item. Requires <code className="rounded bg-surface px-1 text-xs">LANGUAGE_UNLOCK_SECRET</code> to change.
+      </p>
+
+      {enabledLocales.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {enabledLocales.map((code) => {
+            const loc = SUPPORTED_LOCALES.find((l) => l.code === code);
+            return loc ? (
+              <span key={code} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                {loc.flag} {loc.nativeName}
+                {code === defaultLocale && <span className="ml-1 text-[10px] opacity-70">(default)</span>}
+              </span>
+            ) : null;
+          })}
+        </div>
+      )}
+
+      {!secretConfigured ? (
+        <p className="text-sm text-ink-muted rounded-xl border border-dashed border-border bg-surface/50 p-4">
+          Set <code className="rounded bg-surface px-1 text-xs">LANGUAGE_UNLOCK_SECRET</code> in your server environment to enable language management.
+        </p>
+      ) : !unlocked ? (
+        <div className="flex flex-wrap gap-2">
+          <input
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder="Language unlock secret"
+            className="flex-1 min-w-[200px] rounded-xl border-2 border-border bg-card px-3 py-2.5 text-sm text-ink focus:border-primary focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={handleUnlock}
+            className="rounded-xl border-2 border-primary/40 bg-primary/5 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/10"
+          >
+            Unlock to change
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm font-medium text-ink mb-2">Enabled languages</p>
+            <div className="flex flex-wrap gap-2">
+              {SUPPORTED_LOCALES.map((loc) => (
+                <button
+                  key={loc.code}
+                  type="button"
+                  onClick={() => toggleLocale(loc.code)}
+                  className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-3 py-2 text-sm font-medium transition-colors ${
+                    enabledLocales.includes(loc.code)
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-ink-muted hover:border-primary/30"
+                  }`}
+                >
+                  <span>{loc.flag}</span>
+                  <span>{loc.nativeName}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {enabledLocales.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-ink mb-1">Default language (source for translations)</label>
+              <select
+                value={defaultLocale}
+                onChange={(e) => setDefaultLocale(e.target.value)}
+                className="rounded-xl border-2 border-border bg-card px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
+              >
+                {enabledLocales.map((code) => {
+                  const loc = SUPPORTED_LOCALES.find((l) => l.code === code);
+                  return loc ? <option key={code} value={code}>{loc.flag} {loc.nativeName}</option> : null;
+                })}
+              </select>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-95 disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save languages"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setUnlocked(false); setSecret(""); void load(); }}
+              className="rounded-xl border-2 border-border px-4 py-2 text-sm font-semibold text-ink hover:bg-surface"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
