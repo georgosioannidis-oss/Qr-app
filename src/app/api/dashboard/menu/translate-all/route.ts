@@ -26,13 +26,21 @@ function parseOptionGroups(raw: string | null | undefined): OptionGroup[] {
 /**
  * POST /api/dashboard/menu/translate-all
  * Translates every menu item and category to all enabled locales in one shot.
- * Owner access only.
+ * Owner access only. Requires LANGUAGE_UNLOCK_SECRET password in request body.
  */
 export async function POST(req: NextRequest) {
   const session = await getDashboardServerSession(req);
   const forbidden = await requireBrandingApi(session);
   if (forbidden) return forbidden;
   const restaurantId = session!.user.restaurantId!;
+
+  let body: { password?: string } = {};
+  try { body = await req.json(); } catch { /* ignore */ }
+
+  const secret = process.env.LANGUAGE_UNLOCK_SECRET?.trim();
+  if (!secret || body.password?.trim() !== secret) {
+    return NextResponse.json({ error: "Incorrect password." }, { status: 403 });
+  }
 
   const restaurant = await prisma.restaurant.findUnique({
     where: { id: restaurantId },

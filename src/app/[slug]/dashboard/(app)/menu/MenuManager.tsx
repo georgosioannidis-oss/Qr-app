@@ -555,6 +555,8 @@ export function MenuManager() {
   const [togglingCategoryId, setTogglingCategoryId] = useState<string | null>(null);
   const [persistingMenu, setPersistingMenu] = useState(false);
   const [translatingAll, setTranslatingAll] = useState(false);
+  const [translateAllUnlocked, setTranslateAllUnlocked] = useState(false);
+  const [translateAllPassword, setTranslateAllPassword] = useState("");
   const itemLayoutPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingItemLayoutRef = useRef<Category[] | null>(null);
   const categoryOrderPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -971,14 +973,24 @@ export function MenuManager() {
   const handleTranslateAll = async () => {
     setTranslatingAll(true);
     try {
-      const res = await fetch("/api/dashboard/menu/translate-all", { method: "POST" });
+      const res = await fetch("/api/dashboard/menu/translate-all", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: translateAllPassword }),
+      });
       const t = await res.text();
       let d: { translatedItems?: number; translatedCategories?: number; locales?: string[]; error?: string } = {};
       try { if (t) d = JSON.parse(t); } catch { /* ignore */ }
+      if (res.status === 403) {
+        toast.error("Incorrect password.");
+        return;
+      }
       if (!res.ok) {
         toast.error(d.error ?? "Translation failed");
         return;
       }
+      setTranslateAllUnlocked(false);
+      setTranslateAllPassword("");
       if (!d.locales?.length) {
         toast.success("No other languages configured — add them in Options → Guest menu languages.");
       } else {
@@ -1162,21 +1174,44 @@ export function MenuManager() {
               Requires languages to be configured in Options → Guest menu languages.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => void handleTranslateAll()}
-            disabled={translatingAll || categories.length === 0}
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary-hover disabled:opacity-50"
-          >
-            {translatingAll ? (
-              <>
-                <Spinner className="h-4 w-4 border-white border-t-transparent" />
-                Translating…
-              </>
-            ) : (
-              "Translate all"
-            )}
-          </button>
+          {!translateAllUnlocked ? (
+            <button
+              type="button"
+              onClick={() => setTranslateAllUnlocked(true)}
+              disabled={categories.length === 0}
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary-hover disabled:opacity-50"
+            >
+              Translate all
+            </button>
+          ) : (
+            <div className="flex shrink-0 items-center gap-2">
+              <input
+                type="password"
+                value={translateAllPassword}
+                onChange={(e) => setTranslateAllPassword(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void handleTranslateAll(); if (e.key === "Escape") { setTranslateAllUnlocked(false); setTranslateAllPassword(""); } }}
+                placeholder="Enter password"
+                autoFocus
+                className="w-40 rounded-xl border border-border bg-card px-3 py-2 text-sm text-ink shadow-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <button
+                type="button"
+                onClick={() => void handleTranslateAll()}
+                disabled={translatingAll || !translateAllPassword.trim()}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:opacity-50"
+              >
+                {translatingAll ? <Spinner className="h-3.5 w-3.5 border-white border-t-transparent" /> : null}
+                {translatingAll ? "Translating…" : "Confirm"}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setTranslateAllUnlocked(false); setTranslateAllPassword(""); }}
+                className="rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-ink-muted transition hover:bg-surface"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
