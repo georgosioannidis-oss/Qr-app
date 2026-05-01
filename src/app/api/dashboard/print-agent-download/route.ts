@@ -32,18 +32,17 @@ export async function GET(req: NextRequest) {
     process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") ??
     `${req.nextUrl.protocol}//${req.nextUrl.host}`;
 
+  const apiSecret = process.env.PRINT_AGENT_API_SECRET?.trim() ?? "";
+
   const cmd = [
     `@echo off`,
     `REM QR Menu print agent — ${matched.name} station — ${restaurant.name}`,
     `REM 1) Place this file in your print-agent-standalone folder (next to print-agent.mjs).`,
-    `REM 2) Fill in PRINT_AGENT_API_SECRET below (same value set on the server).`,
-    `REM 3) In the print-agent-standalone folder, run "npm install" once in a terminal.`,
-    `REM 4) Double-click this file to start. Leave the window open.`,
+    `REM 2) In the print-agent-standalone folder, run "npm install" once in a terminal.`,
+    `REM 3) Double-click this file to start. Leave the window open.`,
     ``,
-    `REM ---------- EDIT BELOW (1 line — the secret) ----------`,
-    `set "PRINT_AGENT_API_SECRET=PASTE-THE-SAME-SECRET-AS-ON-THE-SERVER"`,
-    ``,
-    `REM ---------- Pre-filled for ${restaurant.name} — ${matched.name} ----------`,
+    `REM ---------- Pre-filled — no editing needed ----------`,
+    `set "PRINT_AGENT_API_SECRET=${apiSecret}"`,
     `set "PRINT_AGENT_BASE_URL=${baseUrl}"`,
     `set "PRINT_AGENT_RESTAURANT_SLUG=${restaurant.slug}"`,
     `set "PRINT_AGENT_STATION=${stationParam}"`,
