@@ -38,6 +38,52 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "station query required" }, { status: 400 });
   }
 
+  // Special station: "receipt" — returns all items for every unprinted order (full customer receipt).
+  if (stationParam === "receipt") {
+    const receiptOrders = await prisma.order.findMany({
+      where: { AND: [ordersForStationPrintAgent(restaurant.id)] },
+      orderBy: { createdAt: "asc" },
+      take: 25,
+      include: {
+        table: { select: { name: true } },
+        restaurant: { select: { name: true } },
+        stationAcks: { where: { stationKey: "receipt" }, select: { stationKey: true } },
+        items: {
+          include: { menuItem: { select: { name: true } } },
+          orderBy: { id: "asc" },
+        },
+      },
+    });
+
+    const payload = receiptOrders
+      .filter((o) => o.stationAcks.length === 0)
+      .map((o) => ({
+        id: o.id,
+        station: "receipt",
+        stationLabel: "Receipt",
+        restaurantName: o.restaurant.name,
+        tableName: o.table.name,
+        status: o.status,
+        createdAt: o.createdAt.toISOString(),
+        totalAmount: o.totalAmount,
+        items: o.items.map((row) => ({
+          quantity: row.quantity,
+          name: row.menuItem.name,
+          unitPrice: row.unitPrice,
+          notes: row.notes,
+          selectedOptionsSummary: row.selectedOptionsSummary,
+        })),
+      }));
+
+    const receiptVenue = {
+      slug: (slug ?? "").trim(),
+      name: restaurant.name,
+      waiterRelayEnabled: restaurant.waiterRelayEnabled,
+      onlinePaymentEnabled: restaurant.onlinePaymentEnabled === true,
+    };
+    return NextResponse.json({ orders: payload, station: "receipt", venue: receiptVenue });
+  }
+
   const stations = await prisma.station.findMany({
     where: { restaurantId: restaurant.id },
     select: { id: true, name: true },

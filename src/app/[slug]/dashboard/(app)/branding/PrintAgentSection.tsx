@@ -94,9 +94,7 @@ export function PrintAgentSection({ restaurantSlug }: { restaurantSlug: string }
             ))}
           </div>
           <p className="mt-3 text-xs text-ink-muted">
-            Each script is pre-filled with your site URL, slug, and station. You still need to paste{" "}
-            <code className="rounded bg-surface px-1">PRINT_AGENT_API_SECRET</code> (one line at the top of the
-            file).
+            Each script is pre-filled with your site URL, restaurant slug, station, and API secret — just download and run.
           </p>
         </>
       ) : (
@@ -105,6 +103,21 @@ export function PrintAgentSection({ restaurantSlug }: { restaurantSlug: string }
           <strong className="text-ink">Stations</strong> — each station you create gets its own print agent slot.
         </p>
       )}
+
+      <div className="mt-5 pt-5 border-t border-border">
+        <p className="text-sm font-medium text-ink mb-1">Customer receipt printer</p>
+        <p className="text-xs text-ink-muted mb-3">
+          Prints a full receipt (all items + total) for every new order. Place at the cashier or front desk — the customer gets their copy automatically.
+        </p>
+        <a
+          href="/api/dashboard/print-agent-download?station=receipt"
+          download
+          className="inline-flex items-center gap-1.5 rounded-lg border-2 border-emerald-500/40 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
+        >
+          Download receipt printer script
+          <span className="text-[10px] font-normal text-emerald-700">(START-RECEIPT-PRINTER.cmd)</span>
+        </a>
+      </div>
 
       <p className="mt-4 text-xs text-ink-muted">
         Details: <code className="rounded bg-surface px-1">print-agent-standalone/README.txt</code> in the repo.

@@ -61,6 +61,7 @@ function normalizePrintAgentStation(value) {
 
 const STATION_RAW = normalizePrintAgentStation(process.env.PRINT_AGENT_STATION || "all");
 const USE_ALL_STATIONS = STATION_RAW === "all";
+const IS_RECEIPT_MODE = STATION_RAW === "receipt";
 /** `all` = poll bar, cold-kitchen, and kitchen each cycle (default). Otherwise one station only. */
 const STATION = USE_ALL_STATIONS ? "all" : STATION_RAW;
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
@@ -84,7 +85,7 @@ function counterFileForStation(stationKey) {
 
 if (
   !SAMPLE_MODE &&
-  (!BASE || !API_SECRET || !RESTAURANT_SLUG || (!USE_ALL_STATIONS && !STATION_LABELS[STATION]))
+  (!BASE || !API_SECRET || !RESTAURANT_SLUG || (!USE_ALL_STATIONS && !IS_RECEIPT_MODE && !STATION_LABELS[STATION]))
 ) {
   console.error(
     "Missing PRINT_AGENT_BASE_URL (or NEXT_PUBLIC_APP_URL), PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, or invalid PRINT_AGENT_STATION.\n" +
@@ -794,6 +795,51 @@ function formatTicketLines(order) {
   return rows;
 }
 
+function formatReceiptLines(order) {
+  const w = 32;
+  const sep = "=".repeat(w);
+  const dashes = "-".repeat(w);
+  const rows = [];
+
+  rows.push(sep);
+  rows.push(centerLine(ticketEnglishText(order.restaurantName || "").toUpperCase(), w));
+  rows.push(sep);
+
+  const d = new Date(order.createdAt);
+  const pad = (n) => String(n).padStart(2, "0");
+  const dateStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  rows.push(`Table: ${ticketEnglishText(order.tableName || "").toUpperCase()}`);
+  rows.push(dateStr);
+  rows.push(dashes);
+
+  for (const it of order.items) {
+    const nameText = ticketEnglishText(it.name || "").toUpperCase();
+    const totalCents = it.unitPrice * it.quantity;
+    const priceStr = `EUR${(totalCents / 100).toFixed(2)}`;
+    const qtyStr = `${it.quantity}x `;
+    const nameWidth = Math.max(1, w - qtyStr.length - priceStr.length - 1);
+    const nameTrunc = nameText.length <= nameWidth
+      ? nameText.padEnd(nameWidth)
+      : nameText.slice(0, nameWidth);
+    rows.push(`${qtyStr}${nameTrunc} ${priceStr}`);
+    if (it.selectedOptionsSummary) {
+      const opts = compactTicketDetailText(it.selectedOptionsSummary);
+      if (opts) rows.push(...wrapLine(`  ${opts}`, w));
+    }
+    if (it.notes) rows.push(...wrapLine(`  ${ticketEnglishText(it.notes).toUpperCase()}`, w));
+  }
+
+  rows.push(dashes);
+  const totalStr = `EUR${(order.totalAmount / 100).toFixed(2)}`;
+  const labelPad = Math.max(1, w - "TOTAL".length - totalStr.length);
+  rows.push(`TOTAL${" ".repeat(labelPad)}${totalStr}`);
+  rows.push(sep);
+  rows.push(centerLine("THANK YOU!", w));
+  rows.push(sep);
+
+  return rows;
+}
+
 function sanitizeFilePart(value) {
   return String(value)
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, "-")
@@ -845,7 +891,7 @@ async function renderTicketPdf(order) {
   const fontInfo = await loadPdfFont(doc);
   const font = fontInfo.font;
 
-  const rows = formatTicketLines(order);
+  const rows = IS_RECEIPT_MODE ? formatReceiptLines(order) : formatTicketLines(order);
   const fontSize = 14;
   const lineHeight = 20;
   let y = page.getHeight() - 24;
@@ -970,7 +1016,8 @@ async function sendPdfToPrinter(pdfFilePath) {
 /** Sends ticket to network raw printer (TCP) or runs PRINT_COMMAND on the PDF. */
 async function sendToPrinter(pdfFilePath, order) {
   if (RAW_HOST) {
-    const lines = formatTicketLines(order).map((line) => (RAW_ASCII_ONLY ? toWinAnsiSafeText(line) : line));
+    const lines = (IS_RECEIPT_MODE ? formatReceiptLines(order) : formatTicketLines(order))
+      .map((line) => (RAW_ASCII_ONLY ? toWinAnsiSafeText(line) : line));
     const payload = buildEscPosPayload(lines);
     const ok = await sendRawToNetworkPrinter(payload);
     if (ok) console.log(`Raw print OK → ${RAW_HOST}:${RAW_PORT} (${pdfFilePath})`);
@@ -1077,59 +1124,67 @@ if (SAMPLE_MODE) {
   const mockOrder = {
     id: "clsample0123456789abcdefghij",
     station: STATION,
-    stationLabel: STATION_LABELS[STATION],
+    stationLabel: IS_RECEIPT_MODE ? "Receipt" : STATION_LABELS[STATION],
     restaurantName: "Moustakallis Tavern",
     tableName: "Table 5",
     status: "in_kitchen",
     createdAt: new Date().toISOString(),
     totalAmount: 4590,
     stationTotalAmount: 3200,
-    items:
-      STATION === "bar"
-        ? [
-            {
-              quantity: 2,
-              name: "Aperol Spritz",
-              unitPrice: 850,
-              notes: "",
-              selectedOptionsSummary: "",
-              routedStation: "Bar",
-            },
-          ]
-        : [
-            {
-              quantity: 1,
-              name: "Τζατζίκι",
-              unitPrice: 450,
-              notes: "",
-              selectedOptionsSummary: "",
-              routedStation: "Cold kitchen",
-            },
-            {
-              quantity: 2,
-              name: "Σουβλάκι χοιρινό",
-              unitPrice: 1250,
-              notes: "No onion",
-              selectedOptionsSummary: "Μέγεθος: Large",
-              routedStation: "Kitchen",
-            },
-            {
-              quantity: 1,
-              name: "Μουσακάς",
-              unitPrice: 850,
-              notes: "",
-              selectedOptionsSummary: "",
-              routedStation: "Kitchen",
-            },
-          ],
+    items: IS_RECEIPT_MODE || STATION !== "bar"
+      ? [
+          {
+            quantity: 2,
+            name: "Aperol Spritz",
+            unitPrice: 850,
+            notes: "",
+            selectedOptionsSummary: "",
+            routedStation: "Bar",
+          },
+          {
+            quantity: 1,
+            name: "Τζατζίκι",
+            unitPrice: 450,
+            notes: "",
+            selectedOptionsSummary: "",
+            routedStation: "Cold kitchen",
+          },
+          {
+            quantity: 2,
+            name: "Σουβλάκι χοιρινό",
+            unitPrice: 1250,
+            notes: "No onion",
+            selectedOptionsSummary: "Μέγεθος: Large",
+            routedStation: "Kitchen",
+          },
+          {
+            quantity: 1,
+            name: "Μουσακάς",
+            unitPrice: 850,
+            notes: "",
+            selectedOptionsSummary: "",
+            routedStation: "Kitchen",
+          },
+        ]
+      : [
+          {
+            quantity: 2,
+            name: "Aperol Spritz",
+            unitPrice: 850,
+            notes: "",
+            selectedOptionsSummary: "",
+            routedStation: "Bar",
+          },
+        ],
   };
-  console.error(`Sample ticket (station=${STATION}, 28 columns, SEAT IN layout)\n`);
-  console.log(formatTicketLines(mockOrder).join("\n"));
+  const label = IS_RECEIPT_MODE ? "receipt (32 cols, full order + total)" : `station=${STATION}, 28 cols, SEAT IN layout`;
+  console.error(`Sample ticket (${label})\n`);
+  console.log((IS_RECEIPT_MODE ? formatReceiptLines(mockOrder) : formatTicketLines(mockOrder)).join("\n"));
   process.exit(0);
 }
 
 console.error(
-  `Print agent polling ${BASE} for ${USE_ALL_STATIONS ? "BAR + COLD KITCHEN + KITCHEN" : STATION_LABELS[STATION]} every ${POLL_MS}ms`
+  `Print agent polling ${BASE} for ${USE_ALL_STATIONS ? "BAR + COLD KITCHEN + KITCHEN" : IS_RECEIPT_MODE ? "RECEIPT (full customer ticket)" : STATION_LABELS[STATION]} every ${POLL_MS}ms`
 );
 console.error(`PDF output folder: ${PDF_DIR}`);
 console.error(

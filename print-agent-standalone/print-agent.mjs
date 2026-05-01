@@ -50,6 +50,7 @@ function normalizePrintAgentStation(value) {
 
 const STATION_RAW = normalizePrintAgentStation(process.env.PRINT_AGENT_STATION || "all");
 const USE_ALL_STATIONS = STATION_RAW === "all";
+const IS_RECEIPT_MODE = STATION_RAW === "receipt";
 /** `all` = poll every station for this restaurant each cycle. Otherwise one station slug only. */
 const STATION = USE_ALL_STATIONS ? "all" : STATION_RAW;
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
@@ -777,6 +778,51 @@ function formatTicketLines(order) {
   return rows;
 }
 
+function formatReceiptLines(order) {
+  const w = 32;
+  const sep = "=".repeat(w);
+  const dashes = "-".repeat(w);
+  const rows = [];
+
+  rows.push(sep);
+  rows.push(centerLine(ticketEnglishText(order.restaurantName || "").toUpperCase(), w));
+  rows.push(sep);
+
+  const d = new Date(order.createdAt);
+  const pad = (n) => String(n).padStart(2, "0");
+  const dateStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  rows.push(`Table: ${ticketEnglishText(order.tableName || "").toUpperCase()}`);
+  rows.push(dateStr);
+  rows.push(dashes);
+
+  for (const it of order.items) {
+    const nameText = ticketEnglishText(it.name || "").toUpperCase();
+    const totalCents = it.unitPrice * it.quantity;
+    const priceStr = `EUR${(totalCents / 100).toFixed(2)}`;
+    const qtyStr = `${it.quantity}x `;
+    const nameWidth = Math.max(1, w - qtyStr.length - priceStr.length - 1);
+    const nameTrunc = nameText.length <= nameWidth
+      ? nameText.padEnd(nameWidth)
+      : nameText.slice(0, nameWidth);
+    rows.push(`${qtyStr}${nameTrunc} ${priceStr}`);
+    if (it.selectedOptionsSummary) {
+      const opts = compactTicketDetailText(it.selectedOptionsSummary);
+      if (opts) rows.push(...wrapLine(`  ${opts}`, w));
+    }
+    if (it.notes) rows.push(...wrapLine(`  ${ticketEnglishText(it.notes).toUpperCase()}`, w));
+  }
+
+  rows.push(dashes);
+  const totalStr = `EUR${(order.totalAmount / 100).toFixed(2)}`;
+  const labelPad = Math.max(1, w - "TOTAL".length - totalStr.length);
+  rows.push(`TOTAL${" ".repeat(labelPad)}${totalStr}`);
+  rows.push(sep);
+  rows.push(centerLine("THANK YOU!", w));
+  rows.push(sep);
+
+  return rows;
+}
+
 function sanitizeFilePart(value) {
   return String(value)
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, "-")
@@ -828,7 +874,7 @@ async function renderTicketPdf(order) {
   const fontInfo = await loadPdfFont(doc);
   const font = fontInfo.font;
 
-  const rows = formatTicketLines(order);
+  const rows = IS_RECEIPT_MODE ? formatReceiptLines(order) : formatTicketLines(order);
   const fontSize = 14;
   const lineHeight = 20;
   let y = page.getHeight() - 24;
@@ -953,7 +999,8 @@ async function sendPdfToPrinter(pdfFilePath) {
 /** Sends ticket to network raw printer (TCP) or runs PRINT_COMMAND on the PDF. */
 async function sendToPrinter(pdfFilePath, order) {
   if (RAW_HOST) {
-    const lines = formatTicketLines(order).map((line) => (RAW_ASCII_ONLY ? toWinAnsiSafeText(line) : line));
+    const lines = (IS_RECEIPT_MODE ? formatReceiptLines(order) : formatTicketLines(order))
+      .map((line) => (RAW_ASCII_ONLY ? toWinAnsiSafeText(line) : line));
     const payload = buildEscPosPayload(lines);
     const ok = await sendRawToNetworkPrinter(payload);
     if (ok) console.log(`Raw print OK → ${RAW_HOST}:${RAW_PORT} (${pdfFilePath})`);
@@ -1129,36 +1176,43 @@ if (SAMPLE_MODE) {
             },
           ],
   };
-  console.error(`Sample ticket (station=${STATION}, 28 columns, SEAT IN layout)\n`);
-  console.log(formatTicketLines(mockOrder).join("\n"));
+  const label = IS_RECEIPT_MODE ? "receipt (32 cols, full order + total)" : `station=${STATION}, 28 cols, SEAT IN layout`;
+  console.error(`Sample ticket (${label})\n`);
+  console.log((IS_RECEIPT_MODE ? formatReceiptLines(mockOrder) : formatTicketLines(mockOrder)).join("\n"));
   process.exit(0);
 }
 
 // Discover stations from server before starting poll loop
 if (!SAMPLE_MODE) {
-  const discovered = await fetchStations();
-  if (!discovered || discovered.length === 0) {
-    console.error(
-      "Could not fetch station list from server — check PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, and that stations are configured in the dashboard."
-    );
-    process.exit(1);
-  }
-  if (USE_ALL_STATIONS) {
-    ACTIVE_STATIONS = discovered.map((s) => s.slug);
-    console.error(`Stations discovered: ${ACTIVE_STATIONS.join(", ")}`);
+  if (IS_RECEIPT_MODE) {
+    // Receipt mode: no station discovery needed — polls a virtual "receipt" station.
+    ACTIVE_STATIONS = ["receipt"];
+    console.error("Receipt printer mode — printing full customer tickets for every new order.");
   } else {
-    const match = discovered.find((s) => s.slug === STATION);
-    if (!match) {
+    const discovered = await fetchStations();
+    if (!discovered || discovered.length === 0) {
       console.error(
-        `Station "${STATION}" not found for this restaurant. Available: ${discovered.map((s) => s.slug).join(", ")}`
+        "Could not fetch station list from server — check PRINT_AGENT_API_SECRET, PRINT_AGENT_RESTAURANT_SLUG, and that stations are configured in the dashboard."
       );
       process.exit(1);
     }
-    ACTIVE_STATIONS = [STATION];
-    console.error(`Station: ${match.name} (slug: ${STATION})`);
+    if (USE_ALL_STATIONS) {
+      ACTIVE_STATIONS = discovered.map((s) => s.slug);
+      console.error(`Stations discovered: ${ACTIVE_STATIONS.join(", ")}`);
+    } else {
+      const match = discovered.find((s) => s.slug === STATION);
+      if (!match) {
+        console.error(
+          `Station "${STATION}" not found for this restaurant. Available: ${discovered.map((s) => s.slug).join(", ")}`
+        );
+        process.exit(1);
+      }
+      ACTIVE_STATIONS = [STATION];
+      console.error(`Station: ${match.name} (slug: ${STATION})`);
+    }
   }
 } else {
-  ACTIVE_STATIONS = [STATION === "all" ? "kitchen" : STATION];
+  ACTIVE_STATIONS = IS_RECEIPT_MODE ? ["receipt"] : [STATION === "all" ? "kitchen" : STATION];
 }
 
 console.error(

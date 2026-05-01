@@ -44,6 +44,26 @@ export async function POST(req: NextRequest) {
   const stationParam = typeof body.stationKey === "string" ? body.stationKey.trim() : "";
   if (!stationParam) return NextResponse.json({ error: "stationKey required" }, { status: 400 });
 
+  // Special station: "receipt" — tracked with literal key, not a Station.id.
+  if (stationParam === "receipt") {
+    const order = await prisma.order.findFirst({
+      where: { AND: [{ id: orderId }, ordersForStationPrintAgent(restaurant.id)] },
+      select: { id: true },
+    });
+    if (!order) return NextResponse.json({ error: "Order not found or not in kitchen queue" }, { status: 404 });
+
+    const existing = await prisma.orderStationPrintAck.findUnique({
+      where: { orderId_stationKey: { orderId: order.id, stationKey: "receipt" } },
+      select: { id: true },
+    });
+    if (existing) return NextResponse.json({ ok: true, alreadyAcked: true });
+
+    await prisma.orderStationPrintAck.create({
+      data: { orderId: order.id, stationKey: "receipt", restaurantId: restaurant.id },
+    });
+    return NextResponse.json({ ok: true });
+  }
+
   const stations = await prisma.station.findMany({
     where: { restaurantId: restaurant.id },
     select: { id: true, name: true },
