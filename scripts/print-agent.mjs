@@ -830,9 +830,23 @@ function formatReceiptLines(order) {
   }
 
   rows.push(dashes);
-  const totalStr = `EUR${(order.totalAmount / 100).toFixed(2)}`;
-  const labelPad = Math.max(1, w - "TOTAL".length - totalStr.length);
-  rows.push(`TOTAL${" ".repeat(labelPad)}${totalStr}`);
+  const vatRate = typeof order.vatRate === "number" ? order.vatRate : 0;
+  if (vatRate > 0) {
+    const totalCents = order.totalAmount;
+    const netCents = Math.round(totalCents / (1 + vatRate / 100));
+    const vatCents = totalCents - netCents;
+    const netStr = `EUR${(netCents / 100).toFixed(2)}`;
+    const vatStr = `EUR${(vatCents / 100).toFixed(2)}`;
+    const totalStr = `EUR${(totalCents / 100).toFixed(2)}`;
+    const netLabel = `Net (excl. VAT ${vatRate}%)`;
+    const vatLabel = `VAT ${vatRate}%`;
+    rows.push(`${netLabel}${" ".repeat(Math.max(1, w - netLabel.length - netStr.length))}${netStr}`);
+    rows.push(`${vatLabel}${" ".repeat(Math.max(1, w - vatLabel.length - vatStr.length))}${vatStr}`);
+    rows.push(`TOTAL${" ".repeat(Math.max(1, w - "TOTAL".length - totalStr.length))}${totalStr}`);
+  } else {
+    const totalStr = `EUR${(order.totalAmount / 100).toFixed(2)}`;
+    rows.push(`TOTAL${" ".repeat(Math.max(1, w - "TOTAL".length - totalStr.length))}${totalStr}`);
+  }
   rows.push(sep);
   rows.push(centerLine("THANK YOU!", w));
   rows.push(sep);

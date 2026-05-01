@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       take: 25,
       include: {
         table: { select: { name: true } },
-        restaurant: { select: { name: true } },
+        restaurant: { select: { name: true, vatRate: true } },
         stationAcks: { where: { stationKey: "receipt" }, select: { stationKey: true } },
         items: {
           include: { menuItem: { select: { name: true } } },
@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
         station: "receipt",
         stationLabel: "Receipt",
         restaurantName: o.restaurant.name,
+        vatRate: o.restaurant.vatRate ?? 0,
         tableName: o.table.name,
         status: o.status,
         createdAt: o.createdAt.toISOString(),
