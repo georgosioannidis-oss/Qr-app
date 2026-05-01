@@ -554,6 +554,7 @@ export function MenuManager() {
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [togglingCategoryId, setTogglingCategoryId] = useState<string | null>(null);
   const [persistingMenu, setPersistingMenu] = useState(false);
+  const [translatingAll, setTranslatingAll] = useState(false);
   const itemLayoutPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingItemLayoutRef = useRef<Category[] | null>(null);
   const categoryOrderPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -967,6 +968,29 @@ export function MenuManager() {
     }
   };
 
+  const handleTranslateAll = async () => {
+    setTranslatingAll(true);
+    try {
+      const res = await fetch("/api/dashboard/menu/translate-all", { method: "POST" });
+      const t = await res.text();
+      let d: { translatedItems?: number; translatedCategories?: number; locales?: string[]; error?: string } = {};
+      try { if (t) d = JSON.parse(t); } catch { /* ignore */ }
+      if (!res.ok) {
+        toast.error(d.error ?? "Translation failed");
+        return;
+      }
+      if (!d.locales?.length) {
+        toast.success("No other languages configured — add them in Options → Guest menu languages.");
+      } else {
+        toast.success(`Translated ${d.translatedItems ?? 0} items and ${d.translatedCategories ?? 0} categories into ${d.locales.join(", ")}.`);
+      }
+    } catch {
+      toast.error("Translation request failed");
+    } finally {
+      setTranslatingAll(false);
+    }
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     const id = String(event.active.id);
     if (id.startsWith(MENU_ITEM_PREFIX)) {
@@ -1127,6 +1151,33 @@ export function MenuManager() {
             )}
           </button>
         </form>
+      </div>
+
+      <div className="rounded-2xl border border-primary/20 bg-primary/[0.04] p-5 shadow-sm">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">Translate entire menu</h2>
+            <p className="mt-0.5 text-xs text-ink-muted">
+              Translates all item names, descriptions, options, and category names into every enabled language at once.
+              Requires languages to be configured in Options → Guest menu languages.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleTranslateAll()}
+            disabled={translatingAll || categories.length === 0}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary-hover disabled:opacity-50"
+          >
+            {translatingAll ? (
+              <>
+                <Spinner className="h-4 w-4 border-white border-t-transparent" />
+                Translating…
+              </>
+            ) : (
+              "Translate all"
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="space-y-5">
