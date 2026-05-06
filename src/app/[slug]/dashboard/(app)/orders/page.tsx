@@ -1,4 +1,4 @@
-import { GuestOrderingPauseCard } from "./GuestOrderingPauseCard";
+import { OrdersPauseBanner } from "./OrdersPauseBanner";
 import { OrdersList } from "./OrdersList";
 import { OrdersViewNav } from "./OrdersViewNav";
 
@@ -10,7 +10,7 @@ export default function OrdersPage() {
         <p className="text-ink-muted">Active orders and recent history. The list below refreshes on a short interval.</p>
       </div>
       <OrdersViewNav />
-      <GuestOrderingPauseCard />
+      <OrdersPauseBanner />
       <OrdersList />
     </div>
   );

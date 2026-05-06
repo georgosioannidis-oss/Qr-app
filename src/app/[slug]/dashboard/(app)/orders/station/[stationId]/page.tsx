@@ -1,4 +1,4 @@
-import { GuestOrderingPauseCard } from "../../GuestOrderingPauseCard";
+import { OrdersPauseBanner } from "../../OrdersPauseBanner";
 import { OrdersList } from "../../OrdersList";
 import { OrdersViewNav } from "../../OrdersViewNav";
 
@@ -15,7 +15,7 @@ export default async function OrdersStationPage({
         <p className="text-ink-muted">Orders with items assigned to this station. Refreshes every 15 seconds.</p>
       </div>
       <OrdersViewNav />
-      <GuestOrderingPauseCard />
+      <OrdersPauseBanner />
       <OrdersList stationId={stationId} />
     </div>
   );

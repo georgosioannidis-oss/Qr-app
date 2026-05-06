@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { GuestOrderingPauseCard } from "../orders/GuestOrderingPauseCard";
 import { BrandingForm } from "./BrandingForm";
 import { PrintAgentSection } from "./PrintAgentSection";
 import { WifiSettingsSection } from "./WifiSettingsSection";
@@ -117,6 +118,7 @@ export function BrandingPageClient() {
 
   return (
     <div className="space-y-10">
+      <GuestOrderingPauseCard />
       <BrandingForm
         initialName={data.name}
         initialLogoUrl={data.logoUrl ?? ""}
