@@ -7,10 +7,6 @@ import { toast } from "sonner";
 import { KitchenTicketPrintHint } from "@/components/KitchenTicketPrintHint";
 import { tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  filterOrderItemsForPreset,
-  type StationOrderPreset,
-} from "@/lib/orders-station-presets";
 
 type OrderItem = {
   quantity: number;
@@ -225,11 +221,11 @@ const STATUS_FILTER_OPTIONS = [
 ] as const;
 
 type OrdersListProps = {
-  /** When set, only matching lines are shown; station dropdown is hidden. */
-  stationPreset?: StationOrderPreset;
+  /** When set, only items assigned to this station ID are shown; station dropdown is hidden. */
+  stationId?: string;
 };
 
-export function OrdersList({ stationPreset }: OrdersListProps) {
+export function OrdersList({ stationId }: OrdersListProps) {
   const params = useParams();
   const tenantSlug = typeof params?.slug === "string" ? params.slug : "";
   const [tab, setTab] = useState<Tab>("current");
@@ -317,20 +313,23 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
   }, [orders]);
 
   const ordersForView = useMemo(() => {
-    if (!stationPreset) return orders;
+    if (!stationId) return orders;
     return orders.map((o) => ({
       ...o,
-      items: filterOrderItemsForPreset(o.items, stationPreset),
+      items: o.items.filter((item) => {
+        const s = item.menuItem.station ?? item.menuItem.category?.station ?? null;
+        return s?.id === stationId;
+      }),
     }));
-  }, [orders, stationPreset]);
+  }, [orders, stationId]);
 
   const filteredOrders = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return ordersForView.filter((o) => {
-      if (stationPreset && o.items.length === 0) return false;
+      if (stationId && o.items.length === 0) return false;
       if (statusFilter !== "all" && (o.status ?? "pending") !== statusFilter) return false;
       if (tableFilter !== "all" && o.table.token !== tableFilter) return false;
-      if (!stationPreset && stationFilter !== "all") {
+      if (!stationId && stationFilter !== "all") {
         const effectiveStation = (i: OrderItem) => i.menuItem.station ?? i.menuItem.category?.station ?? null;
         const match = stationFilter === "__default"
           ? o.items.some((i) => !effectiveStation(i))
@@ -344,12 +343,12 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
       }
       return true;
     });
-  }, [ordersForView, stationPreset, statusFilter, tableFilter, stationFilter, searchQuery]);
+  }, [ordersForView, stationId, statusFilter, tableFilter, stationFilter, searchQuery]);
 
   const filtersActive =
     statusFilter !== "all" ||
     tableFilter !== "all" ||
-    (!stationPreset && stationFilter !== "all") ||
+    (!stationId && stationFilter !== "all") ||
     searchQuery.trim().length > 0;
 
   const clearFilters = () => {
@@ -359,21 +358,6 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
     setSearchQuery("");
   };
 
-  const presetHelp =
-    stationPreset === "bar" ? (
-      <p className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-ink-muted">
-        Showing only lines routed to a station named <strong>Bar</strong>. Assign drinks to that station in{" "}
-        <strong>Menu</strong> or <strong>Stations</strong>.
-      </p>
-    ) : stationPreset === "cold-kitchen" ? (
-      <p className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-ink-muted">
-        Showing the combined food queue (<strong>Kitchen</strong> + <strong>Cold Kitchen</strong> + default kitchen).
-      </p>
-    ) : stationPreset === "full-kitchen" ? (
-      <p className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-ink-muted">
-        Showing the combined food queue (<strong>Kitchen</strong> + <strong>Cold Kitchen</strong> + default kitchen).
-      </p>
-    ) : null;
 
   const tabButtons = (
     <div className="flex gap-2">
@@ -405,8 +389,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
   if (loading) {
     return (
       <div className="space-y-6">
-        {presetHelp ? <div className="mb-3">{presetHelp}</div> : null}
-        <div className="mb-4">{tabButtons}</div>
+                <div className="mb-4">{tabButtons}</div>
         <div className="flex items-center gap-2 text-ink-muted">
           <span className="inline-block w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           Loading orders…
@@ -418,8 +401,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
   if (error) {
     return (
       <div className="space-y-6">
-        {presetHelp ? <div className="mb-3">{presetHelp}</div> : null}
-        <div className="mb-4">{tabButtons}</div>
+                <div className="mb-4">{tabButtons}</div>
         <div className="rounded-xl border border-border bg-card p-4 text-ink text-sm shadow-sm">
           {error}
         </div>
@@ -463,7 +445,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
             </option>
           ))}
         </select>
-        {stationOptions.length > 0 && !stationPreset ? (
+        {stationOptions.length > 0 && !stationId ? (
           <select
             value={stationFilter}
             onChange={(e) => setStationFilter(e.target.value)}
@@ -494,8 +476,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
   if (orders.length === 0) {
     return (
       <div className="space-y-6">
-        {presetHelp ? <div>{presetHelp}</div> : null}
-        <div>
+                <div>
           <p className="text-ink-muted mb-4">
             {tab === "current"
               ? "Active orders. List refreshes every 15 seconds."
@@ -521,8 +502,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
   if (filteredOrders.length === 0) {
     return (
       <div className="space-y-6">
-        {presetHelp ? <div>{presetHelp}</div> : null}
-        <div>
+                <div>
           <p className="text-ink-muted mb-4">
             {tab === "current"
               ? "Active orders. List refreshes every 15 seconds."
@@ -533,12 +513,12 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
         {filterToolbar}
         <div className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
           <p className="text-ink font-medium">
-            {stationPreset && orders.some((o) => o.items.length > 0)
+            {stationId && orders.some((o) => o.items.length > 0)
               ? "Nothing for this station right now"
               : "No orders match your filters"}
           </p>
           <p className="text-sm text-ink-muted mt-1">
-            {stationPreset && orders.some((o) => o.items.length > 0)
+            {stationId && orders.some((o) => o.items.length > 0)
               ? "Other queues may still have work — switch view above, or open All orders."
               : "Try another status, table, or search — or tap Reset."}
           </p>
@@ -556,8 +536,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
 
   return (
     <div className="space-y-6">
-      {presetHelp ? <div>{presetHelp}</div> : null}
-      <div>
+            <div>
         <p className="text-ink-muted mb-4">
           {tab === "current"
             ? "Active orders. List refreshes every 15 seconds."
@@ -577,7 +556,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
           const payLine = payLineLabel(order);
           const paySettled = isOrderPaymentSettled(order);
           const linesTotal = order.items.reduce((s, li) => s + li.unitPrice * li.quantity, 0);
-          const showSplitTotals = Boolean(stationPreset) && linesTotal !== order.totalAmount;
+          const showSplitTotals = Boolean(stationId) && linesTotal !== order.totalAmount;
           return (
           <div
             key={order.id}
@@ -589,7 +568,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
                 <span className="ml-2 text-sm text-ink-muted">
                   {formatDate(order.createdAt)}
                 </span>
-                {!stationPreset && tenantSlug ? (
+                {!stationId && tenantSlug ? (
                   <div className="mt-1.5">
                     <Link
                       href={tenantDashboardHref(tenantSlug, `/orders/print/${order.id}`)}
@@ -622,7 +601,7 @@ export function OrdersList({ stationPreset }: OrdersListProps) {
                 ) : null}
                 <div className="flex flex-col items-end gap-0.5">
                   <span className="text-lg font-bold text-ink tabular-nums">
-                    {stationPreset ? formatPrice(linesTotal) : formatPrice(order.totalAmount)}
+                    {stationId ? formatPrice(linesTotal) : formatPrice(order.totalAmount)}
                   </span>
                   {showSplitTotals ? (
                     <span className="text-xs font-medium text-ink-muted tabular-nums">
