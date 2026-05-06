@@ -34,6 +34,14 @@ model Restaurant {
   prepTimeEstimateMinutes Int?
   /// When true, guest QR menus cannot place new orders (kitchen overload). Staff dashboard unchanged.
   guestQrOrderingPaused Boolean @default(false)
+  /// When true, guests must be on the restaurant's registered WiFi IP to start a QR ordering session.
+  wifiEnforcementEnabled Boolean @default(false)
+  /// Public IP of the restaurant WiFi (captured from the Options tab while on that network).
+  allowedWifiIp          String?
+  /// Consecutive IP-mismatch failures since last IP update; resets to 0 after warning threshold is hit.
+  wifiIpFailureCount     Int     @default(0)
+  /// When true, show a banner in the owner dashboard that WiFi IP may need updating.
+  wifiIpWarnOwner        Boolean @default(false)
   /// VAT rate as an integer percentage (e.g. 19 for 19%). 0 = no VAT / not configured.
   vatRate      Int      @default(0)
   /// JSON array of enabled locale codes, e.g. ["el","en","de"]. Empty = no language switcher shown.

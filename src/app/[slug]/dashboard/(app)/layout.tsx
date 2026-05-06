@@ -131,6 +131,14 @@ export default async function AppLayout({
           </div>
         </div>
       </header>
+      {restaurant?.wifiIpWarnOwner && (
+        <div className="bg-red-600 text-white text-sm text-center px-4 py-2">
+          WiFi IP may have changed — guests cannot use QR codes to order.{" "}
+          <Link href={`/${slug}/dashboard/branding`} className="underline font-medium">
+            Update in Settings
+          </Link>
+        </div>
+      )}
       <main className="dashboard-copy mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 bg-surface">
         {children}
       </main>

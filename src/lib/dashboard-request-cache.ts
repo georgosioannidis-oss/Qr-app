@@ -29,6 +29,7 @@ export const getCachedRestaurantBranding = cache(async (restaurantId: string) =>
       staffMayEditMenuTables: true,
       navLabelOrdersQueue: true,
       navLabelGuestOrders: true,
+      wifiIpWarnOwner: true,
     },
   });
 });

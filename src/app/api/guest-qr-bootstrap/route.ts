@@ -8,8 +8,17 @@ import {
 import { publicAppOriginFromRequest } from "@/lib/staff-invite-url";
 import { prisma } from "@/lib/prisma";
 
+const WIFI_FAILURE_WARN_THRESHOLD = 5;
+
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "";
+}
+
 /**
- * Sets the httpOnly guest menu session cookie (20m) after a valid table QR proof.
+ * Sets the httpOnly guest menu session cookie (15m) after a valid table QR proof.
+ * Also enforces WiFi-only access if the restaurant has wifiEnforcementEnabled.
  * Must run in a Route Handler — Server Components cannot set cookies in Next.js 15+.
  */
 export async function GET(req: NextRequest) {
@@ -24,7 +33,16 @@ export async function GET(req: NextRequest) {
 
   const table = await prisma.table.findUnique({
     where: { token },
-    select: { orderingWindowNonce: true },
+    select: {
+      orderingWindowNonce: true,
+      restaurantId: true,
+      restaurant: {
+        select: {
+          wifiEnforcementEnabled: true,
+          allowedWifiIp: true,
+        },
+      },
+    },
   });
   const nonce = table?.orderingWindowNonce ?? 0;
 
@@ -32,6 +50,26 @@ export async function GET(req: NextRequest) {
   const origin = publicAppOriginFromRequest(req);
   const dest = new URL(`/m/${encodeURIComponent(token)}`, `${origin}/`);
   dest.search = "";
+
+  if (table?.restaurant.wifiEnforcementEnabled && table.restaurant.allowedWifiIp) {
+    const clientIp = getClientIp(req);
+    if (clientIp !== table.restaurant.allowedWifiIp) {
+      const updated = await prisma.restaurant.update({
+        where: { id: table.restaurantId },
+        data: { wifiIpFailureCount: { increment: 1 } },
+        select: { wifiIpFailureCount: true },
+      });
+      if (updated.wifiIpFailureCount >= WIFI_FAILURE_WARN_THRESHOLD) {
+        await prisma.restaurant.update({
+          where: { id: table.restaurantId },
+          data: { wifiIpWarnOwner: true, wifiIpFailureCount: 0 },
+        });
+      }
+      dest.searchParams.set("wifi_required", "1");
+      return NextResponse.redirect(dest);
+    }
+  }
+
   const res = NextResponse.redirect(dest);
   res.cookies.set(GUEST_QR_ACCESS_COOKIE, createAccessToken(token, nonce), {
     httpOnly: true,

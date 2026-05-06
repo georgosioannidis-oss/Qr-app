@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "crypto";
 import type { NextRequest } from "next/server";
 
-const ACCESS_WINDOW_SECONDS = 20 * 60;
+const ACCESS_WINDOW_SECONDS = 15 * 60;
 
 export const GUEST_QR_ACCESS_COOKIE = "qr_menu_access";
 export const GUEST_QR_ACCESS_MAX_AGE_SEC = ACCESS_WINDOW_SECONDS;

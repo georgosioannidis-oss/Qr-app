@@ -23,10 +23,10 @@ export default async function TableMenuPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ paid?: string; cancel?: string; qr?: string }>;
+  searchParams: Promise<{ paid?: string; cancel?: string; qr?: string; wifi_required?: string }>;
 }) {
   const { token } = await params;
-  const { paid, qr } = await searchParams;
+  const { paid, qr, wifi_required } = await searchParams;
   const table = await loadCustomerTableWithMenuByToken(token);
 
   if (!table) notFound();
@@ -42,12 +42,26 @@ export default async function TableMenuPage({
     jar.get(GUEST_QR_ACCESS_COOKIE)?.value
   );
   if (!hasCurrentAccess) {
+    if (wifi_required === "1") {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
+          <div className="max-w-md w-full rounded-3xl border border-border bg-card p-8 shadow-sm text-center">
+            <h2 className="text-xl font-bold text-ink mb-3 leading-snug">
+              Connect to {table.restaurant.name} WiFi to order
+            </h2>
+            <p className="text-base leading-relaxed text-ink-muted sm:text-sm">
+              This menu is only available on the restaurant&apos;s WiFi. Connect to the WiFi and scan the QR code again.
+            </p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
         <div className="max-w-md w-full rounded-3xl border border-border bg-card p-8 shadow-sm text-center">
           <h2 className="text-xl font-bold text-ink mb-3 leading-snug">Scan table QR to order</h2>
           <p className="text-base leading-relaxed text-ink-muted sm:text-sm">
-            Your ordering access has expired. Scan the QR code at your table again to start a new 20-minute session.
+            Your ordering access has expired. Scan the QR code at your table again to start a new 15-minute session.
           </p>
         </div>
       </div>

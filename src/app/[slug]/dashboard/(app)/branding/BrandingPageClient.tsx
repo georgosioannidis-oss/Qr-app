@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BrandingForm } from "./BrandingForm";
 import { PrintAgentSection } from "./PrintAgentSection";
+import { WifiSettingsSection } from "./WifiSettingsSection";
 
 export function BrandingPageClient() {
   const router = useRouter();
@@ -130,6 +131,7 @@ export function BrandingPageClient() {
         initialPrepTimeEstimateMinutes={data.prepTimeEstimateMinutes ?? null}
         initialVatRate={data.vatRate ?? 0}
       />
+      <WifiSettingsSection />
       <PrintAgentSection restaurantSlug={data.slug} />
     </div>
   );
