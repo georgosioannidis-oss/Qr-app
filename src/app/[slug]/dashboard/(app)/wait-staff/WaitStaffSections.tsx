@@ -2,9 +2,22 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-function playWaiterCallAlert() {
+let sharedAudioCtx: AudioContext | null = null;
+
+function getAudioCtx(): AudioContext | null {
   try {
-    const ctx = new AudioContext();
+    if (!sharedAudioCtx) sharedAudioCtx = new AudioContext();
+    return sharedAudioCtx;
+  } catch {
+    return null;
+  }
+}
+
+async function playWaiterCallAlert() {
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") await ctx.resume();
     const now = ctx.currentTime;
     [[440, 0], [660, 0.18], [880, 0.36]].forEach(([freq, delay]) => {
       const osc = ctx.createOscillator();
@@ -53,6 +66,19 @@ export function WaitStaffSections() {
   const [waiterCallCount, setWaiterCallCount] = useState<number | null>(null);
   const prevWaiterCallCount = useRef<number | null>(null);
 
+  useEffect(() => {
+    const unlock = () => {
+      const ctx = getAudioCtx();
+      if (ctx && ctx.state === "suspended") void ctx.resume();
+    };
+    window.addEventListener("pointerdown", unlock, { once: false });
+    window.addEventListener("keydown", unlock, { once: false });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
   const refreshIncomingCount = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard/orders/incoming?countOnly=1");
@@ -77,7 +103,7 @@ export function WaitStaffSections() {
       const data = (await res.json()) as { count?: number };
       const count = typeof data.count === "number" ? data.count : 0;
       if (prevWaiterCallCount.current !== null && count > prevWaiterCallCount.current) {
-        playWaiterCallAlert();
+        void playWaiterCallAlert();
       }
       prevWaiterCallCount.current = count;
       setWaiterCallCount(count);
