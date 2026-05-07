@@ -38,7 +38,6 @@ export function WaitStaffBillSettlement() {
   const [error, setError] = useState<string | null>(null);
   const [busyLine, setBusyLine] = useState<{ orderId: string; lineId: string } | null>(null);
   const [busyAllOrderId, setBusyAllOrderId] = useState<string | null>(null);
-  const [confirmOrder, setConfirmOrder] = useState<OpenBillOrder | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard/restaurant")
@@ -113,7 +112,6 @@ export function WaitStaffBillSettlement() {
   };
 
   const markEntireBill = async (orderId: string) => {
-    setConfirmOrder(null);
     setBusyAllOrderId(orderId);
     try {
       const res = await fetch(`/api/dashboard/orders/${orderId}/bill-lines`, {
@@ -205,7 +203,7 @@ export function WaitStaffBillSettlement() {
                 <button
                   type="button"
                   disabled={isAllBusy}
-                  onClick={() => setConfirmOrder(order)}
+                  onClick={() => void markEntireBill(order.id)}
                   className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
                 >
                   {isAllBusy ? (
@@ -252,49 +250,6 @@ export function WaitStaffBillSettlement() {
           </div>
         );
       })}
-      {confirmOrder && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-[2px] sm:items-center sm:px-4 sm:py-6"
-          onClick={() => setConfirmOrder(null)}
-        >
-          <div
-            className="w-full max-w-sm rounded-t-3xl border border-border bg-card p-6 shadow-2xl sm:rounded-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl">
-                💳
-              </div>
-              <div>
-                <p className="font-bold text-ink">Mark whole bill paid?</p>
-                <p className="text-sm text-ink-muted">{confirmOrder.table.name}</p>
-              </div>
-            </div>
-            <p className="mb-1 text-sm text-ink-muted">
-              This will mark all <strong>{confirmOrder.items.length} items</strong> on this ticket as collected.
-            </p>
-            <p className="mb-6 text-lg font-bold text-ink tabular-nums">
-              Total: {formatPrice(confirmOrder.totalAmount)}
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmOrder(null)}
-                className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl border-2 border-border bg-surface text-sm font-semibold text-ink hover:bg-card"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => void markEntireBill(confirmOrder.id)}
-                className="flex min-h-[48px] flex-1 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-white shadow-sm hover:opacity-95"
-              >
-                Yes, mark paid
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
