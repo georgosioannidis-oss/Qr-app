@@ -29,7 +29,6 @@ function buildLinks(
     { href: tenantDashboardHref(slug, "/tables"), label: "Tables", section: "tables" },
     { href: tenantDashboardHref(slug, "/stations"), label: "Stations", section: "stations" },
     { href: tenantDashboardHref(slug, "/wait-staff"), label: labelGuest, section: "waitStaff" },
-    { href: tenantDashboardHref(slug, "/floorplan"), label: "Floor Plan", section: "waitStaff" },
     { href: tenantDashboardHref(slug, "/orders"), label: labelOrders, section: "orders" },
     { href: tenantDashboardHref(slug, "/office"), label: "Office", section: "office" },
     { href: tenantDashboardHref(slug, "/branding"), label: "Options", section: "branding" },
