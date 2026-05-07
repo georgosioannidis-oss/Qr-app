@@ -48,7 +48,7 @@ export async function PATCH(
   if (forbidden) return forbidden;
   const restaurantId = session!.user.restaurantId!;
 
-  let body: { name?: string; tableSectionId?: string | null; sortOrder?: number };
+  let body: { name?: string; tableSectionId?: string | null; sortOrder?: number; floorX?: number | null; floorY?: number | null };
   try {
     body = await req.json();
   } catch {
@@ -63,7 +63,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const data: { name?: string; tableSectionId?: string; sortOrder?: number } = {};
+  const data: { name?: string; tableSectionId?: string; sortOrder?: number; floorX?: number | null; floorY?: number | null } = {};
 
   if (body.name !== undefined) {
     const name = typeof body.name === "string" ? body.name.trim().slice(0, 80) : "";
@@ -96,6 +96,11 @@ export async function PATCH(
     }
     data.sortOrder = body.sortOrder;
   }
+
+  if (typeof body.floorX === "number") data.floorX = Math.round(body.floorX);
+  else if (body.floorX === null) data.floorX = null;
+  if (typeof body.floorY === "number") data.floorY = Math.round(body.floorY);
+  else if (body.floorY === null) data.floorY = null;
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json(table);

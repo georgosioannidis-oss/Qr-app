@@ -66,6 +66,111 @@ function prepCountdownMessage(
     : `About ${minsLeft} minutes remaining (estimate).`;
 }
 
+type ReceiptItem = {
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  optionsSummary?: string;
+};
+
+function formatEur(cents: number) {
+  return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(cents / 100);
+}
+
+function formatDateTime(iso: string) {
+  return new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+function DigitalReceipt({
+  items,
+  totalAmount,
+  vatRate,
+  paymentPreference,
+  stripeSessionId,
+  orderCreatedAtIso,
+  restaurantName,
+  tableName,
+}: {
+  items: ReceiptItem[];
+  totalAmount: number;
+  vatRate: number;
+  paymentPreference?: string;
+  stripeSessionId?: string;
+  orderCreatedAtIso: string;
+  restaurantName: string;
+  tableName: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const payMethod = stripeSessionId
+    ? "Online card"
+    : paymentPreference === "card"
+    ? "Card at table"
+    : paymentPreference === "cash"
+    ? "Cash"
+    : null;
+
+  const vatAmount = vatRate > 0 ? Math.round(totalAmount - totalAmount / (1 + vatRate / 100)) : 0;
+  const netAmount = totalAmount - vatAmount;
+
+  return (
+    <div className="mt-4 w-full">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3 text-sm font-semibold text-ink hover:bg-card transition-colors"
+      >
+        <span>View receipt</span>
+        <span className="text-ink-muted text-xs">{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div className="mt-2 rounded-2xl border border-border bg-card p-5 text-left text-sm space-y-3">
+          <div className="text-center pb-2 border-b border-border">
+            <p className="font-bold text-ink">{restaurantName}</p>
+            <p className="text-ink-muted text-xs">{tableName} · {formatDateTime(orderCreatedAtIso)}</p>
+          </div>
+          <ul className="space-y-2">
+            {items.map((item, i) => (
+              <li key={i} className="flex justify-between gap-2">
+                <div>
+                  <span className="font-medium text-ink">{item.quantity}× {item.name}</span>
+                  {item.optionsSummary && (
+                    <span className="block text-xs text-ink-muted">{item.optionsSummary}</span>
+                  )}
+                </div>
+                <span className="font-medium text-ink tabular-nums shrink-0">
+                  {formatEur(item.unitPrice * item.quantity)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <div className="border-t border-border pt-3 space-y-1">
+            {vatRate > 0 && (
+              <>
+                <div className="flex justify-between text-xs text-ink-muted">
+                  <span>Subtotal (excl. VAT {vatRate}%)</span>
+                  <span className="tabular-nums">{formatEur(netAmount)}</span>
+                </div>
+                <div className="flex justify-between text-xs text-ink-muted">
+                  <span>VAT {vatRate}%</span>
+                  <span className="tabular-nums">{formatEur(vatAmount)}</span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between font-bold text-ink text-base">
+              <span>Total</span>
+              <span className="tabular-nums">{formatEur(totalAmount)}</span>
+            </div>
+            {payMethod && (
+              <p className="text-xs text-ink-muted pt-1">Payment: {payMethod}</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function OrderStatusView({
   orderId,
   tableToken,
@@ -73,6 +178,12 @@ export function OrderStatusView({
   restaurantName,
   restaurantLogoUrl,
   paidSuccess = false,
+  totalAmount,
+  paymentPreference,
+  stripeSessionId,
+  vatRate = 0,
+  orderCreatedAtIso,
+  receiptItems = [],
 }: {
   orderId: string;
   tableToken: string;
@@ -80,6 +191,12 @@ export function OrderStatusView({
   restaurantName: string;
   restaurantLogoUrl?: string;
   paidSuccess?: boolean;
+  totalAmount?: number;
+  paymentPreference?: string;
+  stripeSessionId?: string;
+  vatRate?: number;
+  orderCreatedAtIso?: string;
+  receiptItems?: ReceiptItem[];
 }) {
   const [status, setStatus] = useState<string | null>(null);
   const [orderCreatedAt, setOrderCreatedAt] = useState<string | null>(null);
@@ -257,6 +374,21 @@ export function OrderStatusView({
         >
           Back to menu
         </Link>
+        {receiptItems.length > 0 &&
+          totalAmount != null &&
+          orderCreatedAtIso != null &&
+          ["paid", "preparing", "ready", "delivered"].includes(status ?? "") && (
+            <DigitalReceipt
+              items={receiptItems}
+              totalAmount={totalAmount}
+              vatRate={vatRate}
+              paymentPreference={paymentPreference}
+              stripeSessionId={stripeSessionId}
+              orderCreatedAtIso={orderCreatedAtIso}
+              restaurantName={restaurantName}
+              tableName={tableName}
+            />
+          )}
       </div>
     </div>
   );

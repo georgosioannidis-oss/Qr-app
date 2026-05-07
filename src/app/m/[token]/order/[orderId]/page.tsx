@@ -23,7 +23,16 @@ export default async function OrderStatusPage({
     where: { id: orderId, table: { token } },
     include: {
       table: { select: { name: true } },
-      restaurant: { select: { name: true, logoUrl: true } },
+      restaurant: { select: { name: true, logoUrl: true, vatRate: true } },
+      items: {
+        select: {
+          quantity: true,
+          unitPrice: true,
+          optionPriceModifier: true,
+          selectedOptionsSummary: true,
+          menuItem: { select: { name: true } },
+        },
+      },
     },
   });
 
@@ -37,6 +46,17 @@ export default async function OrderStatusPage({
       restaurantName={order.restaurant.name}
       restaurantLogoUrl={order.restaurant.logoUrl ?? undefined}
       paidSuccess={paid === "1"}
+      totalAmount={order.totalAmount}
+      paymentPreference={order.paymentPreference ?? undefined}
+      stripeSessionId={order.stripeSessionId ?? undefined}
+      vatRate={order.restaurant.vatRate ?? 0}
+      orderCreatedAtIso={order.createdAt.toISOString()}
+      receiptItems={order.items.map((i) => ({
+        name: i.menuItem.name,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice + (i.optionPriceModifier ?? 0),
+        optionsSummary: i.selectedOptionsSummary ?? undefined,
+      }))}
     />
   );
 }

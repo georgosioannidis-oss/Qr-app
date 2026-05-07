@@ -42,6 +42,7 @@ type MenuItem = {
   allergenCodes?: string | null;
   stationId?: string | null;
   station?: Station | null;
+  badge?: string | null;
 };
 
 type Category = {
@@ -186,6 +187,7 @@ function SortableMenuItemRow({
       imageUrl?: string;
       optionGroups?: OptionGroup[];
       allergenCodes?: string[];
+      badge?: string | null;
     }
   ) => Promise<void>;
   onDeleteItem: (id: string) => void;
@@ -242,6 +244,11 @@ function SortableMenuItemRow({
                   <span>{item.name}</span>
                   {itemAllergenCodes.length > 0 ? (
                     <AllergenIconRow codes={itemAllergenCodes} variant="dense" />
+                  ) : null}
+                  {item.badge ? (
+                    <span className="ml-1.5 inline-block rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900 ring-1 ring-amber-400/40 sm:ml-2 sm:text-xs">
+                      {item.badge}
+                    </span>
                   ) : null}
                   {item.quickPrep === true ? (
                     <span className="ml-1.5 inline-block rounded-md bg-primary/12 px-1.5 py-0.5 text-[10px] font-medium text-primary sm:ml-2 sm:text-xs">
@@ -1858,6 +1865,7 @@ function ItemEditForm({
     optionGroups?: OptionGroup[];
     stationId?: string | null;
     allergenCodes?: string[];
+    badge?: string | null;
   }) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -1871,6 +1879,7 @@ function ItemEditForm({
   const [allergenCodes, setAllergenCodes] = useState<string[]>(() =>
     resolvedMenuItemAllergenCodes(item.name, item.allergenCodes)
   );
+  const [badge, setBadge] = useState<string>(item.badge ?? "");
   const [optionGroups, setOptionGroups] = useState<OptionGroup[]>(() =>
     parseOptionGroups(item.optionGroups)
   );
@@ -1926,6 +1935,7 @@ function ItemEditForm({
         optionGroups,
         stationId: stationId || null,
         allergenCodes,
+        badge: badge.trim() || null,
       });
     } catch {
       /* parent shows toast */
@@ -2018,6 +2028,44 @@ function ItemEditForm({
           </p>
         </div>
       </label>
+
+      <div>
+        <label className={lc}>Badge</label>
+        <p className="text-xs text-ink-muted mb-2">Shows a small highlight chip on the guest menu next to the item name.</p>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {["Bestseller", "Popular", "Chef's pick"].map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => setBadge(badge === preset ? "" : preset)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition ${
+                badge === preset
+                  ? "bg-amber-100 text-amber-900 ring-amber-400/60"
+                  : "bg-surface text-ink ring-border hover:ring-primary/40"
+              }`}
+            >
+              {preset === "Bestseller" ? "🔥 " : preset === "Popular" ? "⚡ " : "👨‍🍳 "}
+              {preset}
+            </button>
+          ))}
+        </div>
+        <input
+          type="text"
+          value={badge}
+          onChange={(e) => setBadge(e.target.value.slice(0, 40))}
+          placeholder="Custom label (optional)"
+          className={ic}
+        />
+        {badge && (
+          <button
+            type="button"
+            onClick={() => setBadge("")}
+            className="mt-1 text-xs font-semibold text-ink-muted hover:text-ink underline"
+          >
+            Remove badge
+          </button>
+        )}
+      </div>
 
       {stations.length > 0 && (
         <div>

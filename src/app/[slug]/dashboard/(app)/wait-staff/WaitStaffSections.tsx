@@ -60,13 +60,13 @@ export function WaitStaffSections() {
 
   useEffect(() => {
     void refreshIncomingCount();
-    const t = setInterval(refreshIncomingCount, 1000);
+    const t = setInterval(refreshIncomingCount, 3000);
     return () => clearInterval(t);
   }, [refreshIncomingCount]);
 
   useEffect(() => {
     void refreshWaiterCallCount();
-    const t = setInterval(refreshWaiterCallCount, 8000);
+    const t = setInterval(refreshWaiterCallCount, 3000);
     return () => clearInterval(t);
   }, [refreshWaiterCallCount]);
 

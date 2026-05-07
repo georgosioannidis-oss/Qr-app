@@ -129,6 +129,10 @@ model Table {
   waiterCalledAt DateTime?
   /// Incremented when staff mark the table as ready for new guests; invalidates any existing guest QR cookie.
   orderingWindowNonce Int @default(0)
+  /// X position on the floor plan canvas in pixels from top-left. Null = auto-placed.
+  floorX        Int?
+  /// Y position on the floor plan canvas in pixels from top-left. Null = auto-placed.
+  floorY        Int?
 
   orders Order[]
 
@@ -175,6 +179,8 @@ model MenuItem {
   /// Preparation station for order routing (null → default kitchen).
   stationId    String?
   station      Station? @relation(fields: [stationId], references: [id], onDelete: SetNull)
+  /// Owner-set badge label shown on the guest menu. Preset values: "Bestseller" | "Popular" | "Chef's pick". Any custom text is also allowed.
+  badge        String?
 
   orderItems   OrderItem[]
   translations MenuItemTranslation[]

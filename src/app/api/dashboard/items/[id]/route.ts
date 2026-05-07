@@ -40,6 +40,7 @@ export async function PATCH(
       optionGroups?: string | null;
       stationId?: string | null;
       allergenCodes?: string | null;
+      badge?: string | null;
     } = {};
     if (body.name !== undefined) updates.name = String(body.name).trim().slice(0, 200);
     if (body.description !== undefined)
@@ -68,6 +69,8 @@ export async function PATCH(
         typeof body.stationId === "string" && body.stationId ? body.stationId : null;
     if (body.allergenCodes !== undefined)
       updates.allergenCodes = normalizeAllergenCodesForSave(body.allergenCodes);
+    if (body.badge !== undefined)
+      updates.badge = body.badge == null || body.badge === "" ? null : String(body.badge).trim().slice(0, 40);
 
     const updated = await prisma.menuItem.update({
       where: { id },

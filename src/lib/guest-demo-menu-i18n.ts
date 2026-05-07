@@ -125,6 +125,7 @@ export type GuestMenuItem = {
   imageUrl?: string;
   optionGroups?: GuestOptionGroup[];
   allergenCodes?: string[];
+  badge?: string;
 };
 
 export type GuestMenuCategory = {

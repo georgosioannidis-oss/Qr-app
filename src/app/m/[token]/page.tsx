@@ -132,6 +132,7 @@ export default async function TableMenuPage({
               parseGuestMenuOptionGroups(i.optionGroups)
             ),
             ...(allergenCodes.length > 0 ? { allergenCodes } : {}),
+            ...(i.badge ? { badge: i.badge } : {}),
           };
         }),
       }))}

@@ -20,6 +20,7 @@ import {
   type GuestMenuCategory as Category,
   type GuestMenuItem as Item,
 } from "@/lib/guest-demo-menu-i18n";
+import { ALLERGEN_DEFS } from "@/lib/allergens";
 import { guestCategoryLabelWithEmoji } from "@/lib/guest-category-emoji";
 import { getGuestMenuUiStrings, type GuestMenuUiStrings } from "@/lib/guest-menu-ui-strings";
 import { SUPPORTED_LOCALES } from "@/lib/locale-config";
@@ -92,6 +93,38 @@ function WaiterBellGlyph({ className }: { className?: string }) {
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
+  );
+}
+
+const BADGE_PRESETS: Record<string, { icon: string; classes: string }> = {
+  "Bestseller": {
+    icon: "🔥",
+    classes: "bg-orange-100 text-orange-900 ring-orange-400/50",
+  },
+  "Popular": {
+    icon: "⚡",
+    classes: "bg-blue-100 text-blue-900 ring-blue-400/50",
+  },
+  "Chef's pick": {
+    icon: "👨‍🍳",
+    classes: "bg-violet-100 text-violet-900 ring-violet-400/50",
+  },
+};
+
+function ItemBadge({ label }: { label: string }) {
+  const preset = BADGE_PRESETS[label];
+  if (preset) {
+    return (
+      <span className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${preset.classes}`}>
+        <span aria-hidden>{preset.icon}</span>
+        {label}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full bg-ink/8 px-2 py-0.5 text-[10px] font-bold text-ink ring-1 ring-ink/15">
+      {label}
+    </span>
   );
 }
 
@@ -204,6 +237,8 @@ export function MenuView({
   const pullStartY = useRef<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const [callWaiterBusy, setCallWaiterBusy] = useState(false);
+  const [allergenFilterOpen, setAllergenFilterOpen] = useState(false);
+  const [allergenFilter, setAllergenFilter] = useState<Set<string>>(new Set());
 
   // --- Language / translation system ---
   // Real DB-backed translations take priority; legacy demo bilingual is kept as fallback for demo slugs.
@@ -243,10 +278,30 @@ export function MenuView({
     if (demoMode) return localizeGuestMenuCategories(categories, menuLang as never, restaurantSlug);
     return categories;
   }, [hasMultipleLocales, demoMode, translationMap, categories, menuLang, defaultLocale, restaurantSlug]);
+  const allergenFilteredCategories = useMemo(() => {
+    if (allergenFilter.size === 0) return localizedCategories;
+    return localizedCategories.map((c) => ({
+      ...c,
+      items: c.items.filter(
+        (i) => !i.allergenCodes?.some((code) => allergenFilter.has(code))
+      ),
+    }));
+  }, [localizedCategories, allergenFilter]);
+
+  const presentAllergenCodes = useMemo(() => {
+    const codes = new Set<string>();
+    for (const c of localizedCategories) {
+      for (const i of c.items) {
+        for (const code of i.allergenCodes ?? []) codes.add(code);
+      }
+    }
+    return ALLERGEN_DEFS.filter((d) => codes.has(d.code));
+  }, [localizedCategories]);
+
   const displayCategories = useMemo(() => {
     const q = menuSearch.trim().toLowerCase();
-    if (!q) return localizedCategories;
-    return localizedCategories
+    if (!q) return allergenFilteredCategories;
+    return allergenFilteredCategories
       .map((c) => ({
         ...c,
         items: c.items.filter(
@@ -256,7 +311,7 @@ export function MenuView({
         ),
       }))
       .filter((c) => c.items.length > 0);
-  }, [localizedCategories, menuSearch]);
+  }, [allergenFilteredCategories, menuSearch]);
 
   useEffect(() => {
     if (!hasMultipleLocales && !demoMode) return;
@@ -437,6 +492,15 @@ export function MenuView({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [allergenInfoOpen]);
+
+  useEffect(() => {
+    if (!allergenFilterOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAllergenFilterOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [allergenFilterOpen]);
 
   const totalCents = cart.reduce(
     (sum, i) => sum + (i.price + (i.optionPriceModifier ?? 0)) * i.quantity,
@@ -697,7 +761,8 @@ export function MenuView({
     !optionsModalItem &&
     !imagePreviewItem &&
     !searchMenuOpen &&
-    !allergenInfoOpen;
+    !allergenInfoOpen &&
+    !allergenFilterOpen;
 
   const mainBottomPad =
     totalItems > 0
@@ -865,6 +930,11 @@ export function MenuView({
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">
               {guestCategoryLabelWithEmoji(cat.name, cat.nameEl)}
             </h2>
+            {cat.items.length === 0 && allergenFilter.size > 0 ? (
+              <p className="py-3 text-xs text-ink-muted">
+                Nothing available for your current filters in this category.
+              </p>
+            ) : null}
             <ul className="space-y-2">
               {cat.items.map((item) => (
                 <li
@@ -895,6 +965,7 @@ export function MenuView({
                     <div className="flex min-w-0 flex-row items-baseline justify-between gap-2">
                       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-1.5 gap-y-1">
                         <p className="min-w-0 text-sm font-semibold leading-snug text-ink">{item.name}</p>
+                        {item.badge ? <ItemBadge label={item.badge} /> : null}
                         {item.allergenCodes?.length ? (
                           <AllergenIconRow codes={item.allergenCodes} />
                         ) : null}
@@ -971,6 +1042,39 @@ export function MenuView({
           ))
         )}
       </main>
+
+      {catalogChromeOnly && presentAllergenCodes.length > 0 ? (
+        <div
+          className="pointer-events-none fixed left-3 z-[18] flex flex-col items-center gap-1 sm:left-4"
+          style={{
+            bottom: totalItems > 0 ? "6.75rem" : "max(1rem, env(safe-area-inset-bottom, 0px))",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setAllergenFilterOpen(true)}
+            className={`pointer-events-auto relative flex h-11 w-11 items-center justify-center rounded-full shadow-lg ring-2 transition active:scale-95 ${
+              allergenFilter.size > 0
+                ? "bg-primary text-white ring-primary/50"
+                : "bg-card text-ink ring-border hover:bg-surface"
+            }`}
+            aria-label="Filter by allergens"
+            title="Filter by allergens"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            {allergenFilter.size > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-1 ring-white">
+                {allergenFilter.size}
+              </span>
+            )}
+          </button>
+          <span className="pointer-events-none max-w-[5rem] text-center text-[0.68rem] font-medium leading-tight text-ink-muted">
+            Filters{allergenFilter.size > 0 ? ` (${allergenFilter.size})` : ""}
+          </span>
+        </div>
+      ) : null}
 
       {catalogChromeOnly ? (
         <div
@@ -1117,6 +1221,87 @@ export function MenuView({
                 className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-md ring-1 ring-black/10 hover:bg-primary-hover"
               >
                 {ui.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {allergenFilterOpen ? (
+        <div
+          className="fixed inset-0 z-[38] flex items-end justify-center bg-black/45 backdrop-blur-[2px] sm:items-center sm:px-4 sm:py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="guest-allergen-filter-title"
+          onClick={() => setAllergenFilterOpen(false)}
+        >
+          <div
+            className="flex max-h-[min(88dvh,600px)] w-full max-w-md flex-col rounded-t-3xl border border-border bg-card shadow-2xl sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <h2 id="guest-allergen-filter-title" className="min-w-0 text-base font-bold text-ink sm:text-lg">
+                Filter by allergens
+              </h2>
+              <button
+                type="button"
+                onClick={() => setAllergenFilterOpen(false)}
+                className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-surface text-lg font-bold leading-none text-ink hover:bg-ink/5"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="shrink-0 px-4 pt-3 pb-1 text-sm text-ink-muted">
+              Select allergens to hide. Items containing any selected allergen will be removed from the menu.
+            </p>
+            <div className="flex-1 overflow-y-auto px-4 py-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {presentAllergenCodes.map((d) => {
+                  const active = allergenFilter.has(d.code);
+                  return (
+                    <button
+                      key={d.code}
+                      type="button"
+                      onClick={() => {
+                        setAllergenFilter((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(d.code)) next.delete(d.code);
+                          else next.add(d.code);
+                          return next;
+                        });
+                      }}
+                      className={`flex min-h-[44px] items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-medium transition-colors ${
+                        active
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-border bg-surface text-ink hover:border-primary/40"
+                      }`}
+                    >
+                      <span className={`h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center ${active ? "border-primary bg-primary" : "border-ink-muted"}`}>
+                        {active && <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M2 6l3 3 5-5"/></svg>}
+                      </span>
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="shrink-0 flex gap-2 border-t border-border px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+              {allergenFilter.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setAllergenFilter(new Set())}
+                  className="flex min-h-[44px] flex-1 items-center justify-center rounded-xl border-2 border-border bg-surface py-2.5 text-sm font-semibold text-ink hover:bg-card"
+                >
+                  Clear filters
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setAllergenFilterOpen(false)}
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-primary py-2.5 text-sm font-semibold text-white shadow-md ring-1 ring-black/10 hover:bg-primary-hover"
+              >
+                {allergenFilter.size > 0 ? `Apply (${allergenFilter.size})` : "Done"}
               </button>
             </div>
           </div>

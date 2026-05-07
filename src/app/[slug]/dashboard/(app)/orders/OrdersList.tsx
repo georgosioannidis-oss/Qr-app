@@ -278,7 +278,7 @@ export function OrdersList({ stationId }: OrdersListProps) {
 
   useEffect(() => {
     if (tab !== "current") return;
-    const t = setInterval(() => void fetchOrders(false), 15000);
+    const t = setInterval(() => void fetchOrders(false), 3000);
     return () => clearInterval(t);
   }, [tab, fetchOrders]);
 
@@ -479,7 +479,7 @@ export function OrdersList({ stationId }: OrdersListProps) {
                 <div>
           <p className="text-ink-muted mb-4">
             {tab === "current"
-              ? "Active orders. List refreshes every 15 seconds."
+              ? "Active orders. Updates every 3 seconds."
               : "Delivered orders and those declined at wait staff."}
           </p>
           {tabButtons}
@@ -505,7 +505,7 @@ export function OrdersList({ stationId }: OrdersListProps) {
                 <div>
           <p className="text-ink-muted mb-4">
             {tab === "current"
-              ? "Active orders. List refreshes every 15 seconds."
+              ? "Active orders. Updates every 3 seconds."
               : "Order history (delivered & declined)."}
           </p>
           {tabButtons}
@@ -539,7 +539,7 @@ export function OrdersList({ stationId }: OrdersListProps) {
             <div>
         <p className="text-ink-muted mb-4">
           {tab === "current"
-            ? "Active orders. List refreshes every 15 seconds."
+            ? "Active orders. Updates every 3 seconds."
             : "Order history (delivered & declined)."}
           {filtersActive && (
             <span className="block sm:inline sm:ml-1 mt-1 sm:mt-0 text-ink font-medium">

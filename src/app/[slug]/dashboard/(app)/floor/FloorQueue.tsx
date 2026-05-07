@@ -17,6 +17,7 @@ type Order = {
   status: string;
   totalAmount: number;
   createdAt: string;
+  isStaffOrder?: boolean;
   table: { name: string; token: string };
   items: OrderItem[];
 };
@@ -78,7 +79,7 @@ export function FloorQueue() {
   }, []);
 
   useEffect(() => {
-    const t = setInterval(load, 12000);
+    const t = setInterval(load, 3000);
     return () => clearInterval(t);
   }, []);
 
@@ -163,6 +164,11 @@ export function FloorQueue() {
                 >
                   {order.status === "pending" ? "Awaiting payment" : order.status}
                 </span>
+                {order.isStaffOrder && (
+                  <span className="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-950 ring-1 ring-sky-700/40 group-data-[theme=dark]/dashboard:bg-sky-950/35 group-data-[theme=dark]/dashboard:text-sky-50 group-data-[theme=dark]/dashboard:ring-sky-500/45">
+                    Staff order
+                  </span>
+                )}
                 <span className="text-lg font-bold tabular-nums text-ink">
                   {formatPrice(order.totalAmount)}
                 </span>
