@@ -1,6 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+function playWaiterCallAlert() {
+  try {
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    [[440, 0], [660, 0.18], [880, 0.36]].forEach(([freq, delay]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0, now + delay);
+      gain.gain.linearRampToValueAtTime(0.35, now + delay + 0.04);
+      gain.gain.linearRampToValueAtTime(0, now + delay + 0.22);
+      osc.start(now + delay);
+      osc.stop(now + delay + 0.25);
+    });
+  } catch {
+    /* audio not available */
+  }
+}
 import { WaitStaffBillSettlement } from "./WaitStaffBillSettlement";
 import { WaitStaffQueue } from "./WaitStaffQueue";
 import { WaitStaffTablePicker } from "./WaitStaffTablePicker";
@@ -29,6 +51,7 @@ export function WaitStaffSections() {
   const [tab, setTab] = useState<SectionId>("incoming");
   const [incomingCount, setIncomingCount] = useState<number | null>(null);
   const [waiterCallCount, setWaiterCallCount] = useState<number | null>(null);
+  const prevWaiterCallCount = useRef<number | null>(null);
 
   const refreshIncomingCount = useCallback(async () => {
     try {
@@ -52,7 +75,12 @@ export function WaitStaffSections() {
         return;
       }
       const data = (await res.json()) as { count?: number };
-      setWaiterCallCount(typeof data.count === "number" ? data.count : 0);
+      const count = typeof data.count === "number" ? data.count : 0;
+      if (prevWaiterCallCount.current !== null && count > prevWaiterCallCount.current) {
+        playWaiterCallAlert();
+      }
+      prevWaiterCallCount.current = count;
+      setWaiterCallCount(count);
     } catch {
       setWaiterCallCount(0);
     }
