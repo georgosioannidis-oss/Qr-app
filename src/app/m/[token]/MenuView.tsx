@@ -242,6 +242,7 @@ export function MenuView({
   const [callWaiterBusy, setCallWaiterBusy] = useState(false);
   const [billRequestBusy, setBillRequestBusy] = useState(false);
   const [billAlreadySent, setBillAlreadySent] = useState(false);
+  const [upsellSheet, setUpsellSheet] = useState<{ suggestions: Item[] } | null>(null);
   const [hasPlacedOrder, setHasPlacedOrder] = useState(false);
   const [allergenFilterOpen, setAllergenFilterOpen] = useState(false);
   const [allergenFilter, setAllergenFilter] = useState<Set<string>>(new Set());
@@ -539,6 +540,14 @@ export function MenuView({
     return () => window.removeEventListener("keydown", onKey);
   }, [allergenFilterOpen]);
 
+  const itemMap = useMemo(() => {
+    const map: Record<string, Item> = {};
+    for (const cat of categories) {
+      for (const item of cat.items) map[item.id] = item;
+    }
+    return map;
+  }, [categories]);
+
   const totalCents = cart.reduce(
     (sum, i) => sum + (i.price + (i.optionPriceModifier ?? 0)) * i.quantity,
     0
@@ -570,6 +579,13 @@ export function MenuView({
       return [...prev, newLine];
     });
     setOptionsModalItem(null);
+    if (item.upsellItemIds?.length) {
+      const cartIds = new Set(cart.map((c) => c.id));
+      const suggestions = item.upsellItemIds
+        .map((id) => itemMap[id])
+        .filter((s): s is Item => Boolean(s) && !cartIds.has(s.id));
+      if (suggestions.length > 0) setUpsellSheet({ suggestions });
+    }
     if (opts?.flashQuickAdd) {
       setFlashItemId(item.id);
       window.setTimeout(() => setFlashItemId(null), 1800);
@@ -1704,6 +1720,59 @@ export function MenuView({
                 className="min-h-[48px] w-full rounded-xl border-2 border-border bg-card text-base font-semibold text-ink hover:bg-ink/5"
               >
                 {ui.close}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {upsellSheet && upsellSheet.suggestions.length > 0 ? (
+        <div
+          className="fixed inset-0 z-[45] flex items-end justify-center bg-black/50"
+          onClick={() => setUpsellSheet(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-3xl bg-card shadow-2xl pb-safe"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-ink/15" />
+            <div className="px-5 pb-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Goes well with</p>
+            </div>
+            <ul className="divide-y divide-border px-3 pb-4">
+              {upsellSheet.suggestions.map((s) => (
+                <li key={s.id} className="flex items-center gap-3 py-3">
+                  {s.imageUrl ? (
+                    <img src={s.imageUrl} alt="" className="h-14 w-14 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="h-14 w-14 rounded-xl bg-ink/5 shrink-0" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-ink leading-snug">{s.name}</p>
+                    <p className="text-sm text-ink-muted">{formatPrice(s.price)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      addToCart(s);
+                      const remaining = upsellSheet.suggestions.filter((x) => x.id !== s.id);
+                      if (remaining.length === 0) setUpsellSheet(null);
+                      else setUpsellSheet({ suggestions: remaining });
+                    }}
+                    className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 active:scale-95 transition"
+                  >
+                    Add
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="px-4 pb-5">
+              <button
+                type="button"
+                onClick={() => setUpsellSheet(null)}
+                className="w-full min-h-[44px] rounded-xl border-2 border-border bg-surface text-sm font-semibold text-ink-muted hover:bg-ink/5"
+              >
+                No thanks
               </button>
             </div>
           </div>

@@ -179,6 +179,7 @@ export default async function TableMenuPage({
             ),
             ...(allergenCodes.length > 0 ? { allergenCodes } : {}),
             ...(i.badge ? { badge: i.badge } : {}),
+            ...(i.upsellItemIds ? { upsellItemIds: (() => { try { return JSON.parse(i.upsellItemIds); } catch { return undefined; } })() } : {}),
           };
         }),
       }))}

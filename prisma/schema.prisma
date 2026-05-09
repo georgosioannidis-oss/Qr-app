@@ -196,6 +196,8 @@ model MenuItem {
   badge        String?
   /// Set when kitchen marks item sold out for the day; null or from a previous day = available again (auto-reset at midnight).
   soldOutAt    DateTime?
+  /// JSON array of up to 3 MenuItem IDs shown as upsell suggestions when this item is added to cart.
+  upsellItemIds String?
 
   orderItems   OrderItem[]
   translations MenuItemTranslation[]

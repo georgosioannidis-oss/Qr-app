@@ -126,6 +126,7 @@ export type GuestMenuItem = {
   optionGroups?: GuestOptionGroup[];
   allergenCodes?: string[];
   badge?: string;
+  upsellItemIds?: string[];
 };
 
 export type GuestMenuCategory = {

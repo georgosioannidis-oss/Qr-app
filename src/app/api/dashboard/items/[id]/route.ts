@@ -41,6 +41,7 @@ export async function PATCH(
       stationId?: string | null;
       allergenCodes?: string | null;
       badge?: string | null;
+      upsellItemIds?: string | null;
     } = {};
     if (body.name !== undefined) updates.name = String(body.name).trim().slice(0, 200);
     if (body.description !== undefined)
@@ -71,6 +72,12 @@ export async function PATCH(
       updates.allergenCodes = normalizeAllergenCodesForSave(body.allergenCodes);
     if (body.badge !== undefined)
       updates.badge = body.badge == null || body.badge === "" ? null : String(body.badge).trim().slice(0, 40);
+    if (body.upsellItemIds !== undefined) {
+      const ids = Array.isArray(body.upsellItemIds) ? body.upsellItemIds : [];
+      updates.upsellItemIds = ids.length === 0
+        ? null
+        : JSON.stringify(ids.filter((id): id is string => typeof id === "string").slice(0, 3));
+    }
 
     const updated = await prisma.menuItem.update({
       where: { id },

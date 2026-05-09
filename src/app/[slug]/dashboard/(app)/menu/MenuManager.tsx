@@ -43,6 +43,7 @@ type MenuItem = {
   stationId?: string | null;
   station?: Station | null;
   badge?: string | null;
+  upsellItemIds?: string | null;
 };
 
 type ScheduleWindow = { start: string; end: string };
@@ -981,6 +982,8 @@ export function MenuManager() {
       optionGroups?: OptionGroup[];
       stationId?: string | null;
       allergenCodes?: string[];
+      badge?: string | null;
+      upsellItemIds?: string[];
     }
   ) => {
     setError("");
@@ -1613,9 +1616,15 @@ function MenuItemEditModal({
       optionGroups?: OptionGroup[];
       stationId?: string | null;
       allergenCodes?: string[];
+      badge?: string | null;
+      upsellItemIds?: string[];
     }
   ) => Promise<void>;
 }) {
+  const allItems = useMemo(
+    () => categories.flatMap((c) => c.items.map((i) => ({ id: i.id, name: i.name, categoryName: c.name }))),
+    [categories]
+  );
   const resolved = useMemo(() => {
     for (const c of categories) {
       const it = c.items.find((i) => i.id === itemId);
@@ -1692,6 +1701,7 @@ function MenuItemEditModal({
             item={resolved.item}
             formVariant="modal"
             stations={stations}
+            allItems={allItems}
             inputClass={inputClass}
             numberFieldClass={numberFieldClass}
             labelClass={labelClass}
@@ -1982,6 +1992,7 @@ function ItemEditForm({
   numberFieldClass: nf,
   labelClass: lc,
   stations = [],
+  allItems = [],
   onSave,
   onCancel,
 }: {
@@ -1991,6 +2002,7 @@ function ItemEditForm({
   numberFieldClass: string;
   labelClass: string;
   stations?: Station[];
+  allItems?: { id: string; name: string; categoryName: string }[];
   onSave: (u: {
     name?: string;
     description?: string;
@@ -2002,6 +2014,7 @@ function ItemEditForm({
     stationId?: string | null;
     allergenCodes?: string[];
     badge?: string | null;
+    upsellItemIds?: string[];
   }) => Promise<void>;
   onCancel: () => void;
 }) {
@@ -2016,6 +2029,9 @@ function ItemEditForm({
     resolvedMenuItemAllergenCodes(item.name, item.allergenCodes)
   );
   const [badge, setBadge] = useState<string>(item.badge ?? "");
+  const [upsellIds, setUpsellIds] = useState<string[]>(() => {
+    try { return item.upsellItemIds ? JSON.parse(item.upsellItemIds) : []; } catch { return []; }
+  });
   const [optionGroups, setOptionGroups] = useState<OptionGroup[]>(() =>
     parseOptionGroups(item.optionGroups)
   );
@@ -2072,6 +2088,7 @@ function ItemEditForm({
         stationId: stationId || null,
         allergenCodes,
         badge: badge.trim() || null,
+        upsellItemIds: upsellIds,
       });
     } catch {
       /* parent shows toast */
@@ -2202,6 +2219,51 @@ function ItemEditForm({
           </button>
         )}
       </div>
+
+      {allItems.length > 1 && (
+        <div>
+          <label className={lc}>Upsell suggestions</label>
+          <p className="text-xs text-ink-muted mb-2">
+            When a guest adds this item to their cart, show a &ldquo;Goes well with&rdquo; popup with these items. Up to 3.
+          </p>
+          {upsellIds.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {upsellIds.map((id) => {
+                const found = allItems.find((a) => a.id === id);
+                return (
+                  <span key={id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary ring-1 ring-primary/20">
+                    {found?.name ?? "Unknown item"}
+                    <button
+                      type="button"
+                      onClick={() => setUpsellIds((prev) => prev.filter((x) => x !== id))}
+                      className="ml-0.5 text-primary/60 hover:text-primary leading-none"
+                      aria-label="Remove"
+                    >×</button>
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          {upsellIds.length < 3 && (
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) setUpsellIds((prev) => [...prev, e.target.value]);
+              }}
+              className={ic}
+            >
+              <option value="">Add a suggestion…</option>
+              {allItems
+                .filter((a) => a.id !== item.id && !upsellIds.includes(a.id))
+                .map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.categoryName} — {a.name}
+                  </option>
+                ))}
+            </select>
+          )}
+        </div>
+      )}
 
       {stations.length > 0 && (
         <div>
