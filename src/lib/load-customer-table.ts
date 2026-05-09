@@ -29,6 +29,8 @@ const menuInclude = {
       enabledLocales: true,
       defaultLocale: true,
       timezone: true,
+      openingTime: true,
+      closingTime: true,
       menuCategories: {
         where: { isAvailable: true },
         orderBy: { sortOrder: "asc" as const },

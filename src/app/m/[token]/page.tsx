@@ -69,6 +69,33 @@ export default async function TableMenuPage({
     );
   }
 
+  // Opening hours check — runs before MenuView so it works independently of manual pause
+  const tz = table.restaurant.timezone ?? "UTC";
+  const { openingTime, closingTime } = table.restaurant;
+  if (openingTime && closingTime) {
+    const nowMins = nowMinutesInTz(tz);
+    const isOpen = isCategoryActiveNow([{ start: openingTime, end: closingTime }], nowMins);
+    if (!isOpen) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
+          <div className="max-w-md w-full rounded-3xl border border-border bg-card p-8 shadow-sm text-center">
+            {table.restaurant.logoUrl ? (
+              <img src={table.restaurant.logoUrl} alt="" className="h-12 w-auto mx-auto mb-4 object-contain" />
+            ) : null}
+            <p className="text-sm font-semibold uppercase tracking-wide text-ink-muted mb-1">{table.restaurant.name}</p>
+            <div className="w-14 h-14 rounded-full bg-ink/5 flex items-center justify-center text-2xl mx-auto mb-4 ring-1 ring-ink/10">
+              🕐
+            </div>
+            <h2 className="text-xl font-bold text-ink mb-3 leading-snug">We&apos;re closed right now</h2>
+            <p className="text-base leading-relaxed text-ink-muted sm:text-sm">
+              We open at {openingTime}. See you soon!
+            </p>
+          </div>
+        </div>
+      );
+    }
+  }
+
   const enabledLocales = parseEnabledLocales(table.restaurant.enabledLocales);
   const defaultLocale = table.restaurant.defaultLocale ?? "el";
 
@@ -95,7 +122,6 @@ export default async function TableMenuPage({
     }
   }
 
-  const tz = table.restaurant.timezone ?? "UTC";
   const nowMins = nowMinutesInTz(tz);
   const tzNow = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
 

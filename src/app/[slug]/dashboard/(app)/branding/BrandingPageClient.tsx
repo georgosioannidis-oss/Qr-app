@@ -27,6 +27,8 @@ export function BrandingPageClient() {
     vatRate?: number;
     timezone?: string;
     pauseMessage?: string | null;
+    openingTime?: string | null;
+    closingTime?: string | null;
   } | null>(null);
 
   useEffect(() => {
@@ -51,6 +53,8 @@ export function BrandingPageClient() {
           prepTimeEstimateMinutes?: number | null;
           timezone?: string;
           pauseMessage?: string | null;
+          openingTime?: string | null;
+          closingTime?: string | null;
         } = {};
         try {
           if (text) json = JSON.parse(text);
@@ -87,6 +91,8 @@ export function BrandingPageClient() {
               typeof json.prepTimeEstimateMinutes === "number" ? json.prepTimeEstimateMinutes : null,
             timezone: typeof json.timezone === "string" ? json.timezone : undefined,
             pauseMessage: typeof json.pauseMessage === "string" ? json.pauseMessage : null,
+            openingTime: typeof json.openingTime === "string" ? json.openingTime : null,
+            closingTime: typeof json.closingTime === "string" ? json.closingTime : null,
           });
         }
       } catch (e) {
@@ -140,6 +146,8 @@ export function BrandingPageClient() {
         initialVatRate={data.vatRate ?? 0}
         initialTimezone={data.timezone}
         initialPauseMessage={data.pauseMessage ?? ""}
+        initialOpeningTime={data.openingTime ?? ""}
+        initialClosingTime={data.closingTime ?? ""}
       />
       <WifiSettingsSection />
       <PrintAgentSection restaurantSlug={data.slug} />

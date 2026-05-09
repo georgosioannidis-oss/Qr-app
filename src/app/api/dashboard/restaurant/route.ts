@@ -37,6 +37,8 @@ export async function GET() {
         defaultLocale: true,
         timezone: true,
         pauseMessage: true,
+        openingTime: true,
+        closingTime: true,
       },
     });
 
@@ -75,6 +77,8 @@ export async function PATCH(req: NextRequest) {
     vatRate?: number | null | string;
     timezone?: string;
     pauseMessage?: string | null;
+    openingTime?: string | null;
+    closingTime?: string | null;
   };
   try {
     body = await req.json();
@@ -110,6 +114,8 @@ export async function PATCH(req: NextRequest) {
       vatRate?: number;
       timezone?: string;
       pauseMessage?: string | null;
+      openingTime?: string | null;
+      closingTime?: string | null;
     } = {};
 
     if (body.logoUrl !== undefined) {
@@ -207,6 +213,17 @@ export async function PATCH(req: NextRequest) {
         ? null
         : String(body.pauseMessage).trim().slice(0, 200) || null;
       data.pauseMessage = msg;
+    }
+
+    const timeRe = /^\d{2}:\d{2}$/;
+    if (body.openingTime !== undefined || body.closingTime !== undefined) {
+      const ot = body.openingTime == null || body.openingTime === "" ? null : String(body.openingTime).trim();
+      const ct = body.closingTime == null || body.closingTime === "" ? null : String(body.closingTime).trim();
+      if ((ot && !timeRe.test(ot)) || (ct && !timeRe.test(ct))) {
+        return NextResponse.json({ error: "openingTime/closingTime must be HH:MM" }, { status: 400 });
+      }
+      data.openingTime = ot && ct ? ot : null;
+      data.closingTime = ot && ct ? ct : null;
     }
 
     if (Object.keys(data).length === 0) {

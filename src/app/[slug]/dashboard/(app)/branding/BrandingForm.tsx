@@ -37,6 +37,8 @@ export function BrandingForm({
   initialVatRate,
   initialTimezone,
   initialPauseMessage,
+  initialOpeningTime,
+  initialClosingTime,
 }: {
   initialName: string;
   initialLogoUrl: string;
@@ -52,6 +54,8 @@ export function BrandingForm({
   initialVatRate?: number;
   initialTimezone?: string;
   initialPauseMessage?: string;
+  initialOpeningTime?: string;
+  initialClosingTime?: string;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -83,6 +87,8 @@ export function BrandingForm({
   );
   const [timezone, setTimezone] = useState(initialTimezone ?? "Europe/Athens");
   const [pauseMessage, setPauseMessage] = useState(initialPauseMessage ?? "");
+  const [openingTime, setOpeningTime] = useState(initialOpeningTime ?? "");
+  const [closingTime, setClosingTime] = useState(initialClosingTime ?? "");
   const [showCustomColor, setShowCustomColor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -109,6 +115,8 @@ export function BrandingForm({
     );
     setTimezone(initialTimezone ?? "Europe/Athens");
     setPauseMessage(initialPauseMessage ?? "");
+    setOpeningTime(initialOpeningTime ?? "");
+    setClosingTime(initialClosingTime ?? "");
   }, [
     initialName,
     initialLogoUrl,
@@ -124,6 +132,8 @@ export function BrandingForm({
     initialVatRate,
     initialTimezone,
     initialPauseMessage,
+    initialOpeningTime,
+    initialClosingTime,
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -177,6 +187,8 @@ export function BrandingForm({
           vatRate: vatRateValue,
           timezone,
           pauseMessage: pauseMessage.trim() || null,
+          openingTime: openingTime && closingTime ? openingTime : null,
+          closingTime: openingTime && closingTime ? closingTime : null,
         }),
       });
       const text = await res.text();
@@ -462,6 +474,49 @@ export function BrandingForm({
           className="w-full rounded-xl border-2 border-border bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-muted/50 focus:border-primary focus:outline-none resize-none"
         />
         <p className="mt-1 text-xs text-ink-muted">{pauseMessage.length}/200</p>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-ink mb-1">Opening hours</h2>
+        <p className="text-ink-muted mb-4 text-sm">
+          Outside these hours the guest menu shows a &ldquo;We&rsquo;re closed&rdquo; screen automatically. Leave blank for no restriction.
+          Both fields must be filled — set the same time to disable.
+        </p>
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Opens at</span>
+            <input
+              type="time"
+              value={openingTime}
+              onChange={(e) => setOpeningTime(e.target.value)}
+              className="rounded-xl border-2 border-border bg-card px-4 py-2.5 text-ink focus:border-primary focus:outline-none"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Closes at</span>
+            <input
+              type="time"
+              value={closingTime}
+              onChange={(e) => setClosingTime(e.target.value)}
+              className="rounded-xl border-2 border-border bg-card px-4 py-2.5 text-ink focus:border-primary focus:outline-none"
+            />
+          </label>
+          {(openingTime || closingTime) ? (
+            <button
+              type="button"
+              onClick={() => { setOpeningTime(""); setClosingTime(""); }}
+              className="text-xs text-ink-muted underline hover:text-red-600 pb-2.5"
+            >
+              Clear hours
+            </button>
+          ) : null}
+        </div>
+        {openingTime && closingTime ? (
+          <p className="mt-2 text-xs text-emerald-600">
+            Active — guests can order between {openingTime} and {closingTime}
+            {closingTime < openingTime ? " (overnight)" : ""}.
+          </p>
+        ) : null}
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">

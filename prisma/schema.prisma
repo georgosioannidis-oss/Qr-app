@@ -52,6 +52,10 @@ model Restaurant {
   defaultLocale  String @default("el")
   /// IANA timezone used for time-scheduled menu categories (e.g. "Europe/Athens"). Defaults to Athens.
   timezone       String @default("Europe/Athens")
+  /// Opening time in HH:MM (e.g. "10:00"). Null = no schedule restriction (always open).
+  openingTime    String?
+  /// Closing time in HH:MM (e.g. "23:00"). Supports overnight if end < start. Null = no restriction.
+  closingTime    String?
   createdAt    DateTime @default(now())
 
   users          RestaurantUser[]
