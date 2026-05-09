@@ -76,7 +76,7 @@ export async function PATCH(
       const ids = Array.isArray(body.upsellItemIds) ? body.upsellItemIds : [];
       updates.upsellItemIds = ids.length === 0
         ? null
-        : JSON.stringify(ids.filter((id): id is string => typeof id === "string").slice(0, 3));
+        : JSON.stringify((ids as unknown[]).filter((x): x is string => typeof x === "string").slice(0, 3));
     }
 
     const updated = await prisma.menuItem.update({
