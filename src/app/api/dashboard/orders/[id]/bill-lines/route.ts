@@ -43,7 +43,7 @@ export async function PATCH(
 
   const order = await prisma.order.findFirst({
     where: { id: orderId, restaurantId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, tableId: true },
   });
   if (!order) {
     return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -62,6 +62,10 @@ export async function PATCH(
     await prisma.order.update({
       where: { id: orderId },
       data: { billPaidAt: new Date() },
+    });
+    await prisma.table.update({
+      where: { id: order.tableId },
+      data: { billRequestedAt: null },
     });
     const row = await prisma.order.findUnique({
       where: { id: orderId },
@@ -96,6 +100,13 @@ export async function PATCH(
   });
 
   const { allPaid, billPaidAt } = await syncOrderBillPaidAt(orderId);
+
+  if (allPaid) {
+    await prisma.table.update({
+      where: { id: order.tableId },
+      data: { billRequestedAt: null },
+    });
+  }
 
   return NextResponse.json({
     ok: true,

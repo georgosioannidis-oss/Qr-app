@@ -237,6 +237,8 @@ export function MenuView({
   const pullStartY = useRef<number | null>(null);
   const [pullDistance, setPullDistance] = useState(0);
   const [callWaiterBusy, setCallWaiterBusy] = useState(false);
+  const [billRequestBusy, setBillRequestBusy] = useState(false);
+  const [hasPlacedOrder, setHasPlacedOrder] = useState(false);
   const [allergenFilterOpen, setAllergenFilterOpen] = useState(false);
   const [allergenFilter, setAllergenFilter] = useState<Set<string>>(new Set());
 
@@ -341,10 +343,13 @@ export function MenuView({
         localStorage.setItem(key, sid);
       }
       setGuestSessionId(sid);
+      if (localStorage.getItem(`qr_has_ordered_${tableToken}`) === "1") {
+        setHasPlacedOrder(true);
+      }
     } catch {
       setGuestSessionId(createGuestSessionId());
     }
-  }, []);
+  }, [tableToken]);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -379,6 +384,28 @@ export function MenuView({
       setCallWaiterBusy(false);
     }
   }, [tableToken, ui]);
+
+  const requestBill = useCallback(async () => {
+    setBillRequestBusy(true);
+    toast.success("Bill request sent — your waiter is on the way.");
+    try {
+      const res = await fetch("/api/customer/bill-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tableToken }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        let data: { error?: string } = {};
+        try { if (text) data = JSON.parse(text); } catch { /* ignore */ }
+        toast.error(data.error ?? "Could not send bill request. Please try again.");
+      }
+    } catch {
+      toast.error("Could not send bill request. Please try again.");
+    } finally {
+      setBillRequestBusy(false);
+    }
+  }, [tableToken]);
 
   useEffect(() => {
     if (!displayCategories.some((c) => c.id === activeCategory)) {
@@ -583,6 +610,8 @@ export function MenuView({
       setCart([]);
       setCartOpen(false);
       setShowPostOrderThankYou(true);
+      setHasPlacedOrder(true);
+      try { localStorage.setItem(`qr_has_ordered_${tableToken}`, "1"); } catch { /* ignore */ }
     }
 
     try {
@@ -609,6 +638,8 @@ export function MenuView({
           setCart([]);
           setCartOpen(false);
           setShowPostOrderThankYou(true);
+          setHasPlacedOrder(true);
+          try { localStorage.setItem(`qr_has_ordered_${tableToken}`, "1"); } catch { /* ignore */ }
         }
       }
     } catch (e) {
@@ -1078,30 +1109,60 @@ export function MenuView({
 
       {catalogChromeOnly ? (
         <div
-          className="pointer-events-none fixed right-3 z-[18] flex flex-col items-center gap-1 sm:right-4"
+          className="pointer-events-none fixed right-3 z-[18] flex flex-col items-center gap-2 sm:right-4"
           style={{
             bottom: totalItems > 0 ? "6.75rem" : "max(1rem, env(safe-area-inset-bottom, 0px))",
           }}
         >
-          <button
-            type="button"
-            onClick={() => void callWaiter()}
-            disabled={callWaiterBusy}
-            className={`pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg ring-2 ring-violet-400/50 transition hover:bg-violet-700 disabled:opacity-55 dark:bg-violet-600 dark:ring-violet-400/35 dark:hover:bg-violet-500 ${
-              prefersReducedMotion ? "" : "active:scale-95"
-            }`}
-            aria-label={ui.callWaiterAria}
-            title={ui.callWaiterAria}
-          >
-            {callWaiterBusy ? (
-              <Spinner className="h-5 w-5 border-white border-t-transparent" label="" />
-            ) : (
-              <WaiterBellGlyph className="h-5 w-5" />
-            )}
-          </button>
-          <span className="pointer-events-none max-w-[6rem] text-center text-[0.68rem] font-medium leading-tight text-ink-muted">
-            {ui.callWaiterCaption}
-          </span>
+          {hasPlacedOrder ? (
+            <div className="pointer-events-auto flex flex-col items-center gap-1">
+              <button
+                type="button"
+                onClick={() => void requestBill()}
+                disabled={billRequestBusy}
+                className={`flex h-11 w-11 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg ring-2 ring-amber-300/50 transition hover:bg-amber-600 disabled:opacity-55 dark:bg-amber-500 dark:ring-amber-400/35 dark:hover:bg-amber-400 ${
+                  prefersReducedMotion ? "" : "active:scale-95"
+                }`}
+                aria-label="Ask for the bill"
+                title="Ask for the bill"
+              >
+                {billRequestBusy ? (
+                  <Spinner className="h-5 w-5 border-white border-t-transparent" label="" />
+                ) : (
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <path d="M3 10h18" />
+                    <path d="M7 15h4" />
+                    <path d="M15 15h2" />
+                  </svg>
+                )}
+              </button>
+              <span className="pointer-events-none max-w-[6rem] text-center text-[0.68rem] font-medium leading-tight text-ink-muted">
+                Ask for bill
+              </span>
+            </div>
+          ) : null}
+          <div className="pointer-events-auto flex flex-col items-center gap-1">
+            <button
+              type="button"
+              onClick={() => void callWaiter()}
+              disabled={callWaiterBusy}
+              className={`flex h-11 w-11 items-center justify-center rounded-full bg-violet-600 text-white shadow-lg ring-2 ring-violet-400/50 transition hover:bg-violet-700 disabled:opacity-55 dark:bg-violet-600 dark:ring-violet-400/35 dark:hover:bg-violet-500 ${
+                prefersReducedMotion ? "" : "active:scale-95"
+              }`}
+              aria-label={ui.callWaiterAria}
+              title={ui.callWaiterAria}
+            >
+              {callWaiterBusy ? (
+                <Spinner className="h-5 w-5 border-white border-t-transparent" label="" />
+              ) : (
+                <WaiterBellGlyph className="h-5 w-5" />
+              )}
+            </button>
+            <span className="pointer-events-none max-w-[6rem] text-center text-[0.68rem] font-medium leading-tight text-ink-muted">
+              {ui.callWaiterCaption}
+            </span>
+          </div>
         </div>
       ) : null}
 

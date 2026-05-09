@@ -13,6 +13,7 @@ type TableRow = {
   token: string;
   sortOrder: number;
   waiterCalledAt: string | null;
+  billRequestedAt: string | null;
 };
 
 type SectionRow = {
@@ -30,6 +31,7 @@ export function WaitStaffTablePicker() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [clearingId, setClearingId] = useState<string | null>(null);
+  const [clearingBillId, setClearingBillId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -111,6 +113,26 @@ export function WaitStaffTablePicker() {
     }
   };
 
+  const clearBill = async (tableId: string) => {
+    setClearingBillId(tableId);
+    try {
+      const res = await fetch(`/api/dashboard/wait-staff/tables/${tableId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clearBillRequest: true }),
+      });
+      const text = await res.text();
+      let d: { error?: string } = {};
+      try { if (text) d = JSON.parse(text); } catch { /* ignore */ }
+      if (!res.ok) { toast.error(d.error ?? "Could not clear bill request"); return; }
+      await load();
+    } catch {
+      toast.error("Request failed");
+    } finally {
+      setClearingBillId(null);
+    }
+  };
+
   const tableCount = sections.reduce((n, s) => n + s.tables.length, 0);
 
   return (
@@ -118,8 +140,7 @@ export function WaitStaffTablePicker() {
       <h2 className="text-lg font-semibold text-ink">Tables</h2>
       <p className="mt-1 text-sm text-ink-muted">
         A <strong className="text-violet-700 dark:text-violet-300">purple</strong> table means a guest tapped{" "}
-        <strong>Call waiter</strong>. Tap the bar on that table after you visit to clear it. Use{" "}
-        <strong>Take order</strong> to place an order on behalf of the guest.
+        <strong>Call waiter</strong>. An <strong className="text-amber-700 dark:text-amber-400">amber</strong> bar means they want the <strong>bill</strong>. Tap the bar to clear after you visit.
       </p>
 
       {loading ? (
@@ -142,6 +163,8 @@ export function WaitStaffTablePicker() {
                 <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                   {section.tables.map((t) => {
                     const called = t.waiterCalledAt != null;
+                    const billRequested = t.billRequestedAt != null;
+                    const hasTopBar = called || billRequested;
                     return (
                       <li key={t.id} className="flex flex-col gap-0">
                         {called ? (
@@ -161,6 +184,27 @@ export function WaitStaffTablePicker() {
                             )}
                           </button>
                         ) : null}
+                        {billRequested ? (
+                          <button
+                            type="button"
+                            onClick={() => void clearBill(t.id)}
+                            disabled={clearingBillId === t.id}
+                            className={`flex min-h-[40px] w-full items-center justify-center px-2 py-2 text-center text-xs font-bold text-white shadow-sm transition disabled:opacity-60 ${
+                              called
+                                ? "bg-amber-500 hover:bg-amber-600"
+                                : "rounded-t-xl bg-amber-500 hover:bg-amber-600"
+                            }`}
+                          >
+                            {clearingBillId === t.id ? (
+                              <>
+                                <Spinner className="mr-2 h-3.5 w-3.5 border-white border-t-transparent" label="" />
+                                Clearing…
+                              </>
+                            ) : (
+                              "Tap to clear — bill requested"
+                            )}
+                          </button>
+                        ) : null}
                         <Link
                           href={`/m/${t.token}`}
                           target="_blank"
@@ -168,6 +212,8 @@ export function WaitStaffTablePicker() {
                           className={`flex min-h-[48px] items-center justify-center border-2 px-3 py-3 text-center text-sm font-semibold shadow-sm transition-colors ${
                             called
                               ? "rounded-b-xl rounded-t-none border-violet-500 bg-violet-100/80 text-violet-950 ring-1 ring-violet-400/30 hover:bg-violet-100 dark:border-violet-500 dark:bg-violet-950/50 dark:text-violet-100 dark:hover:bg-violet-900/50"
+                              : billRequested
+                              ? "rounded-b-xl rounded-t-none border-amber-400 bg-amber-50/80 text-amber-950 ring-1 ring-amber-300/40 hover:bg-amber-50 dark:border-amber-500 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-900/40"
                               : "rounded-xl border-border bg-card text-ink hover:border-primary/50 hover:bg-primary/5"
                           }`}
                         >

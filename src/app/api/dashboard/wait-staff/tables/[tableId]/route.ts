@@ -19,17 +19,17 @@ export async function PATCH(
   const restaurantId = session!.user.restaurantId!;
   const { tableId } = await params;
 
-  let body: { clearWaiterCall?: boolean; resetOrderingWindow?: boolean };
+  let body: { clearWaiterCall?: boolean; resetOrderingWindow?: boolean; clearBillRequest?: boolean };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { clearWaiterCall, resetOrderingWindow } = body;
-  if (!clearWaiterCall && !resetOrderingWindow) {
+  const { clearWaiterCall, resetOrderingWindow, clearBillRequest } = body;
+  if (!clearWaiterCall && !resetOrderingWindow && !clearBillRequest) {
     return NextResponse.json(
-      { error: "Send { clearWaiterCall: true } or { resetOrderingWindow: true }" },
+      { error: "Send clearWaiterCall, clearBillRequest, or resetOrderingWindow" },
       { status: 400 }
     );
   }
@@ -38,6 +38,7 @@ export async function PATCH(
     where: { id: tableId, restaurantId },
     data: {
       ...(clearWaiterCall && { waiterCalledAt: null }),
+      ...(clearBillRequest && { billRequestedAt: null }),
       ...(resetOrderingWindow && { orderingWindowNonce: { increment: 1 } }),
     },
   });

@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
       include: {
         tables: {
           orderBy: { sortOrder: "asc" },
-          select: { id: true, name: true, token: true, sortOrder: true, waiterCalledAt: true, floorX: true, floorY: true },
+          select: { id: true, name: true, token: true, sortOrder: true, waiterCalledAt: true, billRequestedAt: true, floorX: true, floorY: true },
         },
       },
     });

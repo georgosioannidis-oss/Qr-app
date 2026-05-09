@@ -129,6 +129,8 @@ model Table {
   guestQrOrderingPaused Boolean @default(false)
   /// Set when the guest taps “Call waiter” on the menu; staff clears after visiting the table.
   waiterCalledAt DateTime?
+  /// Set when the guest taps “Ask for the bill”; cleared manually by staff or auto on payment.
+  billRequestedAt DateTime?
   /// Incremented when staff mark the table as ready for new guests; invalidates any existing guest QR cookie.
   orderingWindowNonce Int @default(0)
   /// X position on the floor plan canvas in pixels from top-left. Null = auto-placed.
@@ -140,6 +142,7 @@ model Table {
 
   @@index([restaurantId])
   @@index([restaurantId, waiterCalledAt])
+  @@index([restaurantId, billRequestedAt])
   @@index([tableSectionId])
   @@index([tableSectionId, sortOrder])
 }

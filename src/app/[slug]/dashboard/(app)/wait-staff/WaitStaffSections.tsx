@@ -19,18 +19,44 @@ async function playWaiterCallAlert() {
     if (!ctx) return;
     if (ctx.state === "suspended") await ctx.resume();
     const now = ctx.currentTime;
+    // Ascending tones: 440 → 660 → 880 Hz
     [[440, 0], [660, 0.18], [880, 0.36]].forEach(([freq, delay]) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.frequency.value = freq;
+      osc.frequency.value = freq!;
       osc.type = "sine";
-      gain.gain.setValueAtTime(0, now + delay);
-      gain.gain.linearRampToValueAtTime(0.35, now + delay + 0.04);
-      gain.gain.linearRampToValueAtTime(0, now + delay + 0.22);
-      osc.start(now + delay);
-      osc.stop(now + delay + 0.25);
+      gain.gain.setValueAtTime(0, now + delay!);
+      gain.gain.linearRampToValueAtTime(0.35, now + delay! + 0.04);
+      gain.gain.linearRampToValueAtTime(0, now + delay! + 0.22);
+      osc.start(now + delay!);
+      osc.stop(now + delay! + 0.25);
+    });
+  } catch {
+    /* audio not available */
+  }
+}
+
+async function playBillRequestAlert() {
+  try {
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") await ctx.resume();
+    const now = ctx.currentTime;
+    // Descending tones: 880 → 660 → 440 Hz — distinct from waiter call
+    [[880, 0], [660, 0.2], [440, 0.4]].forEach(([freq, delay]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq!;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0, now + delay!);
+      gain.gain.linearRampToValueAtTime(0.28, now + delay! + 0.04);
+      gain.gain.linearRampToValueAtTime(0, now + delay! + 0.24);
+      osc.start(now + delay!);
+      osc.stop(now + delay! + 0.27);
     });
   } catch {
     /* audio not available */
@@ -65,6 +91,8 @@ export function WaitStaffSections() {
   const [incomingCount, setIncomingCount] = useState<number | null>(null);
   const [waiterCallCount, setWaiterCallCount] = useState<number | null>(null);
   const prevWaiterCallCount = useRef<number | null>(null);
+  const [billRequestCount, setBillRequestCount] = useState<number | null>(null);
+  const prevBillRequestCount = useRef<number | null>(null);
 
   useEffect(() => {
     const unlock = () => {
@@ -112,6 +140,22 @@ export function WaitStaffSections() {
     }
   }, []);
 
+  const refreshBillRequestCount = useCallback(async () => {
+    try {
+      const res = await fetch("/api/dashboard/wait-staff/bill-request-count");
+      if (!res.ok) { setBillRequestCount(0); return; }
+      const data = (await res.json()) as { count?: number };
+      const count = typeof data.count === "number" ? data.count : 0;
+      if (prevBillRequestCount.current !== null && count > prevBillRequestCount.current) {
+        void playBillRequestAlert();
+      }
+      prevBillRequestCount.current = count;
+      setBillRequestCount(count);
+    } catch {
+      setBillRequestCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     void refreshIncomingCount();
     const t = setInterval(refreshIncomingCount, 3000);
@@ -125,9 +169,15 @@ export function WaitStaffSections() {
   }, [refreshWaiterCallCount]);
 
   useEffect(() => {
+    void refreshBillRequestCount();
+    const t = setInterval(refreshBillRequestCount, 3000);
+    return () => clearInterval(t);
+  }, [refreshBillRequestCount]);
+
+  useEffect(() => {
     if (tab === "incoming") void refreshIncomingCount();
-    if (tab === "tables") void refreshWaiterCallCount();
-  }, [tab, refreshIncomingCount, refreshWaiterCallCount]);
+    if (tab === "tables") { void refreshWaiterCallCount(); void refreshBillRequestCount(); }
+  }, [tab, refreshIncomingCount, refreshWaiterCallCount, refreshBillRequestCount]);
 
   return (
     <div className="space-y-5">
@@ -142,6 +192,8 @@ export function WaitStaffSections() {
             s.id === "incoming" && incomingCount !== null && incomingCount > 0;
           const showTablesCallBadge =
             s.id === "tables" && waiterCallCount !== null && waiterCallCount > 0;
+          const showBillBadge =
+            s.id === "tables" && billRequestCount !== null && billRequestCount > 0;
           const incomingBadgeLabel =
             incomingCount === null || incomingCount < 1
               ? s.label
@@ -188,7 +240,16 @@ export function WaitStaffSections() {
                     title={`${waiterCallCount} table(s) calling`}
                     aria-hidden
                   >
-                    {waiterCallCount > 99 ? "99+" : waiterCallCount}
+                    {waiterCallCount! > 99 ? "99+" : waiterCallCount}
+                  </span>
+                ) : null}
+                {showBillBadge ? (
+                  <span
+                    className="inline-flex min-h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[11px] font-bold tabular-nums text-white shadow-sm ring-2 ring-white/90 dark:ring-white/20"
+                    title={`${billRequestCount} table(s) want the bill`}
+                    aria-hidden
+                  >
+                    {billRequestCount! > 99 ? "99+" : billRequestCount}
                   </span>
                 ) : null}
               </span>
