@@ -36,6 +36,7 @@ export function BrandingForm({
   initialPrepTimeEstimateMinutes,
   initialVatRate,
   initialTimezone,
+  initialPauseMessage,
 }: {
   initialName: string;
   initialLogoUrl: string;
