@@ -1728,24 +1728,38 @@ export function MenuView({
 
       {upsellSheet && upsellSheet.suggestions.length > 0 ? (
         <div
-          className="fixed inset-0 z-[45] flex items-end justify-center bg-black/50"
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55"
           onClick={() => setUpsellSheet(null)}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl bg-card shadow-2xl pb-safe"
+            className="flex w-full max-w-md flex-col rounded-t-3xl bg-card shadow-2xl"
+            style={{ maxHeight: "70dvh", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-ink/15" />
-            <div className="px-5 pb-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Goes well with</p>
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between px-5 pt-4 pb-2">
+              <div>
+                <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-ink/15" />
+                <p className="text-xs font-semibold uppercase tracking-wide text-ink-muted">Goes well with</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUpsellSheet(null)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-ink/8 text-ink text-lg leading-none hover:bg-ink/15 transition"
+                aria-label="Close"
+              >
+                ×
+              </button>
             </div>
-            <ul className="divide-y divide-border px-3 pb-4">
+
+            {/* Scrollable suggestion list */}
+            <ul className="min-h-0 flex-1 overflow-y-auto divide-y divide-border px-3">
               {upsellSheet.suggestions.map((s) => (
                 <li key={s.id} className="flex items-center gap-3 py-3">
                   {s.imageUrl ? (
-                    <img src={s.imageUrl} alt="" className="h-14 w-14 rounded-xl object-cover shrink-0" />
+                    <img src={s.imageUrl} alt="" className="h-14 w-14 shrink-0 rounded-xl object-cover" />
                   ) : (
-                    <div className="h-14 w-14 rounded-xl bg-ink/5 shrink-0" />
+                    <div className="h-14 w-14 shrink-0 rounded-xl bg-ink/5" />
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-ink leading-snug">{s.name}</p>
@@ -1759,18 +1773,20 @@ export function MenuView({
                       if (remaining.length === 0) setUpsellSheet(null);
                       else setUpsellSheet({ suggestions: remaining });
                     }}
-                    className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 active:scale-95 transition"
+                    className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700 active:scale-95"
                   >
                     Add
                   </button>
                 </li>
               ))}
             </ul>
-            <div className="px-4 pb-5">
+
+            {/* Sticky dismiss button */}
+            <div className="shrink-0 px-4 py-4">
               <button
                 type="button"
                 onClick={() => setUpsellSheet(null)}
-                className="w-full min-h-[44px] rounded-xl border-2 border-border bg-surface text-sm font-semibold text-ink-muted hover:bg-ink/5"
+                className="w-full min-h-[48px] rounded-xl border-2 border-border bg-surface text-sm font-semibold text-ink-muted hover:bg-ink/5"
               >
                 No thanks
               </button>
