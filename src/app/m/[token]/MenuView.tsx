@@ -175,6 +175,8 @@ type Props = {
   payAtTableCashEnabled?: boolean;
   /** Kitchen overload: block new guest orders from this QR link (staff flow unchanged). */
   guestOrderingPaused?: boolean;
+  /** Custom message shown when ordering is paused; falls back to generic built-in text if absent. */
+  pauseMessage?: string;
   categories: Category[];
   /** When `moustakallis` (or legacy `demo-restaurant` slug), guest can switch EL/EN/RU/FR/PL for menu + UI. */
   restaurantSlug?: string | null;
@@ -198,6 +200,7 @@ export function MenuView({
   payAtTableCardEnabled = true,
   payAtTableCashEnabled = true,
   guestOrderingPaused = false,
+  pauseMessage,
   categories,
   restaurantSlug = null,
   isStaffOrder = false,
@@ -735,8 +738,12 @@ export function MenuView({
           <div className="w-14 h-14 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-200 flex items-center justify-center text-2xl mx-auto mb-4 ring-1 ring-amber-500/25">
             ⏸
           </div>
-          <h2 className="text-xl font-bold text-ink mb-3 leading-snug">{ui.orderingPausedTitle}</h2>
-          <p className="text-base leading-relaxed text-ink-muted sm:text-sm">{ui.orderingPausedHint}</p>
+          <h2 className="text-xl font-bold text-ink mb-3 leading-snug">
+            {pauseMessage ? "Ordering is currently paused" : ui.orderingPausedTitle}
+          </h2>
+          <p className={`text-base leading-relaxed sm:text-sm ${pauseMessage ? "text-ink" : "text-ink-muted"}`}>
+            {pauseMessage ?? ui.orderingPausedHint}
+          </p>
         </div>
       </div>
     );

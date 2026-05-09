@@ -36,6 +36,7 @@ export async function GET() {
         enabledLocales: true,
         defaultLocale: true,
         timezone: true,
+        pauseMessage: true,
       },
     });
 
@@ -73,6 +74,7 @@ export async function PATCH(req: NextRequest) {
     prepTimeEstimateMinutes?: number | null | string;
     vatRate?: number | null | string;
     timezone?: string;
+    pauseMessage?: string | null;
   };
   try {
     body = await req.json();
@@ -107,6 +109,7 @@ export async function PATCH(req: NextRequest) {
       prepTimeEstimateMinutes?: number | null;
       vatRate?: number;
       timezone?: string;
+      pauseMessage?: string | null;
     } = {};
 
     if (body.logoUrl !== undefined) {
@@ -197,6 +200,13 @@ export async function PATCH(req: NextRequest) {
     if (body.timezone !== undefined) {
       const tz = String(body.timezone).trim();
       if (tz) data.timezone = tz;
+    }
+
+    if (body.pauseMessage !== undefined) {
+      const msg = body.pauseMessage == null || body.pauseMessage === ""
+        ? null
+        : String(body.pauseMessage).trim().slice(0, 200) || null;
+      data.pauseMessage = msg;
     }
 
     if (Object.keys(data).length === 0) {

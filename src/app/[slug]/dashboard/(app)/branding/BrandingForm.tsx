@@ -50,6 +50,7 @@ export function BrandingForm({
   initialPrepTimeEstimateMinutes?: number | null;
   initialVatRate?: number;
   initialTimezone?: string;
+  initialPauseMessage?: string;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,6 +81,7 @@ export function BrandingForm({
     initialVatRate != null && initialVatRate > 0 ? String(initialVatRate) : ""
   );
   const [timezone, setTimezone] = useState(initialTimezone ?? "Europe/Athens");
+  const [pauseMessage, setPauseMessage] = useState(initialPauseMessage ?? "");
   const [showCustomColor, setShowCustomColor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -105,6 +107,7 @@ export function BrandingForm({
       initialVatRate != null && initialVatRate > 0 ? String(initialVatRate) : ""
     );
     setTimezone(initialTimezone ?? "Europe/Athens");
+    setPauseMessage(initialPauseMessage ?? "");
   }, [
     initialName,
     initialLogoUrl,
@@ -119,6 +122,7 @@ export function BrandingForm({
     initialPrepTimeEstimateMinutes,
     initialVatRate,
     initialTimezone,
+    initialPauseMessage,
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -171,6 +175,7 @@ export function BrandingForm({
           prepTimeEstimateMinutes,
           vatRate: vatRateValue,
           timezone,
+          pauseMessage: pauseMessage.trim() || null,
         }),
       });
       const text = await res.text();
@@ -441,6 +446,21 @@ export function BrandingForm({
           <option value="Asia/Nicosia">Asia/Nicosia</option>
           <option value="UTC">UTC</option>
         </select>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-ink mb-1">Ordering paused — custom message</h2>
+        <p className="text-ink-muted mb-4 text-sm">
+          When you pause ordering, guests see this message instead of the generic screen. Leave blank to keep the default.
+        </p>
+        <textarea
+          value={pauseMessage}
+          onChange={(e) => setPauseMessage(e.target.value.slice(0, 200))}
+          rows={3}
+          placeholder="e.g. Kitchen is very busy — please ask your waiter to order for you."
+          className="w-full rounded-xl border-2 border-border bg-card px-4 py-2.5 text-sm text-ink placeholder:text-ink-muted/50 focus:border-primary focus:outline-none resize-none"
+        />
+        <p className="mt-1 text-xs text-ink-muted">{pauseMessage.length}/200</p>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
