@@ -35,6 +35,7 @@ export function BrandingForm({
   initialPayAtTableCashEnabled,
   initialPrepTimeEstimateMinutes,
   initialVatRate,
+  initialTimezone,
 }: {
   initialName: string;
   initialLogoUrl: string;
