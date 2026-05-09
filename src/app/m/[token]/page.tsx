@@ -13,6 +13,7 @@ import { GUEST_QR_ACCESS_COOKIE, isValidQrProof, verifyAccessToken } from "@/lib
 import { ensureMinTwoPeopleOptionGroup } from "@/lib/min-two-people-option";
 import { parseGuestMenuOptionGroups } from "@/lib/parse-guest-menu-option-groups";
 import { parseEnabledLocales } from "@/lib/locale-config";
+import { nowMinutesInTz, isCategoryActiveNow, parseScheduleWindows } from "@/lib/category-schedule";
 import { MenuView } from "./MenuView";
 import type { TranslationMap } from "./MenuView";
 
@@ -94,7 +95,13 @@ export default async function TableMenuPage({
     }
   }
 
-  const menu = table.restaurant.menuCategories.filter((c) => c.items.length > 0);
+  const nowMins = nowMinutesInTz(table.restaurant.timezone ?? "UTC");
+  const menu = table.restaurant.menuCategories.filter((c) => {
+    if (c.items.length === 0) return false;
+    const windows = parseScheduleWindows(c.scheduleWindows);
+    if (windows.length === 0) return true;
+    return isCategoryActiveNow(windows, nowMins);
+  });
   const usesOnlineCheckout = restaurantUsesStripeCheckout(table.restaurant);
 
   return (

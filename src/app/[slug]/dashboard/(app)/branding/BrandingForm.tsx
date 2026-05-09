@@ -48,6 +48,7 @@ export function BrandingForm({
   initialPayAtTableCashEnabled?: boolean;
   initialPrepTimeEstimateMinutes?: number | null;
   initialVatRate?: number;
+  initialTimezone?: string;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +78,7 @@ export function BrandingForm({
   const [vatRate, setVatRate] = useState(
     initialVatRate != null && initialVatRate > 0 ? String(initialVatRate) : ""
   );
+  const [timezone, setTimezone] = useState(initialTimezone ?? "Europe/Athens");
   const [showCustomColor, setShowCustomColor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -101,6 +103,7 @@ export function BrandingForm({
     setVatRate(
       initialVatRate != null && initialVatRate > 0 ? String(initialVatRate) : ""
     );
+    setTimezone(initialTimezone ?? "Europe/Athens");
   }, [
     initialName,
     initialLogoUrl,
@@ -114,6 +117,7 @@ export function BrandingForm({
     initialPayAtTableCashEnabled,
     initialPrepTimeEstimateMinutes,
     initialVatRate,
+    initialTimezone,
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -165,6 +169,7 @@ export function BrandingForm({
           payAtTableCashEnabled,
           prepTimeEstimateMinutes,
           vatRate: vatRateValue,
+          timezone,
         }),
       });
       const text = await res.text();
@@ -408,6 +413,33 @@ export function BrandingForm({
           />
           <span className="mt-1 block text-xs text-ink-muted">0–100, or leave blank for 0%.</span>
         </label>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-ink mb-1">Restaurant timezone</h2>
+        <p className="text-ink-muted mb-4 text-sm">
+          Used for time-scheduled menu categories (e.g. show Breakfast only 9–12). Set this to your restaurant&apos;s local timezone.
+        </p>
+        <select
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          className="w-full max-w-xs rounded-xl border-2 border-border bg-card px-4 py-2.5 text-ink focus:border-primary focus:outline-none"
+        >
+          <option value="Europe/Athens">Europe/Athens (EET/EEST)</option>
+          <option value="Europe/Nicosia">Europe/Nicosia (EET/EEST)</option>
+          <option value="Europe/London">Europe/London (GMT/BST)</option>
+          <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
+          <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+          <option value="Europe/Rome">Europe/Rome (CET/CEST)</option>
+          <option value="Europe/Madrid">Europe/Madrid (CET/CEST)</option>
+          <option value="Europe/Istanbul">Europe/Istanbul (TRT)</option>
+          <option value="America/New_York">America/New_York (ET)</option>
+          <option value="America/Chicago">America/Chicago (CT)</option>
+          <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
+          <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+          <option value="Asia/Nicosia">Asia/Nicosia</option>
+          <option value="UTC">UTC</option>
+        </select>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">

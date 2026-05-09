@@ -35,6 +35,7 @@ export async function GET() {
         vatRate: true,
         enabledLocales: true,
         defaultLocale: true,
+        timezone: true,
       },
     });
 
@@ -71,6 +72,7 @@ export async function PATCH(req: NextRequest) {
     payAtTableCashEnabled?: boolean;
     prepTimeEstimateMinutes?: number | null | string;
     vatRate?: number | null | string;
+    timezone?: string;
   };
   try {
     body = await req.json();
@@ -104,6 +106,7 @@ export async function PATCH(req: NextRequest) {
       payAtTableCashEnabled?: boolean;
       prepTimeEstimateMinutes?: number | null;
       vatRate?: number;
+      timezone?: string;
     } = {};
 
     if (body.logoUrl !== undefined) {
@@ -189,6 +192,11 @@ export async function PATCH(req: NextRequest) {
         }
         data.vatRate = n;
       }
+    }
+
+    if (body.timezone !== undefined) {
+      const tz = String(body.timezone).trim();
+      if (tz) data.timezone = tz;
     }
 
     if (Object.keys(data).length === 0) {

@@ -27,6 +27,7 @@ const menuInclude = {
       guestQrOrderingPaused: true,
       enabledLocales: true,
       defaultLocale: true,
+      timezone: true,
       menuCategories: {
         where: { isAvailable: true },
         orderBy: { sortOrder: "asc" as const },

@@ -45,6 +45,8 @@ type MenuItem = {
   badge?: string | null;
 };
 
+type ScheduleWindow = { start: string; end: string };
+
 type Category = {
   id: string;
   name: string;
@@ -52,6 +54,7 @@ type Category = {
   isAvailable: boolean;
   stationId?: string | null;
   station?: Station | null;
+  scheduleWindows?: string | null;
   items: MenuItem[];
 };
 
@@ -386,8 +389,134 @@ function SortableMenuCategoryBlock({
   };
   const itemIds = cat.items.map((i) => `${MENU_ITEM_PREFIX}${i.id}`);
 
+  const parsedWindows: ScheduleWindow[] = (() => {
+    if (!cat.scheduleWindows) return [];
+    try { return JSON.parse(cat.scheduleWindows); } catch { return []; }
+  })();
+
+  const [showSchedulePanel, setShowSchedulePanel] = useState(false);
+  const [draftWindows, setDraftWindows] = useState<ScheduleWindow[]>(parsedWindows);
+  const [newStart, setNewStart] = useState("09:00");
+  const [newEnd, setNewEnd] = useState("12:00");
+  const [savingSchedule, setSavingSchedule] = useState(false);
+
+  useEffect(() => {
+    setDraftWindows(parsedWindows);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cat.scheduleWindows]);
+
+  async function handleSaveSchedule(windows: ScheduleWindow[]) {
+    setSavingSchedule(true);
+    try {
+      const res = await fetch(`/api/dashboard/categories/${cat.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scheduleWindows: windows.length ? JSON.stringify(windows) : null }),
+      });
+      if (!res.ok) throw new Error();
+      setDraftWindows(windows);
+      toast.success("Schedule saved");
+    } catch {
+      toast.error("Failed to save schedule");
+    } finally {
+      setSavingSchedule(false);
+    }
+  }
+
+  const schedulePanel = showSchedulePanel ? (
+    <div className="mb-4 rounded-2xl border border-border bg-surface p-4 text-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="font-semibold text-ink">Time windows — category visible only during these hours</span>
+        <button
+          type="button"
+          onClick={() => setShowSchedulePanel(false)}
+          className="text-xs text-ink-muted hover:text-ink"
+        >
+          Close
+        </button>
+      </div>
+
+      {draftWindows.length > 0 ? (
+        <ul className="mb-3 space-y-2">
+          {draftWindows.map((w, i) => (
+            <li key={i} className="flex items-center gap-3">
+              <span className="tabular-nums font-mono text-ink">{w.start} – {w.end}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = draftWindows.filter((_, j) => j !== i);
+                  setDraftWindows(next);
+                  handleSaveSchedule(next);
+                }}
+                className="text-xs text-red-500 hover:text-red-700"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mb-3 text-xs text-ink-muted">No windows set — category is always visible.</p>
+      )}
+
+      <div className="flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-ink-muted">From</span>
+          <input
+            type="time"
+            value={newStart}
+            onChange={(e) => setNewStart(e.target.value)}
+            className="rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-ink focus:border-primary focus:outline-none"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-xs font-medium text-ink-muted">To</span>
+          <input
+            type="time"
+            value={newEnd}
+            onChange={(e) => setNewEnd(e.target.value)}
+            className="rounded-lg border border-border bg-card px-2 py-1.5 text-sm text-ink focus:border-primary focus:outline-none"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={savingSchedule}
+          onClick={() => {
+            const next = [...draftWindows, { start: newStart, end: newEnd }];
+            setDraftWindows(next);
+            handleSaveSchedule(next);
+          }}
+          className="rounded-xl border border-primary/50 bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary hover:bg-primary/20 disabled:opacity-50"
+        >
+          Add window
+        </button>
+      </div>
+
+      {draftWindows.length > 0 && (
+        <button
+          type="button"
+          disabled={savingSchedule}
+          onClick={() => {
+            setDraftWindows([]);
+            handleSaveSchedule([]);
+          }}
+          className="mt-3 text-xs text-ink-muted underline hover:text-red-600 disabled:opacity-50"
+        >
+          Remove all — always show
+        </button>
+      )}
+    </div>
+  ) : null;
+
   const headerActions = (
     <div className="flex w-full min-w-0 shrink-0 flex-col gap-2 [@media(min-width:400px)]:flex-row [@media(min-width:400px)]:flex-wrap [@media(min-width:400px)]:items-center [@media(min-width:400px)]:justify-end sm:w-auto">
+      <button
+        type="button"
+        onClick={() => setShowSchedulePanel((v) => !v)}
+        className="min-h-[44px] flex-1 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-ink shadow-sm hover:border-primary/40 hover:bg-primary/5 disabled:opacity-50 [@media(min-width:400px)]:flex-none [@media(min-width:400px)]:py-1.5"
+      >
+        {draftWindows.length > 0 ? "Edit hours" : "Set hours"}
+      </button>
       {cat.isAvailable ? (
         <button
           type="button"
@@ -477,6 +606,11 @@ function SortableMenuCategoryBlock({
                   Hidden from guests
                 </span>
               ) : null}
+              {draftWindows.length > 0 ? (
+                <span className="rounded-md bg-blue-50 px-1.5 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-blue-200">
+                  {draftWindows[0].start}–{draftWindows[0].end}{draftWindows.length > 1 ? ` +${draftWindows.length - 1}` : ""}
+                </span>
+              ) : null}
               {cat.station ? (
                 <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary ring-1 ring-primary/20">
                   {cat.station.name}
@@ -505,6 +639,8 @@ function SortableMenuCategoryBlock({
         </div>
         {headerActions}
       </div>
+
+      {schedulePanel}
 
       <MenuCategoryDropZone categoryId={cat.id} emphasize={emphasizeItemDropTarget}>
         {cat.items.length === 0 ? (

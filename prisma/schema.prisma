@@ -48,6 +48,8 @@ model Restaurant {
   enabledLocales String @default("[]")
   /// Primary/source language staff write menu content in (e.g. "el"). Translations are from this language.
   defaultLocale  String @default("el")
+  /// IANA timezone used for time-scheduled menu categories (e.g. "Europe/Athens"). Defaults to Athens.
+  timezone       String @default("Europe/Athens")
   createdAt    DateTime @default(now())
 
   users          RestaurantUser[]
@@ -153,6 +155,8 @@ model MenuCategory {
   /// Default preparation station for all items in this category (null → Kitchen). Individual items can override.
   stationId    String?
   station      Station? @relation(fields: [stationId], references: [id], onDelete: SetNull)
+  /// JSON array of time windows: [{"start":"09:00","end":"12:00"}]. Null/empty = always visible. Overnight supported (end < start).
+  scheduleWindows String?
 
   items        MenuItem[]
   translations MenuCategoryTranslation[]

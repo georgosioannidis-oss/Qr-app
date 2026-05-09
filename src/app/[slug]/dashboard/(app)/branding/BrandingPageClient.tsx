@@ -25,6 +25,7 @@ export function BrandingPageClient() {
     payAtTableCashEnabled?: boolean;
     prepTimeEstimateMinutes?: number | null;
     vatRate?: number;
+    timezone?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export function BrandingPageClient() {
           payAtTableCardEnabled?: boolean;
           payAtTableCashEnabled?: boolean;
           prepTimeEstimateMinutes?: number | null;
+          timezone?: string;
         } = {};
         try {
           if (text) json = JSON.parse(text);
@@ -81,6 +83,7 @@ export function BrandingPageClient() {
             payAtTableCashEnabled: json.payAtTableCashEnabled !== false,
             prepTimeEstimateMinutes:
               typeof json.prepTimeEstimateMinutes === "number" ? json.prepTimeEstimateMinutes : null,
+            timezone: typeof json.timezone === "string" ? json.timezone : undefined,
           });
         }
       } catch (e) {
@@ -132,6 +135,7 @@ export function BrandingPageClient() {
         initialPayAtTableCashEnabled={data.payAtTableCashEnabled}
         initialPrepTimeEstimateMinutes={data.prepTimeEstimateMinutes ?? null}
         initialVatRate={data.vatRate ?? 0}
+        initialTimezone={data.timezone}
       />
       <WifiSettingsSection />
       <PrintAgentSection restaurantSlug={data.slug} />
