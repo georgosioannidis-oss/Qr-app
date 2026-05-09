@@ -1120,7 +1120,7 @@ export function MenuView({
                 type="button"
                 onClick={() => void requestBill()}
                 disabled={billRequestBusy}
-                className={`flex h-11 w-11 items-center justify-center rounded-full bg-amber-500 text-white shadow-lg ring-2 ring-amber-300/50 transition hover:bg-amber-600 disabled:opacity-55 dark:bg-amber-500 dark:ring-amber-400/35 dark:hover:bg-amber-400 ${
+                className={`flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400/50 transition hover:bg-emerald-700 disabled:opacity-55 dark:bg-emerald-600 dark:ring-emerald-400/35 dark:hover:bg-emerald-500 ${
                   prefersReducedMotion ? "" : "active:scale-95"
                 }`}
                 aria-label="Ask for the bill"
