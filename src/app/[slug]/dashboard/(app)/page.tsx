@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { getDashboardServerSession } from "@/lib/auth-server";
 import { CONFIRMED_ORDER_STATUSES } from "@/lib/dashboard-roles";
@@ -6,6 +7,11 @@ import { getCachedRestaurantUserDashboardRow } from "@/lib/dashboard-request-cac
 import { prisma } from "@/lib/prisma";
 import { tenantDashboardBase, tenantDashboardHref } from "@/lib/dashboard-tenant-paths";
 import { defaultDashboardHome, resolveDashboardAccess } from "@/lib/staff-permissions";
+
+const DailySnapshot = dynamic(
+  () => import("./DailySnapshot").then((m) => ({ default: m.DailySnapshot })),
+  { ssr: false }
+);
 
 const CONFIRMED_STATUSES = [...CONFIRMED_ORDER_STATUSES];
 
@@ -157,6 +163,8 @@ export default async function DashboardPage({
           </div>
         ) : null}
       </header>
+
+      {access.orders ? <DailySnapshot /> : null}
 
       {(access.orders || access.waitStaff) && (
         <section aria-labelledby="pulse-heading">
