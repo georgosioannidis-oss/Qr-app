@@ -188,6 +188,8 @@ model MenuItem {
   station      Station? @relation(fields: [stationId], references: [id], onDelete: SetNull)
   /// Owner-set badge label shown on the guest menu. Preset values: "Bestseller" | "Popular" | "Chef's pick". Any custom text is also allowed.
   badge        String?
+  /// Set when kitchen marks item sold out for the day; null or from a previous day = available again (auto-reset at midnight).
+  soldOutAt    DateTime?
 
   orderItems   OrderItem[]
   translations MenuItemTranslation[]

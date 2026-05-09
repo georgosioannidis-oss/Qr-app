@@ -95,13 +95,25 @@ export default async function TableMenuPage({
     }
   }
 
-  const nowMins = nowMinutesInTz(table.restaurant.timezone ?? "UTC");
-  const menu = table.restaurant.menuCategories.filter((c) => {
-    if (c.items.length === 0) return false;
-    const windows = parseScheduleWindows(c.scheduleWindows);
-    if (windows.length === 0) return true;
-    return isCategoryActiveNow(windows, nowMins);
-  });
+  const tz = table.restaurant.timezone ?? "UTC";
+  const nowMins = nowMinutesInTz(tz);
+  const tzNow = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
+
+  const menu = table.restaurant.menuCategories
+    .map((c) => ({
+      ...c,
+      items: c.items.filter((i) => {
+        if (!i.soldOutAt) return true;
+        const soldDay = new Date(i.soldOutAt.toLocaleString("en-US", { timeZone: tz }));
+        return soldDay.toDateString() !== tzNow.toDateString();
+      }),
+    }))
+    .filter((c) => {
+      if (c.items.length === 0) return false;
+      const windows = parseScheduleWindows(c.scheduleWindows);
+      if (windows.length === 0) return true;
+      return isCategoryActiveNow(windows, nowMins);
+    });
   const usesOnlineCheckout = restaurantUsesStripeCheckout(table.restaurant);
 
   return (

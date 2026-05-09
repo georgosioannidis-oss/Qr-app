@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
         include: {
           menuItem: {
             select: {
-              name: true, stationId: true,
+              id: true, name: true, stationId: true, soldOutAt: true,
               station: { select: { id: true, name: true } },
               category: {
                 select: {

@@ -14,7 +14,9 @@ type OrderItem = {
   notes: string | null;
   selectedOptionsSummary: string | null;
   menuItem: {
+    id: string;
     name: string;
+    soldOutAt?: string | null;
     stationId?: string | null;
     station?: { id: string; name: string } | null;
     category?: {
@@ -24,6 +26,17 @@ type OrderItem = {
     } | null;
   };
 };
+
+function isSoldOutToday(soldOutAt: string | null | undefined): boolean {
+  if (!soldOutAt) return false;
+  const d = new Date(soldOutAt);
+  const now = new Date();
+  return (
+    d.getUTCFullYear() === now.getUTCFullYear() &&
+    d.getUTCMonth() === now.getUTCMonth() &&
+    d.getUTCDate() === now.getUTCDate()
+  );
+}
 
 type Order = {
   id: string;
@@ -618,22 +631,65 @@ export function OrdersList({ stationId }: OrdersListProps) {
               {order.items.map((line, i) => {
                 const extra = [line.notes, line.selectedOptionsSummary].filter(Boolean).join(" · ");
                 const stName = line.menuItem.station?.name ?? line.menuItem.category?.station?.name;
+                const soldOut = isSoldOutToday(line.menuItem.soldOutAt);
                 return (
-                  <li key={i} className="flex justify-between gap-2 py-1.5 border-b border-border/60 last:border-0">
-                    <div>
-                      <span className="font-medium text-ink">{line.quantity}× {line.menuItem.name}</span>
-                      {stName && (
-                        <span className="ml-1.5 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary ring-1 ring-primary/20">
-                          {stName}
-                        </span>
-                      )}
-                      {extra && (
-                        <span className="block text-xs text-ink-muted mt-0.5">
-                          {extra}
-                        </span>
-                      )}
+                  <li key={i} className="border-b border-border/60 last:border-0 py-1.5">
+                    <div className="flex justify-between gap-2">
+                      <div>
+                        <span className="font-medium text-ink">{line.quantity}× {line.menuItem.name}</span>
+                        {soldOut && (
+                          <span className="ml-1.5 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700">86</span>
+                        )}
+                        {stName && (
+                          <span className="ml-1.5 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary ring-1 ring-primary/20">
+                            {stName}
+                          </span>
+                        )}
+                        {extra && (
+                          <span className="block text-xs text-ink-muted mt-0.5">{extra}</span>
+                        )}
+                      </div>
+                      <span className="font-medium text-ink shrink-0">{formatPrice(line.unitPrice * line.quantity)}</span>
                     </div>
-                    <span className="font-medium text-ink shrink-0">{formatPrice(line.unitPrice * line.quantity)}</span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const next = !soldOut;
+                        setOrders((prev) =>
+                          prev.map((o) => ({
+                            ...o,
+                            items: o.items.map((it) =>
+                              it.menuItem.id === line.menuItem.id
+                                ? { ...it, menuItem: { ...it.menuItem, soldOutAt: next ? new Date().toISOString() : null } }
+                                : it
+                            ),
+                          }))
+                        );
+                        try {
+                          const res = await fetch(`/api/dashboard/menu-items/${line.menuItem.id}/sold-out`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ soldOut: next }),
+                          });
+                          if (!res.ok) {
+                            toast.error("Could not update item — try again");
+                            void fetchOrders();
+                          } else {
+                            toast.success(next ? `"${line.menuItem.name}" marked 86 — removed from guest menu` : `"${line.menuItem.name}" back on the menu`);
+                          }
+                        } catch {
+                          toast.error("Request failed");
+                          void fetchOrders();
+                        }
+                      }}
+                      className={`mt-1.5 rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${
+                        soldOut
+                          ? "bg-red-100 text-red-700 hover:bg-red-200"
+                          : "bg-ink/5 text-ink-muted hover:bg-ink/10 hover:text-ink"
+                      }`}
+                    >
+                      {soldOut ? "86 — tap to bring back" : "86 sold out"}
+                    </button>
                   </li>
                 );
               })}
