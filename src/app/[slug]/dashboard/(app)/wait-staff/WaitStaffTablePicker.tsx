@@ -189,7 +189,7 @@ export function WaitStaffTablePicker() {
                             type="button"
                             onClick={() => void clearBill(t.id)}
                             disabled={clearingBillId === t.id}
-                            className={`flex min-h-[40px] w-full items-center justify-center px-2 py-2 text-center text-xs font-bold text-white shadow-sm transition disabled:opacity-60 bg-amber-500 hover:bg-amber-600 ${
+                            className={`flex min-h-[40px] w-full items-center justify-center px-2 py-2 text-center text-xs font-bold text-white shadow-sm transition disabled:opacity-60 bg-emerald-600 hover:bg-emerald-700 ${
                               called ? "" : "rounded-t-xl"
                             }`}
                           >
@@ -211,7 +211,7 @@ export function WaitStaffTablePicker() {
                             called
                               ? "rounded-b-xl rounded-t-none border-violet-500 bg-violet-100/80 text-violet-950 ring-1 ring-violet-400/30 hover:bg-violet-100 dark:border-violet-500 dark:bg-violet-950/50 dark:text-violet-100 dark:hover:bg-violet-900/50"
                               : billRequested
-                              ? "rounded-b-xl rounded-t-none border-amber-500 bg-amber-100 text-amber-900 hover:bg-amber-200 dark:border-amber-500 dark:bg-amber-900 dark:text-amber-100 dark:hover:bg-amber-800"
+                              ? "rounded-b-xl rounded-t-none border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-700"
                               : "rounded-xl border-border bg-card text-ink hover:border-primary/50 hover:bg-primary/5"
                           }`}
                         >

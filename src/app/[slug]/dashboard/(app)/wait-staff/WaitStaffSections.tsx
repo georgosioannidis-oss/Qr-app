@@ -245,7 +245,7 @@ export function WaitStaffSections() {
                 ) : null}
                 {showBillBadge ? (
                   <span
-                    className="inline-flex min-h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-full bg-amber-500 px-1.5 text-[11px] font-bold tabular-nums text-white shadow-sm ring-2 ring-white/90 dark:ring-white/20"
+                    className="inline-flex min-h-[1.375rem] min-w-[1.375rem] items-center justify-center rounded-full bg-emerald-600 px-1.5 text-[11px] font-bold tabular-nums text-white shadow-sm ring-2 ring-white/90 dark:ring-white/20"
                     title={`${billRequestCount} table(s) want the bill`}
                     aria-hidden
                   >

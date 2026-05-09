@@ -238,6 +238,7 @@ export function MenuView({
   const [pullDistance, setPullDistance] = useState(0);
   const [callWaiterBusy, setCallWaiterBusy] = useState(false);
   const [billRequestBusy, setBillRequestBusy] = useState(false);
+  const [billAlreadySent, setBillAlreadySent] = useState(false);
   const [hasPlacedOrder, setHasPlacedOrder] = useState(false);
   const [allergenFilterOpen, setAllergenFilterOpen] = useState(false);
   const [allergenFilter, setAllergenFilter] = useState<Set<string>>(new Set());
@@ -346,6 +347,9 @@ export function MenuView({
       if (localStorage.getItem(`qr_has_ordered_${tableToken}`) === "1") {
         setHasPlacedOrder(true);
       }
+      if (localStorage.getItem(`qr_bill_sent_${tableToken}`) === "1") {
+        setBillAlreadySent(true);
+      }
     } catch {
       setGuestSessionId(createGuestSessionId());
     }
@@ -399,6 +403,9 @@ export function MenuView({
         let data: { error?: string } = {};
         try { if (text) data = JSON.parse(text); } catch { /* ignore */ }
         toast.error(data.error ?? "Could not send bill request. Please try again.");
+      } else {
+        setBillAlreadySent(true);
+        try { localStorage.setItem(`qr_bill_sent_${tableToken}`, "1"); } catch { /* ignore */ }
       }
     } catch {
       toast.error("Could not send bill request. Please try again.");
@@ -1119,15 +1126,21 @@ export function MenuView({
               <button
                 type="button"
                 onClick={() => void requestBill()}
-                disabled={billRequestBusy}
-                className={`flex h-11 w-11 items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg ring-2 ring-emerald-400/50 transition hover:bg-emerald-700 disabled:opacity-55 dark:bg-emerald-600 dark:ring-emerald-400/35 dark:hover:bg-emerald-500 ${
-                  prefersReducedMotion ? "" : "active:scale-95"
-                }`}
+                disabled={billRequestBusy || billAlreadySent}
+                className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg ring-2 transition disabled:cursor-not-allowed ${
+                  billAlreadySent
+                    ? "bg-emerald-800 ring-emerald-700/50 opacity-70"
+                    : "bg-emerald-600 ring-emerald-400/50 hover:bg-emerald-700 dark:bg-emerald-600 dark:ring-emerald-400/35 dark:hover:bg-emerald-500"
+                } ${prefersReducedMotion ? "" : "active:scale-95"}`}
                 aria-label="Ask for the bill"
-                title="Ask for the bill"
+                title={billAlreadySent ? "Bill already requested" : "Ask for the bill"}
               >
                 {billRequestBusy ? (
                   <Spinner className="h-5 w-5 border-white border-t-transparent" label="" />
+                ) : billAlreadySent ? (
+                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 6L9 17l-5-5" />
+                  </svg>
                 ) : (
                   <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="5" width="18" height="14" rx="2" />
@@ -1138,7 +1151,7 @@ export function MenuView({
                 )}
               </button>
               <span className="pointer-events-none max-w-[6rem] text-center text-[0.68rem] font-medium leading-tight text-ink-muted">
-                Ask for bill
+                {billAlreadySent ? "Bill sent ✓" : "Ask for bill"}
               </span>
             </div>
           ) : null}
