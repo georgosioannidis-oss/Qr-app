@@ -791,19 +791,6 @@ export function MenuView({
               : "Waiting for a waiter to confirm your order."}
           </p>
 
-          {lastOrderItems.length > 0 && (
-            <ul className="text-left text-sm space-y-1.5 mb-6 border border-border rounded-xl p-4 bg-surface">
-              {lastOrderItems.map((line) => (
-                <li key={cartLineKey(line)} className="flex justify-between gap-2">
-                  <span className="text-ink font-medium">{line.name} × {line.quantity}</span>
-                  <span className="tabular-nums text-ink-muted shrink-0">
-                    {formatPrice((line.price + (line.optionPriceModifier ?? 0)) * line.quantity)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-
           <button
             type="button"
             onClick={() => {
