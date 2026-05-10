@@ -798,13 +798,13 @@ function formatReceiptLines(order) {
   for (const it of order.items) {
     const nameText = ticketEnglishText(it.name || "").toUpperCase();
     const totalCents = it.unitPrice * it.quantity;
-    const priceStr = `EUR${(totalCents / 100).toFixed(2)}`;
+    const priceStr = `€${(totalCents / 100).toFixed(2)}`;
     const qtyStr = `${it.quantity}x `;
     const nameWidth = Math.max(1, w - qtyStr.length - priceStr.length - 1);
     const nameTrunc = nameText.length <= nameWidth
-      ? nameText.padEnd(nameWidth)
+      ? nameText
       : nameText.slice(0, nameWidth);
-    rows.push(`${qtyStr}${nameTrunc} ${priceStr}`);
+    rows.push({ left: `${qtyStr}${nameTrunc}`, right: priceStr });
     if (it.selectedOptionsSummary) {
       const opts = compactTicketDetailText(it.selectedOptionsSummary);
       if (opts) rows.push(...wrapLine(`  ${opts}`, w));
@@ -818,17 +818,15 @@ function formatReceiptLines(order) {
     const totalCents = order.totalAmount;
     const netCents = Math.round(totalCents / (1 + vatRate / 100));
     const vatCents = totalCents - netCents;
-    const netStr = `EUR${(netCents / 100).toFixed(2)}`;
-    const vatStr = `EUR${(vatCents / 100).toFixed(2)}`;
-    const totalStr = `EUR${(totalCents / 100).toFixed(2)}`;
-    const netLabel = `Net (excl. VAT ${vatRate}%)`;
-    const vatLabel = `VAT ${vatRate}%`;
-    rows.push(`${netLabel}${" ".repeat(Math.max(1, w - netLabel.length - netStr.length))}${netStr}`);
-    rows.push(`${vatLabel}${" ".repeat(Math.max(1, w - vatLabel.length - vatStr.length))}${vatStr}`);
-    rows.push(`TOTAL${" ".repeat(Math.max(1, w - "TOTAL".length - totalStr.length))}${totalStr}`);
+    const netStr = `€${(netCents / 100).toFixed(2)}`;
+    const vatStr = `€${(vatCents / 100).toFixed(2)}`;
+    const totalStr = `€${(totalCents / 100).toFixed(2)}`;
+    rows.push({ left: `Net (excl. VAT ${vatRate}%)`, right: netStr });
+    rows.push({ left: `VAT ${vatRate}%`, right: vatStr });
+    rows.push({ left: `TOTAL`, right: totalStr });
   } else {
-    const totalStr = `EUR${(order.totalAmount / 100).toFixed(2)}`;
-    rows.push(`TOTAL${" ".repeat(Math.max(1, w - "TOTAL".length - totalStr.length))}${totalStr}`);
+    const totalStr = `€${(order.totalAmount / 100).toFixed(2)}`;
+    rows.push({ left: `TOTAL`, right: totalStr });
   }
   rows.push(sep);
   rows.push(centerLine("THANK YOU!", w));
@@ -884,28 +882,36 @@ async function loadPdfFont(doc) {
 
 async function renderTicketPdf(order) {
   const doc = await PDFDocument.create();
-  let page = doc.addPage([226.77, 700]);
+  const pageWidth = 226.77;
+  let page = doc.addPage([pageWidth, 700]);
   const fontInfo = await loadPdfFont(doc);
   const font = fontInfo.font;
 
   const rows = IS_RECEIPT_MODE ? formatReceiptLines(order) : formatTicketLines(order);
   const fontSize = IS_RECEIPT_MODE ? 10 : 14;
   const lineHeight = IS_RECEIPT_MODE ? 14 : 20;
+  const margin = 12;
   let y = page.getHeight() - 24;
 
   for (const row of rows) {
     if (y < 24) {
       y = page.getHeight() - 24;
-      page = doc.addPage([226.77, 700]);
+      page = doc.addPage([pageWidth, 700]);
     }
-    const text = fontInfo.unicode ? row : toWinAnsiSafeText(row);
-    page.drawText(text, {
-      x: 12,
-      y,
-      size: fontSize,
-      font,
-      color: rgb(0, 0, 0),
-    });
+
+    if (IS_RECEIPT_MODE && typeof row === "object" && row !== null) {
+      // Two-column: item name left, price right-aligned
+      const leftText = fontInfo.unicode ? row.left : toWinAnsiSafeText(row.left);
+      const rightText = fontInfo.unicode ? row.right : toWinAnsiSafeText(row.right);
+      page.drawText(leftText, { x: margin, y, size: fontSize, font, color: rgb(0, 0, 0) });
+      const rightWidth = font.widthOfTextAtSize(rightText, fontSize);
+      page.drawText(rightText, { x: pageWidth - margin - rightWidth, y, size: fontSize, font, color: rgb(0, 0, 0) });
+    } else {
+      const text = fontInfo.unicode
+        ? (typeof row === "string" ? row : `${row.left} ${row.right}`)
+        : toWinAnsiSafeText(typeof row === "string" ? row : `${row.left} ${row.right}`);
+      page.drawText(text, { x: margin, y, size: fontSize, font, color: rgb(0, 0, 0) });
+    }
     y -= lineHeight;
   }
   return { bytes: await doc.save(), fontPath: fontInfo.fontPath, usingUnicode: fontInfo.unicode };
@@ -1013,8 +1019,11 @@ async function sendPdfToPrinter(pdfFilePath) {
 /** Sends ticket to network raw printer (TCP) or runs PRINT_COMMAND on the PDF. */
 async function sendToPrinter(pdfFilePath, order) {
   if (RAW_HOST) {
-    const lines = (IS_RECEIPT_MODE ? formatReceiptLines(order) : formatTicketLines(order))
-      .map((line) => (RAW_ASCII_ONLY ? toWinAnsiSafeText(line) : line));
+    const rawRows = IS_RECEIPT_MODE ? formatReceiptLines(order) : formatTicketLines(order);
+    const lines = rawRows.map((row) => {
+      const flat = typeof row === "string" ? row : `${row.left}${" ".repeat(Math.max(1, 38 - row.left.length - row.right.length))}${row.right}`;
+      return RAW_ASCII_ONLY ? toWinAnsiSafeText(flat) : flat;
+    });
     const payload = buildEscPosPayload(lines);
     const ok = await sendRawToNetworkPrinter(payload);
     if (ok) console.log(`Raw print OK → ${RAW_HOST}:${RAW_PORT} (${pdfFilePath})`);
