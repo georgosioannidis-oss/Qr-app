@@ -638,6 +638,8 @@ export function MenuView({
       setShowPostOrderThankYou(true);
       setHasPlacedOrder(true);
       try { localStorage.setItem(`qr_has_ordered_${tableToken}`, "1"); } catch { /* ignore */ }
+      setBillAlreadySent(false);
+      try { localStorage.removeItem(`qr_bill_sent_${tableToken}`); } catch { /* ignore */ }
     }
 
     try {
