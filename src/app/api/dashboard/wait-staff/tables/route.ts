@@ -25,12 +25,36 @@ export async function GET(req: NextRequest) {
       include: {
         tables: {
           orderBy: { sortOrder: "asc" },
-          select: { id: true, name: true, token: true, sortOrder: true, waiterCalledAt: true, billRequestedAt: true, floorX: true, floorY: true },
+          select: {
+            id: true, name: true, token: true, sortOrder: true,
+            waiterCalledAt: true, billRequestedAt: true, floorX: true, floorY: true,
+            orders: {
+              where: { paymentPreference: { not: null } },
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              select: { paymentPreference: true },
+            },
+          },
         },
       },
     });
 
-    return NextResponse.json({ sections });
+    const transformed = sections.map((section) => ({
+      ...section,
+      tables: section.tables.map((t) => ({
+        id: t.id,
+        name: t.name,
+        token: t.token,
+        sortOrder: t.sortOrder,
+        waiterCalledAt: t.waiterCalledAt,
+        billRequestedAt: t.billRequestedAt,
+        floorX: t.floorX,
+        floorY: t.floorY,
+        paymentPreference: t.orders[0]?.paymentPreference ?? null,
+      })),
+    }));
+
+    return NextResponse.json({ sections: transformed });
   } catch (e) {
     console.error("GET /api/dashboard/wait-staff/tables:", e);
     const message = e instanceof Error ? e.message : "Server error";

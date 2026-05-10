@@ -1623,14 +1623,6 @@ export function MenuView({
                   <span className="mt-0.5 block text-xs leading-snug text-ink-muted sm:text-sm">{ui.payCashHint}</span>
                 </div>
               </button>
-              <button
-                type="button"
-                disabled={isPlacing}
-                onClick={() => void submitOrder()}
-                className="w-full min-h-[52px] rounded-2xl border-2 border-dashed border-border bg-surface text-base font-semibold text-ink-muted hover:border-primary/40 hover:text-ink hover:bg-primary/[0.04] disabled:opacity-50"
-              >
-                {ui.placeOrderWithoutPayPreference}
-              </button>
             </div>
             {isPlacing ? (
               <div className="mt-5 flex items-center justify-center gap-2 text-base text-ink-muted">

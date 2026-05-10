@@ -14,6 +14,7 @@ type TableRow = {
   sortOrder: number;
   waiterCalledAt: string | null;
   billRequestedAt: string | null;
+  paymentPreference: string | null;
 };
 
 type SectionRow = {
@@ -199,7 +200,10 @@ export function WaitStaffTablePicker() {
                                 Clearing…
                               </>
                             ) : (
-                              "Tap to clear — bill requested"
+                              <>
+                                Tap to clear — bill requested{" "}
+                                {t.paymentPreference === "card" ? "💳" : t.paymentPreference === "cash" ? "💶" : ""}
+                              </>
                             )}
                           </button>
                         ) : null}
