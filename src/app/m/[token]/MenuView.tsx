@@ -2213,7 +2213,7 @@ function ItemOptionsModal({
               type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder={ui.notePlaceholder}
+              placeholder=""
               className="w-full rounded-xl border-2 border-border bg-surface px-4 py-3 text-base text-ink placeholder:text-ink-muted/70 focus:border-primary focus:outline-none sm:text-sm"
               maxLength={300}
             />
