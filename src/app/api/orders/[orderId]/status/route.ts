@@ -83,5 +83,6 @@ export async function GET(
     prepTimeEstimateMinutes: prepEffective,
     prepTimeQuickOrder,
     waiterRelayPending,
+    relayAccepted: order.waiterRelayAt !== null,
   });
 }

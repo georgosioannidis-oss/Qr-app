@@ -159,6 +159,7 @@ export default async function TableMenuPage({
           sectionPaused: table.tableSection?.guestQrOrderingPaused === true,
           tablePaused: table.guestQrOrderingPaused === true,
         })}
+        waiterRelayEnabled={table.restaurant.waiterRelayEnabled === true}
         enabledLocales={enabledLocales}
         defaultLocale={defaultLocale}
         translationMap={translationMap}

@@ -182,6 +182,8 @@ type Props = {
   restaurantSlug?: string | null;
   /** When true, order is submitted as a staff manual order — bypasses QR cookie requirement server-side. */
   isStaffOrder?: boolean;
+  /** When true, orders wait for a waiter to accept before going to the kitchen — enables the waiting screen. */
+  waiterRelayEnabled?: boolean;
   /** Locale codes this restaurant has enabled, e.g. ["el","en","de"]. Empty = no switcher shown. */
   enabledLocales?: string[];
   /** The restaurant's source/default locale — used as fallback when a translation is missing. */
@@ -204,6 +206,7 @@ export function MenuView({
   categories,
   restaurantSlug = null,
   isStaffOrder = false,
+  waiterRelayEnabled = false,
   enabledLocales = [],
   defaultLocale = "el",
   translationMap,
@@ -246,6 +249,11 @@ export function MenuView({
   const [hasPlacedOrder, setHasPlacedOrder] = useState(false);
   const [allergenFilterOpen, setAllergenFilterOpen] = useState(false);
   const [allergenFilter, setAllergenFilter] = useState<Set<string>>(new Set());
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [lastOrderItems, setLastOrderItems] = useState<CartItem[]>([]);
+  const [orderAccepted, setOrderAccepted] = useState(false);
+  const [waitingTimedOut, setWaitingTimedOut] = useState(false);
+  const [showLeaveWarning, setShowLeaveWarning] = useState(false);
 
   // --- Language / translation system ---
   // Real DB-backed translations take priority; legacy demo bilingual is kept as fallback for demo slugs.
@@ -540,6 +548,20 @@ export function MenuView({
     return () => window.removeEventListener("keydown", onKey);
   }, [allergenFilterOpen]);
 
+  useEffect(() => {
+    if (!pendingOrderId || orderAccepted || !waiterRelayEnabled) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/orders/${pendingOrderId}/status?tableToken=${tableToken}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.relayAccepted) setOrderAccepted(true);
+      } catch { /* ignore network errors */ }
+    }, 3000);
+    const timeout = setTimeout(() => setWaitingTimedOut(true), 5 * 60 * 1000);
+    return () => { clearInterval(interval); clearTimeout(timeout); };
+  }, [pendingOrderId, orderAccepted, waiterRelayEnabled, tableToken]);
+
   const itemMap = useMemo(() => {
     const map: Record<string, Item> = {};
     for (const cat of categories) {
@@ -632,6 +654,7 @@ export function MenuView({
     }
 
     if (!usesOnlineCheckout) {
+      setLastOrderItems(savedCart);
       setPaymentModalOpen(false);
       setCart([]);
       setCartOpen(false);
@@ -657,6 +680,11 @@ export function MenuView({
         if (!res.ok) throw new Error("Invalid response from server");
       }
       if (!res.ok) throw new Error(data.error ?? "Failed to place order");
+
+      if (!usesOnlineCheckout && data.orderId) {
+        setPendingOrderId(data.orderId);
+        if (!waiterRelayEnabled) setOrderAccepted(true);
+      }
 
       if (usesOnlineCheckout) {
         setPaymentModalOpen(false);
@@ -724,22 +752,107 @@ export function MenuView({
   }
 
   if (showPostOrderThankYou) {
+    const isWaiting = waiterRelayEnabled && !orderAccepted && !waitingTimedOut;
+    const isTimedOut = waiterRelayEnabled && !orderAccepted && waitingTimedOut;
+    const isConfirmed = orderAccepted;
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-surface">
         <div className="max-w-sm w-full text-center bg-card rounded-3xl shadow-lg border border-border p-8">
           {tableLogoUrl ? (
             <img src={tableLogoUrl} alt="" className="h-10 w-auto mx-auto mb-3 object-contain" />
           ) : null}
-          {thankYouIcon}
-          <h2 className="text-xl font-bold text-ink mb-6 leading-snug">{ui.thankYouAfterOrder}</h2>
+
+          {isConfirmed ? (
+            <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-3xl mx-auto mb-4 ring-1 ring-green-200">
+              ✓
+            </div>
+          ) : (
+            <div className={`text-5xl mx-auto mb-4 w-fit ${prefersReducedMotion ? "" : "motion-safe:animate-bounce"}`}>
+              🍽️
+            </div>
+          )}
+
+          {isWaiting && (
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <div className={`w-2.5 h-2.5 rounded-full bg-orange-400 ${prefersReducedMotion ? "" : "motion-safe:animate-pulse"}`} />
+              <span className="text-xs font-medium text-ink-muted">Waiting for confirmation</span>
+            </div>
+          )}
+
+          <h2 className="text-xl font-bold text-ink mb-2 leading-snug">
+            {isConfirmed ? "Your order is confirmed!" : "Order placed!"}
+          </h2>
+          <p className="text-sm text-ink-muted mb-5 leading-relaxed">
+            {isConfirmed
+              ? "Your waiter has confirmed your order."
+              : isTimedOut
+              ? "Taking longer than expected — feel free to head back to the menu."
+              : "Waiting for a waiter to confirm your order."}
+          </p>
+
+          {lastOrderItems.length > 0 && (
+            <ul className="text-left text-sm space-y-1.5 mb-6 border border-border rounded-xl p-4 bg-surface">
+              {lastOrderItems.map((line) => (
+                <li key={cartLineKey(line)} className="flex justify-between gap-2">
+                  <span className="text-ink font-medium">{line.name} × {line.quantity}</span>
+                  <span className="tabular-nums text-ink-muted shrink-0">
+                    {formatPrice((line.price + (line.optionPriceModifier ?? 0)) * line.quantity)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <button
             type="button"
-            onClick={() => setShowPostOrderThankYou(false)}
+            onClick={() => {
+              if (isWaiting) { setShowLeaveWarning(true); return; }
+              setShowPostOrderThankYou(false);
+            }}
             className="min-h-[48px] w-full py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold shadow-sm ring-1 ring-black/10"
           >
             {ui.backToMenu}
           </button>
         </div>
+
+        {showLeaveWarning && (
+          <div
+            className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+            onClick={() => setShowLeaveWarning(false)}
+          >
+            <div
+              className="w-full max-w-sm bg-card rounded-3xl shadow-2xl border border-border p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center text-2xl mx-auto mb-4">
+                ⚠️
+              </div>
+              <h3 className="text-lg font-bold text-ink text-center mb-2">
+                Your order hasn&apos;t been confirmed yet
+              </h3>
+              <p className="text-sm text-ink-muted text-center mb-6 leading-relaxed">
+                A waiter still needs to confirm your order. Are you sure you want to go back?
+              </p>
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowLeaveWarning(false)}
+                  className="min-h-[48px] w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold shadow-sm ring-1 ring-black/10"
+                >
+                  Stay here
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowLeaveWarning(false); setShowPostOrderThankYou(false); }}
+                  className="min-h-[48px] w-full py-3 rounded-xl border-2 border-red-200 bg-red-50 text-red-600 font-semibold hover:bg-red-100"
+                >
+                  Go back anyway
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
