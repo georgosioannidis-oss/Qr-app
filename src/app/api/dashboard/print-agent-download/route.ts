@@ -21,13 +21,6 @@ export async function GET(req: NextRequest) {
   });
   if (!restaurant) return NextResponse.json({ error: "Restaurant not found" }, { status: 404 });
 
-  const stations = await prisma.station.findMany({
-    where: { restaurantId },
-    select: { name: true },
-  });
-  const matched = stations.find((s) => stationSlug(s.name) === stationParam);
-  if (!matched) return NextResponse.json({ error: "Station not found" }, { status: 404 });
-
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "") ??
     `${req.nextUrl.protocol}//${req.nextUrl.host}`;
@@ -70,6 +63,13 @@ export async function GET(req: NextRequest) {
       },
     });
   }
+
+  const stations = await prisma.station.findMany({
+    where: { restaurantId },
+    select: { name: true },
+  });
+  const matched = stations.find((s) => stationSlug(s.name) === stationParam);
+  if (!matched) return NextResponse.json({ error: "Station not found" }, { status: 404 });
 
   const cmd = [
     `@echo off`,
