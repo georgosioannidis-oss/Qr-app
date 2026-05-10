@@ -1779,6 +1779,7 @@ function ItemAddForm({
       formData.set("image", file);
       const res = await fetch("/api/dashboard/items/image", {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
       const text = await res.text();
@@ -2064,6 +2065,7 @@ function ItemEditForm({
       formData.set("image", file);
       const res = await fetch("/api/dashboard/items/image", {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
       const text = await res.text();
