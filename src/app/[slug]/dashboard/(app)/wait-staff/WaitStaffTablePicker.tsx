@@ -202,7 +202,7 @@ export function WaitStaffTablePicker() {
                             ) : (
                               <>
                                 Tap to clear — bill requested{" "}
-                                {t.paymentPreference === "card" ? <span className="text-base">💳</span> : t.paymentPreference === "cash" ? <span className="text-base">💶</span> : ""}
+                                {t.paymentPreference === "card" ? <span className="text-2xl">💳</span> : t.paymentPreference === "cash" ? <span className="text-2xl">🪙</span> : ""}
                               </>
                             )}
                           </button>
