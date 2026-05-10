@@ -779,7 +779,7 @@ function formatTicketLines(order) {
 }
 
 function formatReceiptLines(order) {
-  const w = 32;
+  const w = 38;
   const sep = "=".repeat(w);
   const dashes = "-".repeat(w);
   const rows = [];
@@ -889,8 +889,8 @@ async function renderTicketPdf(order) {
   const font = fontInfo.font;
 
   const rows = IS_RECEIPT_MODE ? formatReceiptLines(order) : formatTicketLines(order);
-  const fontSize = 14;
-  const lineHeight = 20;
+  const fontSize = IS_RECEIPT_MODE ? 10 : 14;
+  const lineHeight = IS_RECEIPT_MODE ? 14 : 20;
   let y = page.getHeight() - 24;
 
   for (const row of rows) {
