@@ -45,25 +45,17 @@ export function PrintAgentSection({ restaurantSlug }: { restaurantSlug: string }
 
       <ol className="list-decimal list-inside text-sm text-ink-muted space-y-2 mb-6">
         <li>
-          On the server: set{" "}
-          <code className="text-xs bg-surface px-1 rounded">PRINT_AGENT_API_SECRET</code> to a long random value and
-          redeploy or restart.
+          Download the <strong className="text-ink">ZIP</strong> for each station below — it contains everything needed (the agent script, dependencies, and a pre-filled startup file).
         </li>
         <li>
-          On each kitchen PC: install Node 18+, download and unzip{" "}
-          <code className="text-xs bg-surface px-1 rounded">print-agent-standalone</code> from the repo, run{" "}
-          <code className="text-xs bg-surface px-1 rounded">npm install</code> once in that folder.
+          On the kitchen PC: install <strong className="text-ink">Node.js 18+</strong> if not already installed (<code className="text-xs bg-surface px-1 rounded">nodejs.org</code>).
         </li>
         <li>
-          Download the pre-filled startup script for each station (below), place it in the{" "}
-          <code className="text-xs bg-surface px-1 rounded">print-agent-standalone</code> folder, fill in the secret,
-          and double-click to run.
+          Extract the ZIP to any folder. Open a terminal in that folder and run{" "}
+          <code className="text-xs bg-surface px-1 rounded">npm install</code> once.
         </li>
         <li>
-          Optional: set{" "}
-          <code className="text-xs bg-surface px-1 rounded">PRINT_COMMAND</code> in the script to send PDFs to the
-          printer automatically (see{" "}
-          <code className="text-xs bg-surface px-1 rounded">README.txt</code>).
+          Double-click the <code className="text-xs bg-surface px-1 rounded">START-*.cmd</code> file to run. Keep the window open.
         </li>
       </ol>
 
@@ -77,19 +69,17 @@ export function PrintAgentSection({ restaurantSlug }: { restaurantSlug: string }
 
       {stations.length > 0 ? (
         <>
-          <p className="text-sm font-medium text-ink mb-3">Download startup script per station:</p>
+          <p className="text-sm font-medium text-ink mb-3">Download setup ZIP per station:</p>
           <div className="flex flex-wrap gap-2">
             {stations.map((s) => (
               <a
                 key={s.id}
-                href={`/api/dashboard/print-agent-download?station=${encodeURIComponent(s.slug)}`}
+                href={`/api/dashboard/print-agent-zip?station=${encodeURIComponent(s.slug)}`}
                 download
                 className="inline-flex items-center gap-1.5 rounded-lg border-2 border-primary/40 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10"
               >
-                {s.name}
-                <span className="text-[10px] font-normal text-primary/70">
-                  ({s.slug})
-                </span>
+                ⬇ {s.name}
+                <span className="text-[10px] font-normal text-primary/70">.zip</span>
               </a>
             ))}
           </div>
@@ -107,21 +97,17 @@ export function PrintAgentSection({ restaurantSlug }: { restaurantSlug: string }
       <div className="mt-5 pt-5 border-t border-border">
         <p className="text-sm font-medium text-ink mb-1">Customer receipt printer</p>
         <p className="text-xs text-ink-muted mb-3">
-          Prints a full receipt (all items + total) for every new order. Place at the cashier or front desk — the customer gets their copy automatically.
+          Prints a full receipt (all items + total) for every new order. Place at the cashier or front desk.
         </p>
         <a
-          href="/api/dashboard/print-agent-download?station=receipt"
+          href="/api/dashboard/print-agent-zip?station=receipt"
           download
           className="inline-flex items-center gap-1.5 rounded-lg border-2 border-emerald-500/40 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 hover:bg-emerald-100"
         >
-          Download receipt printer script
-          <span className="text-[10px] font-normal text-emerald-700">(START-RECEIPT-PRINTER.cmd)</span>
+          ⬇ Download receipt printer setup
+          <span className="text-[10px] font-normal text-emerald-700">.zip</span>
         </a>
       </div>
-
-      <p className="mt-4 text-xs text-ink-muted">
-        Details: <code className="rounded bg-surface px-1">print-agent-standalone/README.txt</code> in the repo.
-      </p>
     </section>
   );
 }
