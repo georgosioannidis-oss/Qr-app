@@ -645,7 +645,7 @@ export function BrandingForm({
 
         <p className="text-center text-ink-muted text-sm mt-3">or paste a link</p>
         <input
-          type="url"
+          type="text"
           value={logoUrl}
           onChange={(e) => setLogoUrl(e.target.value)}
           placeholder="https://…"
