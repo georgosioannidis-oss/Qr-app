@@ -712,23 +712,39 @@ function centerLine(text, width) {
 function itemOptionLines(it, w) {
   const lines = [];
   if (it.selectedOptionsSummary) {
-    const opts = String(it.selectedOptionsSummary)
-      .split(/\s*·\s*/)
-      .map((p) => ticketEnglishText(compactOptionSegment(p.trim())).toUpperCase())
-      .filter(Boolean);
-    for (const opt of opts) {
-      lines.push(...wrapLine(opt, w, "   "));
-    }
+    const raw = String(it.selectedOptionsSummary).trim();
+    if (raw) lines.push(...wrapLine(raw, w, "   "));
   }
   if (it.notes) {
-    lines.push(...wrapLine(ticketEnglishText(it.notes).toUpperCase(), w, "   "));
+    const notes = String(it.notes || "").trim();
+    if (notes) lines.push(...wrapLine(notes, w, "   "));
   }
   return lines;
 }
 
+// Wraps a kitchen item line: first line has "qty  name", continuations indented.
+function wrapItemLine(qty, name, w) {
+  const prefix = `${qty}  `;
+  const contIndent = " ".repeat(prefix.length);
+  const words = String(name).trim().split(/\s+/);
+  const lines = [];
+  let cur = prefix + (words[0] || "");
+  for (let i = 1; i < words.length; i++) {
+    const candidate = `${cur} ${words[i]}`;
+    if (candidate.length <= w) {
+      cur = candidate;
+    } else {
+      lines.push(cur);
+      cur = `${contIndent}${words[i]}`;
+    }
+  }
+  if (cur.trim()) lines.push(cur);
+  return lines.length ? lines : [prefix];
+}
+
 function printItems(items, rows, w) {
   for (const it of items) {
-    rows.push(...wrapLine(`${it.quantity}  ${ticketEnglishText(it.name).toUpperCase()}`, w));
+    rows.push(...wrapItemLine(it.quantity, String(it.name || "").trim(), w));
     rows.push(...itemOptionLines(it, w));
   }
 }
@@ -742,7 +758,7 @@ function formatTicketLines(order) {
   rows.push(sep);
   rows.push(centerLine("SEAT IN", w));
   rows.push(centerLine("*** TABLE ***", w));
-  rows.push(centerLine(ticketEnglishText(order.tableName).toUpperCase(), w));
+  rows.push(centerLine(String(order.tableName || "").toUpperCase(), w));
   rows.push(sep);
   rows.push("");
 
@@ -785,31 +801,30 @@ function formatReceiptLines(order) {
   const rows = [];
 
   rows.push(sep);
-  rows.push(centerLine(ticketEnglishText(order.restaurantName || "").toUpperCase(), w));
+  rows.push(centerLine(String(order.restaurantName || "").toUpperCase(), w));
   rows.push(sep);
 
   const d = new Date(order.createdAt);
   const pad = (n) => String(n).padStart(2, "0");
   const dateStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  rows.push(`Table: ${ticketEnglishText(order.tableName || "").toUpperCase()}`);
+  rows.push(`Table: ${String(order.tableName || "").toUpperCase()}`);
   rows.push(dateStr);
   rows.push(dashes);
 
   for (const it of order.items) {
-    const nameText = ticketEnglishText(it.name || "").toUpperCase();
+    const nameText = String(it.name || "").trim();
     const totalCents = it.unitPrice * it.quantity;
     const priceStr = `€${(totalCents / 100).toFixed(2)}`;
     const qtyStr = `${it.quantity}x `;
-    const nameWidth = Math.max(1, w - qtyStr.length - priceStr.length - 1);
-    const nameTrunc = nameText.length <= nameWidth
-      ? nameText
-      : nameText.slice(0, nameWidth);
-    rows.push({ left: `${qtyStr}${nameTrunc}`, right: priceStr });
+    rows.push({ left: `${qtyStr}${nameText}`, right: priceStr });
     if (it.selectedOptionsSummary) {
-      const opts = compactTicketDetailText(it.selectedOptionsSummary);
-      if (opts) rows.push(...wrapLine(`  ${opts}`, w));
+      const raw = String(it.selectedOptionsSummary).trim();
+      if (raw) rows.push(...wrapLine(`  ${raw}`, w));
     }
-    if (it.notes) rows.push(...wrapLine(`  ${ticketEnglishText(it.notes).toUpperCase()}`, w));
+    if (it.notes) {
+      const notes = String(it.notes || "").trim();
+      if (notes) rows.push(...wrapLine(`  ${notes}`, w));
+    }
   }
 
   rows.push(dashes);
@@ -893,26 +908,55 @@ async function renderTicketPdf(order) {
   const margin = 12;
   let y = page.getHeight() - 24;
 
-  for (const row of rows) {
-    if (y < 24) {
-      y = page.getHeight() - 24;
-      page = doc.addPage([pageWidth, 700]);
+  // Pixel-aware word wrap (receipt only — proportional font)
+  function wrapByPixels(text, maxPx) {
+    const words = String(text).trim().split(/\s+/);
+    const lines = [];
+    let cur = "";
+    for (const word of words) {
+      const candidate = cur ? `${cur} ${word}` : word;
+      if (font.widthOfTextAtSize(candidate, fontSize) <= maxPx) {
+        cur = candidate;
+      } else {
+        if (cur) lines.push(cur);
+        cur = word;
+      }
     }
+    if (cur) lines.push(cur);
+    return lines.length ? lines : [""];
+  }
+
+  function putLine(text, x) {
+    if (y < 24) { page = doc.addPage([pageWidth, 700]); y = page.getHeight() - 24; }
+    const safe = fontInfo.unicode ? String(text) : toWinAnsiSafeText(String(text));
+    if (safe.trim()) page.drawText(safe, { x, y, size: fontSize, font, color: rgb(0, 0, 0) });
+    y -= lineHeight;
+  }
+
+  for (const row of rows) {
+    if (y < 24) { page = doc.addPage([pageWidth, 700]); y = page.getHeight() - 24; }
 
     if (IS_RECEIPT_MODE && typeof row === "object" && row !== null) {
-      // Two-column: item name left, price right-aligned
-      const leftText = fontInfo.unicode ? row.left : toWinAnsiSafeText(row.left);
-      const rightText = fontInfo.unicode ? row.right : toWinAnsiSafeText(row.right);
-      page.drawText(leftText, { x: margin, y, size: fontSize, font, color: rgb(0, 0, 0) });
-      const rightWidth = font.widthOfTextAtSize(rightText, fontSize);
-      page.drawText(rightText, { x: pageWidth - margin - rightWidth, y, size: fontSize, font, color: rgb(0, 0, 0) });
+      // Pixel-based wrap: name wraps freely, price right-aligned on last name line
+      const rightRaw = fontInfo.unicode ? row.right : toWinAnsiSafeText(row.right);
+      const priceWidth = font.widthOfTextAtSize(rightRaw, fontSize);
+      const namePx = (pageWidth - 2 * margin) - priceWidth - 6;
+      const nameLines = wrapByPixels(row.left, namePx);
+
+      for (let i = 0; i < nameLines.length - 1; i++) {
+        putLine(nameLines[i], margin);
+      }
+
+      // Last name line + price right-aligned on the same row
+      if (y < 24) { page = doc.addPage([pageWidth, 700]); y = page.getHeight() - 24; }
+      const lastSafe = fontInfo.unicode ? (nameLines[nameLines.length - 1] || "") : toWinAnsiSafeText(nameLines[nameLines.length - 1] || "");
+      if (lastSafe.trim()) page.drawText(lastSafe, { x: margin, y, size: fontSize, font, color: rgb(0, 0, 0) });
+      page.drawText(rightRaw, { x: pageWidth - margin - priceWidth, y, size: fontSize, font, color: rgb(0, 0, 0) });
+      y -= lineHeight;
     } else {
-      const text = fontInfo.unicode
-        ? (typeof row === "string" ? row : `${row.left} ${row.right}`)
-        : toWinAnsiSafeText(typeof row === "string" ? row : `${row.left} ${row.right}`);
-      page.drawText(text, { x: margin, y, size: fontSize, font, color: rgb(0, 0, 0) });
+      const text = typeof row === "string" ? row : `${row.left} ${row.right}`;
+      putLine(text, margin);
     }
-    y -= lineHeight;
   }
   return { bytes: await doc.save(), fontPath: fontInfo.fontPath, usingUnicode: fontInfo.unicode };
 }
