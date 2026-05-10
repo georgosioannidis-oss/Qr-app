@@ -230,6 +230,7 @@ export function BrandingForm({
       formData.set("logo", file);
       const res = await fetch("/api/dashboard/restaurant/logo", {
         method: "POST",
+        credentials: "include",
         body: formData,
       });
       const text = await res.text();
