@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
     "README.txt": [enc(readmeContent), { level: 6 }],
   });
 
-  return new NextResponse(zipped, {
+  return new NextResponse(Buffer.from(zipped), {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="${zipFileName}"`,
