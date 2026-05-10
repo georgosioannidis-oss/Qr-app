@@ -245,6 +245,7 @@ export function MenuView({
   const [callWaiterBusy, setCallWaiterBusy] = useState(false);
   const [billRequestBusy, setBillRequestBusy] = useState(false);
   const [billAlreadySent, setBillAlreadySent] = useState(false);
+  const [showBillConfirm, setShowBillConfirm] = useState(false);
   const [upsellSheet, setUpsellSheet] = useState<{ suggestions: Item[] } | null>(null);
   const [hasPlacedOrder, setHasPlacedOrder] = useState(false);
   const [allergenFilterOpen, setAllergenFilterOpen] = useState(false);
@@ -1250,9 +1251,7 @@ export function MenuView({
             <div className="pointer-events-auto flex flex-col items-center gap-1">
               <button
                 type="button"
-                onClick={() => {
-                  if (window.confirm("Ask for the bill? Your waiter will come to your table.")) void requestBill();
-                }}
+                onClick={() => setShowBillConfirm(true)}
                 disabled={billRequestBusy || billAlreadySent}
                 className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg ring-2 transition disabled:cursor-not-allowed ${
                   billAlreadySent
@@ -1305,6 +1304,42 @@ export function MenuView({
           </div>
         </div>
       ) : null}
+
+      {showBillConfirm && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setShowBillConfirm(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-card rounded-3xl shadow-2xl border border-border p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center text-2xl mx-auto mb-4">
+              🧾
+            </div>
+            <h3 className="text-lg font-bold text-ink text-center mb-2">Ask for the bill?</h3>
+            <p className="text-sm text-ink-muted text-center mb-6 leading-relaxed">
+              Your waiter will come to your table shortly.
+            </p>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => { setShowBillConfirm(false); void requestBill(); }}
+                className="min-h-[48px] w-full py-3 rounded-xl bg-primary hover:bg-primary-hover text-white font-semibold shadow-sm ring-1 ring-black/10"
+              >
+                Yes, bring the bill
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBillConfirm(false)}
+                className="min-h-[48px] w-full py-3 rounded-xl border-2 border-border bg-surface text-ink font-semibold hover:bg-ink/5"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {optionsModalItem && (
         <ItemOptionsModal
