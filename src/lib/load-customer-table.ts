@@ -26,6 +26,7 @@ const menuInclude = {
       payAtTableCashEnabled: true,
       guestQrOrderingPaused: true,
       pauseMessage: true,
+      waiterRelayEnabled: true,
       enabledLocales: true,
       defaultLocale: true,
       timezone: true,
