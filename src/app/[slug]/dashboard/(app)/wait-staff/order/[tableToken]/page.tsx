@@ -2,12 +2,11 @@ import { notFound, redirect } from "next/navigation";
 import { getDashboardServerSession } from "@/lib/auth-server";
 import { isPureKitchenRole } from "@/lib/dashboard-roles";
 import { loadCustomerTableWithMenuByToken } from "@/lib/load-customer-table";
-import { normalizePublicMediaUrl } from "@/lib/media-url";
 import { resolvedMenuItemAllergenCodes } from "@/lib/merge-menu-allergens";
 import { restaurantUsesStripeCheckout } from "@/lib/restaurant-checkout";
 import { ensureMinTwoPeopleOptionGroup } from "@/lib/min-two-people-option";
 import { parseGuestMenuOptionGroups } from "@/lib/parse-guest-menu-option-groups";
-import { MenuView } from "@/app/m/[token]/MenuView";
+import { StaffOrderView } from "./StaffOrderView";
 
 export default async function StaffOrderPage({
   params,
@@ -26,17 +25,13 @@ export default async function StaffOrderPage({
   const usesOnlineCheckout = restaurantUsesStripeCheckout(table.restaurant);
 
   return (
-    <MenuView
-      restaurantName={table.restaurant.name}
+    <StaffOrderView
       restaurantSlug={slug}
       tableName={table.name}
       tableToken={tableToken}
-      tableLogoUrl={table.restaurant.logoUrl ?? undefined}
       usesOnlineCheckout={usesOnlineCheckout}
       payAtTableCardEnabled={table.restaurant.payAtTableCardEnabled === true}
       payAtTableCashEnabled={table.restaurant.payAtTableCashEnabled === true}
-      guestOrderingPaused={false}
-      isStaffOrder={true}
       categories={menu.map((c) => ({
         id: c.id,
         name: c.name,
@@ -45,9 +40,7 @@ export default async function StaffOrderPage({
           return {
             id: i.id,
             name: i.name,
-            description: i.description ?? undefined,
             price: i.price,
-            imageUrl: normalizePublicMediaUrl(i.imageUrl ?? undefined) ?? undefined,
             optionGroups: ensureMinTwoPeopleOptionGroup(
               i.name,
               parseGuestMenuOptionGroups(i.optionGroups)
