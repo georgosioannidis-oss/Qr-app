@@ -1148,7 +1148,9 @@ export function MenuView({
             <div className="pointer-events-auto flex flex-col items-center gap-1">
               <button
                 type="button"
-                onClick={() => void requestBill()}
+                onClick={() => {
+                  if (window.confirm("Ask for the bill? Your waiter will come to your table.")) void requestBill();
+                }}
                 disabled={billRequestBusy || billAlreadySent}
                 className={`flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg ring-2 transition disabled:cursor-not-allowed ${
                   billAlreadySent
