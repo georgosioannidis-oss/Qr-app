@@ -25,6 +25,7 @@ import { AllergenIconRow } from "@/components/AllergenIcons";
 import { resolvedMenuItemAllergenCodes } from "@/lib/merge-menu-allergens";
 import { OptionGroupsEditor, parseOptionGroups, type OptionGroup } from "./OptionGroupsEditor";
 import { AllergenCheckboxes } from "./AllergenCheckboxes";
+import { MenuImport } from "./MenuImport";
 
 type Station = { id: string; name: string };
 
@@ -689,6 +690,7 @@ export function MenuManager() {
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [addingCategory, setAddingCategory] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
@@ -1475,6 +1477,20 @@ export function MenuManager() {
           onAdd={handleAddItem}
         />
       ) : null}
+
+      <div className="flex justify-center pt-6 pb-2">
+        <button
+          type="button"
+          onClick={() => setImportOpen(true)}
+          className="text-[10px] text-ink-muted/30 hover:text-ink-muted/60 transition-colors select-none"
+        >
+          Import
+        </button>
+      </div>
+
+      {importOpen && (
+        <MenuImport onClose={() => { setImportOpen(false); window.location.reload(); }} />
+      )}
     </div>
   );
 }
