@@ -38,6 +38,54 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "station query required" }, { status: 400 });
   }
 
+  // Special station: "fiscal" — returns orders where staff clicked "Print Fiscal Receipt" and not yet acked.
+  if (stationParam === "fiscal") {
+    const fiscalOrders = await prisma.order.findMany({
+      where: {
+        restaurantId: restaurant.id,
+        fiscalReceiptRequestedAt: { not: null },
+        stationAcks: { none: { stationKey: "fiscal" } },
+      },
+      orderBy: { fiscalReceiptRequestedAt: "asc" },
+      take: 25,
+      include: {
+        table: { select: { name: true } },
+        restaurant: { select: { name: true, vatRate: true } },
+        items: {
+          include: { menuItem: { select: { name: true } } },
+          orderBy: { id: "asc" },
+        },
+      },
+    });
+
+    const payload = fiscalOrders.map((o) => ({
+      id: o.id,
+      station: "fiscal",
+      stationLabel: "Fiscal Receipt",
+      restaurantName: o.restaurant.name,
+      vatRate: o.restaurant.vatRate ?? 0,
+      tableName: o.table.name,
+      status: o.status,
+      createdAt: o.createdAt.toISOString(),
+      totalAmount: o.totalAmount,
+      items: o.items.map((row) => ({
+        quantity: row.quantity,
+        name: row.menuItem.name,
+        unitPrice: row.unitPrice,
+        notes: row.notes,
+        selectedOptionsSummary: row.selectedOptionsSummary,
+      })),
+    }));
+
+    const venue = {
+      slug: (slug ?? "").trim(),
+      name: restaurant.name,
+      waiterRelayEnabled: restaurant.waiterRelayEnabled,
+      onlinePaymentEnabled: restaurant.onlinePaymentEnabled === true,
+    };
+    return NextResponse.json({ orders: payload, station: "fiscal", venue });
+  }
+
   // Special station: "receipt" — returns all items for every unprinted order (full customer receipt).
   if (stationParam === "receipt") {
     const receiptOrders = await prisma.order.findMany({

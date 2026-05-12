@@ -5,7 +5,8 @@ import { requireWaitStaffApiAccess } from "@/lib/require-wait-staff-api";
 
 /**
  * POST /api/dashboard/orders/[id]/fiscal-receipt
- * Queue a fiscal receipt print job for this order.
+ * Marks this order as needing a fiscal receipt print.
+ * The print agent polls for orders with fiscalReceiptRequestedAt set and no ack yet.
  * Only o-kipos restaurant is supported for now.
  */
 export async function POST(
@@ -19,17 +20,6 @@ export async function POST(
   const restaurantId = session!.user.restaurantId!;
   const { id: orderId } = await params;
 
-  // Verify order exists and belongs to this restaurant
-  const order = await prisma.order.findFirst({
-    where: { id: orderId, restaurantId },
-    select: { id: true, status: true },
-  });
-
-  if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
-  }
-
-  // Only allow for o-kipos for now
   const restaurant = await prisma.restaurant.findUnique({
     where: { id: restaurantId },
     select: { slug: true },
@@ -42,20 +32,20 @@ export async function POST(
     );
   }
 
-  // Create or update the fiscal print ack
-  // This marks that a fiscal receipt needs to be printed for this order
-  await prisma.orderStationPrintAck.upsert({
-    where: { orderId_stationKey: { orderId, stationKey: "fiscal" } },
-    update: { printedAt: new Date() },
-    create: {
-      orderId,
-      stationKey: "fiscal",
-      restaurantId,
-    },
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, restaurantId },
+    select: { id: true, status: true },
   });
 
-  return NextResponse.json({
-    ok: true,
-    message: "Fiscal receipt queued for printing",
+  if (!order) {
+    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  }
+
+  // Mark order as needing a fiscal receipt — the print agent picks this up
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { fiscalReceiptRequestedAt: new Date() },
   });
+
+  return NextResponse.json({ ok: true, message: "Fiscal receipt queued for printing" });
 }

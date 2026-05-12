@@ -1248,30 +1248,24 @@ async function writeFiscalReceipt(order) {
 
   const content = textLines.join("\n");
   await writeFile(filePath, content, "utf8");
-  return filePath;
+  return { filePath };
 }
 
-async function sendFiscalReceiptToPrinter(filePath) {
-  try {
-    const content = await readFile(filePath, "utf8");
-    console.error(`Fiscal receipt ready: ${filePath}`);
-    console.error(`Content length: ${content.length} bytes`);
-
-    if (RAW_HOST && RAW_PORT) {
-      const payload = buildEscPosPayload(content.split("\n"));
-      console.error(`Sending ${payload.length} bytes to ${RAW_HOST}:${RAW_PORT}`);
-      return await sendRawToNetworkPrinter(payload);
-    } else if (PRINT_CMD) {
-      console.error(`Using PRINT_COMMAND for fiscal receipt`);
-      return await runPrintCommand(PRINT_CMD.replace("{file}", filePath));
-    } else {
-      console.error("No printer configured (RAW_HOST/RAW_PORT or PRINT_COMMAND). Fiscal receipt saved to file only.");
-      return true;
-    }
-  } catch (err) {
-    console.error("Error sending fiscal receipt to printer:", err.message);
-    return false;
+async function sendFiscalReceiptToPrinter(order) {
+  if (RAW_HOST) {
+    const lines = formatFiscalReceiptLines(order).map((row) => {
+      if (typeof row === "string") return RAW_ASCII_ONLY ? toWinAnsiSafeText(row) : row;
+      const flat = `${row.left}${" ".repeat(Math.max(1, 56 - row.left.length - row.right.length))}${row.right}`;
+      return RAW_ASCII_ONLY ? toWinAnsiSafeText(flat) : flat;
+    });
+    const payload = buildEscPosPayload(lines);
+    const ok = await sendRawToNetworkPrinter(payload);
+    if (ok) console.error(`Fiscal receipt raw print OK → ${RAW_HOST}:${RAW_PORT}`);
+    return ok;
   }
+  // Fall back to PDF print via PRINT_COMMAND / SumatraPDF
+  const { filePath } = await writeFiscalReceipt(order);
+  return sendPdfToPrinter(filePath);
 }
 
 let ticking = false;
@@ -1293,8 +1287,7 @@ async function tick() {
 
         let ok = false;
         if (IS_FISCAL_MODE) {
-          const filePath = await writeFiscalReceipt(printableOrder);
-          ok = await sendFiscalReceiptToPrinter(filePath);
+          ok = await sendFiscalReceiptToPrinter(printableOrder);
         } else {
           const { filePath, fontPath, usingUnicode } = await writeTicketPdf(printableOrder);
           if (!usingUnicode) {

@@ -264,6 +264,8 @@ model Order {
   kitchenTicketPrintedAt DateTime?
   /// Waiter confirmed payment for the whole ticket (all lines checked). Separate from Stripe / kitchen `paid` flow.
   billPaidAt DateTime?
+  /// Set when wait staff clicks "Print Fiscal Receipt" — signals the fiscal print agent to print this order.
+  fiscalReceiptRequestedAt DateTime?
   /// Opaque per-device ID so guests only see their own orders in "Your orders" (localStorage on the phone).
   guestSessionId String?
   /// True when placed by a logged-in staff member via the dashboard manual-order flow.
