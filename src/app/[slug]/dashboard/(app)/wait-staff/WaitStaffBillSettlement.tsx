@@ -23,6 +23,11 @@ type OpenBillOrder = {
   items: Line[];
 };
 
+type RestaurantData = {
+  slug: string;
+  name?: string;
+};
+
 function formatPrice(cents: number) {
   return new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(cents / 100);
 }
@@ -38,13 +43,21 @@ export function WaitStaffBillSettlement() {
   const [error, setError] = useState<string | null>(null);
   const [busyLine, setBusyLine] = useState<{ orderId: string; lineId: string } | null>(null);
   const [busyAllOrderId, setBusyAllOrderId] = useState<string | null>(null);
+  const [restaurant, setRestaurant] = useState<RestaurantData | null>(null);
+  const [busyFiscal, setBusyFiscal] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/dashboard/restaurant")
       .then((r) => r.json())
       .then((d: unknown) => {
-        if (d && typeof d === "object" && "vatRate" in d && typeof (d as { vatRate: unknown }).vatRate === "number") {
-          setVatRate((d as { vatRate: number }).vatRate);
+        if (d && typeof d === "object") {
+          const data = d as Record<string, unknown>;
+          if (typeof data.vatRate === "number") {
+            setVatRate(data.vatRate);
+          }
+          if (typeof data.slug === "string") {
+            setRestaurant({ slug: data.slug, name: typeof data.name === "string" ? data.name : undefined });
+          }
         }
       })
       .catch(() => {});
@@ -139,6 +152,32 @@ export function WaitStaffBillSettlement() {
     }
   };
 
+  const printFiscalReceipt = async (orderId: string) => {
+    setBusyFiscal(orderId);
+    try {
+      const res = await fetch(`/api/dashboard/orders/${orderId}/fiscal-receipt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const text = await res.text();
+      let d: { error?: string; message?: string } = {};
+      try {
+        if (text) d = JSON.parse(text);
+      } catch {
+        /* ignore */
+      }
+      if (!res.ok) {
+        toast.error(d.error ?? "Could not queue fiscal receipt");
+        return;
+      }
+      toast.success(d.message ?? "Fiscal receipt queued");
+    } catch {
+      toast.error("Request failed");
+    } finally {
+      setBusyFiscal(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-sm text-ink-muted">
@@ -200,21 +239,40 @@ export function WaitStaffBillSettlement() {
                     {vatRate > 0 ? `Total (incl. VAT): ` : ""}{formatPrice(order.totalAmount)}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  disabled={isAllBusy}
-                  onClick={() => void markEntireBill(order.id)}
-                  className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
-                >
-                  {isAllBusy ? (
-                    <>
-                      <Spinner className="mr-2 h-3.5 w-3.5 border-white border-t-transparent" label="" />
-                      Saving…
-                    </>
-                  ) : (
-                    "Mark whole bill paid"
+                <div className="flex flex-wrap gap-2">
+                  {restaurant?.slug === "o-kipos" && (
+                    <button
+                      type="button"
+                      disabled={busyFiscal === order.id}
+                      onClick={() => void printFiscalReceipt(order.id)}
+                      className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+                    >
+                      {busyFiscal === order.id ? (
+                        <>
+                          <Spinner className="mr-2 h-3.5 w-3.5 border-white border-t-transparent" label="" />
+                          Printing…
+                        </>
+                      ) : (
+                        "Print Fiscal Receipt"
+                      )}
+                    </button>
                   )}
-                </button>
+                  <button
+                    type="button"
+                    disabled={isAllBusy}
+                    onClick={() => void markEntireBill(order.id)}
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm hover:opacity-95 disabled:opacity-50"
+                  >
+                    {isAllBusy ? (
+                      <>
+                        <Spinner className="mr-2 h-3.5 w-3.5 border-white border-t-transparent" label="" />
+                        Saving…
+                      </>
+                    ) : (
+                      "Mark whole bill paid"
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
             <ul className="divide-y divide-border rounded-xl border border-border bg-surface/40">

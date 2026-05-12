@@ -51,6 +51,7 @@ function normalizePrintAgentStation(value) {
 const STATION_RAW = normalizePrintAgentStation(process.env.PRINT_AGENT_STATION || "all");
 const USE_ALL_STATIONS = STATION_RAW === "all";
 const IS_RECEIPT_MODE = STATION_RAW === "receipt";
+const IS_FISCAL_MODE = STATION_RAW === "fiscal";
 /** `all` = poll every station for this restaurant each cycle. Otherwise one station slug only. */
 const STATION = USE_ALL_STATIONS ? "all" : STATION_RAW;
 const PDF_DIR = process.env.PRINT_AGENT_PDF_DIR || path.join(process.cwd(), "print-agent-pdfs");
@@ -850,6 +851,83 @@ function formatReceiptLines(order) {
   return rows;
 }
 
+function formatFiscalReceiptLines(order) {
+  const w = 56;
+  const sep = "-".repeat(w);
+  const rows = [];
+
+  // Header
+  rows.push(sep);
+  rows.push(centerLine(String(order.restaurantName || "").toUpperCase(), w));
+  rows.push(sep);
+
+  // Date/time with day of week
+  const d = new Date(order.createdAt);
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const dayName = days[d.getDay()];
+  const pad = (n) => String(n).padStart(2, "0");
+  const dateStr = `${dayName} ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  rows.push(dateStr);
+  rows.push("");
+
+  // Table and metadata
+  rows.push(`Table: ${String(order.tableName || "").toUpperCase()}`);
+  rows.push("");
+
+  // Items header
+  rows.push("ITEMS");
+  rows.push(sep);
+
+  // Items with VAT rates
+  for (const it of order.items) {
+    const nameText = String(it.name || "").trim().toUpperCase();
+    const totalCents = it.unitPrice * it.quantity;
+    const priceStr = `€${(totalCents / 100).toFixed(2)}`;
+    const qtyStr = `${it.quantity}x `;
+
+    // Get VAT rate if available (for now, use order's VAT rate)
+    const vatRate = typeof order.vatRate === "number" ? order.vatRate : 0;
+    const vatStr = vatRate > 0 ? `${vatRate}%` : "";
+
+    rows.push(`${qtyStr}${nameText.padEnd(40)}${priceStr.padStart(10)} ${vatStr}`);
+
+    if (it.selectedOptionsSummary) {
+      const raw = String(it.selectedOptionsSummary).trim();
+      if (raw) rows.push(`  ${raw}`);
+    }
+    if (it.notes) {
+      const notes = String(it.notes || "").trim();
+      if (notes) rows.push(`  NOTE: ${notes}`);
+    }
+  }
+
+  rows.push(sep);
+
+  // VAT breakdown
+  const vatRate = typeof order.vatRate === "number" ? order.vatRate : 0;
+  if (vatRate > 0) {
+    const totalCents = order.totalAmount;
+    const netCents = Math.round(totalCents / (1 + vatRate / 100));
+    const vatCents = totalCents - netCents;
+    const netStr = `€${(netCents / 100).toFixed(2)}`;
+    const vatStr = `€${(vatCents / 100).toFixed(2)}`;
+    const totalStr = `€${(totalCents / 100).toFixed(2)}`;
+
+    rows.push({ left: "Subtotal (excl. VAT)", right: netStr });
+    rows.push({ left: `VAT ${vatRate}%`, right: vatStr });
+    rows.push("");
+    rows.push({ left: "TOTAL (incl. VAT)", right: totalStr });
+  } else {
+    const totalStr = `€${(order.totalAmount / 100).toFixed(2)}`;
+    rows.push({ left: "TOTAL", right: totalStr });
+  }
+
+  rows.push(sep);
+  rows.push("");
+
+  return rows;
+}
+
 function sanitizeFilePart(value) {
   return String(value)
     .replace(/[<>:"/\\|?*\x00-\x1F]/g, "-")
@@ -1147,6 +1225,55 @@ async function ack(orderId, stationKey) {
   return res.ok;
 }
 
+async function writeFiscalReceipt(order) {
+  await mkdir(PDF_DIR, { recursive: true });
+  const ts = new Date(order.createdAt).toISOString().replace(/[:.]/g, "-");
+  const table = String(order.tableName || "").replace(/\s+/g, "_").slice(0, 20);
+  const idShort = order.id.slice(0, 10);
+  const fileName = `${ts}_fiscal_${table}_${idShort}.txt`;
+  const filePath = path.join(PDF_DIR, fileName);
+
+  const lines = formatFiscalReceiptLines(order);
+  const textLines = lines.map((line) => {
+    if (typeof line === "string") {
+      return line;
+    } else if (typeof line === "object" && line !== null) {
+      const left = String(line.left || "").trim();
+      const right = String(line.right || "").trim();
+      const padding = Math.max(0, 56 - left.length - right.length);
+      return `${left}${" ".repeat(padding)}${right}`;
+    }
+    return "";
+  });
+
+  const content = textLines.join("\n");
+  await writeFile(filePath, content, "utf8");
+  return filePath;
+}
+
+async function sendFiscalReceiptToPrinter(filePath) {
+  try {
+    const content = await readFile(filePath, "utf8");
+    console.error(`Fiscal receipt ready: ${filePath}`);
+    console.error(`Content length: ${content.length} bytes`);
+
+    if (RAW_HOST && RAW_PORT) {
+      const payload = buildEscPosPayload(content.split("\n"));
+      console.error(`Sending ${payload.length} bytes to ${RAW_HOST}:${RAW_PORT}`);
+      return await sendRawToNetworkPrinter(payload);
+    } else if (PRINT_CMD) {
+      console.error(`Using PRINT_COMMAND for fiscal receipt`);
+      return await runPrintCommand(PRINT_CMD.replace("{file}", filePath));
+    } else {
+      console.error("No printer configured (RAW_HOST/RAW_PORT or PRINT_COMMAND). Fiscal receipt saved to file only.");
+      return true;
+    }
+  } catch (err) {
+    console.error("Error sending fiscal receipt to printer:", err.message);
+    return false;
+  }
+}
+
 let ticking = false;
 let loggedNoOrdersHint = false;
 
@@ -1163,13 +1290,21 @@ async function tick() {
       for (const order of orders) {
         const ticketNumber = await reserveNextTicketNumber(stationKey);
         const printableOrder = { ...order, ticketNumber };
-        const { filePath, fontPath, usingUnicode } = await writeTicketPdf(printableOrder);
-        if (!usingUnicode) {
-          console.error("Unicode font not found; ticket text may show ? characters.");
-        } else if (fontPath) {
-          console.error(`PDF font: ${fontPath}`);
+
+        let ok = false;
+        if (IS_FISCAL_MODE) {
+          const filePath = await writeFiscalReceipt(printableOrder);
+          ok = await sendFiscalReceiptToPrinter(filePath);
+        } else {
+          const { filePath, fontPath, usingUnicode } = await writeTicketPdf(printableOrder);
+          if (!usingUnicode) {
+            console.error("Unicode font not found; ticket text may show ? characters.");
+          } else if (fontPath) {
+            console.error(`PDF font: ${fontPath}`);
+          }
+          ok = await sendToPrinter(filePath, printableOrder);
         }
-        const ok = await sendToPrinter(filePath, printableOrder);
+
         if (!ok) {
           console.error("Skipping ack for", order.id, "(print failed)");
           continue;
@@ -1251,7 +1386,11 @@ if (SAMPLE_MODE) {
 
 // Discover stations from server before starting poll loop
 if (!SAMPLE_MODE) {
-  if (IS_RECEIPT_MODE) {
+  if (IS_FISCAL_MODE) {
+    // Fiscal mode: no station discovery needed — polls a virtual "fiscal" station.
+    ACTIVE_STATIONS = ["fiscal"];
+    console.error("Fiscal receipt printer mode — printing fiscal receipts for o-kipos.");
+  } else if (IS_RECEIPT_MODE) {
     // Receipt mode: no station discovery needed — polls a virtual "receipt" station.
     ACTIVE_STATIONS = ["receipt"];
     console.error("Receipt printer mode — printing full customer tickets for every new order.");
@@ -1279,7 +1418,7 @@ if (!SAMPLE_MODE) {
     }
   }
 } else {
-  ACTIVE_STATIONS = IS_RECEIPT_MODE ? ["receipt"] : [STATION === "all" ? "kitchen" : STATION];
+  ACTIVE_STATIONS = IS_FISCAL_MODE ? ["fiscal"] : IS_RECEIPT_MODE ? ["receipt"] : [STATION === "all" ? "kitchen" : STATION];
 }
 
 console.error(
