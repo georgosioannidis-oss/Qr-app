@@ -6,8 +6,7 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { SUPPORTED_LOCALES } from "@/lib/locale-config";
 
-/** When false, owners see a notice and cannot enable “Pay online with card”; saves always persist `onlinePaymentEnabled: false`. */
-const GUEST_ONLINE_CARD_PAYMENT_AVAILABLE = false;
+const GUEST_ONLINE_CARD_PAYMENT_AVAILABLE = true;
 
 const PRESET_COLORS = [
   { name: "Orange", hex: "#C15C2A" },
