@@ -7,7 +7,7 @@ REM 3) Double-click this file to start. Leave the window open.
 REM 4) Fiscal receipts will be sent to your PowerOn printer.
 
 REM ---------- Pre-filled from server — no editing needed ----------
-set "PRINT_AGENT_API_SECRET=YOUR_SECRET_HERE"
+set "PRINT_AGENT_API_SECRET=fHt+Oz12X7yywZf/Y34nQpyFVMzZ2AN4ZnE+nuDRwIOrlDUOKvJ4tfACj3koMDR0"
 set "PRINT_AGENT_BASE_URL=https://scannorder.ink"
 set "PRINT_AGENT_RESTAURANT_SLUG=o-kipos"
 set "PRINT_AGENT_STATION=fiscal"
