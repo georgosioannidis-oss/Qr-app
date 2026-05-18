@@ -38,6 +38,7 @@ export function BrandingForm({
   initialPauseMessage,
   initialOpeningTime,
   initialClosingTime,
+  initialMenuOnlyMode,
 }: {
   initialName: string;
   initialLogoUrl: string;
