@@ -180,6 +180,8 @@ type Props = {
   categories: Category[];
   /** When `moustakallis` (or legacy `demo-restaurant` slug), guest can switch EL/EN/RU/FR/PL for menu + UI. */
   restaurantSlug?: string | null;
+  /** When true, the menu is browse-only — all cart and order UI is hidden. */
+  menuOnlyMode?: boolean;
   /** When true, order is submitted as a staff manual order — bypasses QR cookie requirement server-side. */
   isStaffOrder?: boolean;
   /** When true, orders wait for a waiter to accept before going to the kitchen — enables the waiting screen. */
@@ -203,6 +205,7 @@ export function MenuView({
   payAtTableCashEnabled = true,
   guestOrderingPaused = false,
   pauseMessage,
+  menuOnlyMode = false,
   categories,
   restaurantSlug = null,
   isStaffOrder = false,
@@ -955,13 +958,15 @@ export function MenuView({
             </div>
           </div>
           <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setOrderHistoryOpen(true)}
-              className="min-h-[40px] rounded-xl border-2 border-border bg-card px-3 py-1.5 text-sm font-semibold text-ink shadow-sm hover:border-primary/40 hover:bg-primary/5"
-            >
-              {ui.yourOrders}
-            </button>
+            {!menuOnlyMode && (
+              <button
+                type="button"
+                onClick={() => setOrderHistoryOpen(true)}
+                className="min-h-[40px] rounded-xl border-2 border-border bg-card px-3 py-1.5 text-sm font-semibold text-ink shadow-sm hover:border-primary/40 hover:bg-primary/5"
+              >
+                {ui.yourOrders}
+              </button>
+            )}
             {(hasMultipleLocales || demoMode) ? (
               <div
                 className="flex flex-wrap justify-end gap-1"
@@ -1144,6 +1149,7 @@ export function MenuView({
                     {itemHasOptionGroups(item) && !itemHasRequiredOptionGroup(item) ? (
                       <p className="text-[0.65rem] leading-snug text-ink-muted sm:text-xs">{ui.optionalExtrasHint}</p>
                     ) : null}
+                    {!menuOnlyMode && (
                     <div className="mt-0.5 flex min-w-0 flex-row flex-wrap items-center justify-end gap-1.5">
                       {flashItemId === item.id ? (
                         <span
@@ -1198,6 +1204,7 @@ export function MenuView({
                         </>
                       )}
                     </div>
+                    )}
                   </div>
                 </li>
               ))}

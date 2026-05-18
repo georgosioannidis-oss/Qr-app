@@ -29,6 +29,7 @@ export function BrandingPageClient() {
     pauseMessage?: string | null;
     openingTime?: string | null;
     closingTime?: string | null;
+    menuOnlyMode?: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -55,6 +56,7 @@ export function BrandingPageClient() {
           pauseMessage?: string | null;
           openingTime?: string | null;
           closingTime?: string | null;
+          menuOnlyMode?: boolean;
         } = {};
         try {
           if (text) json = JSON.parse(text);
@@ -93,6 +95,7 @@ export function BrandingPageClient() {
             pauseMessage: typeof json.pauseMessage === "string" ? json.pauseMessage : null,
             openingTime: typeof json.openingTime === "string" ? json.openingTime : null,
             closingTime: typeof json.closingTime === "string" ? json.closingTime : null,
+            menuOnlyMode: json.menuOnlyMode === true,
           });
         }
       } catch (e) {
@@ -148,6 +151,7 @@ export function BrandingPageClient() {
         initialPauseMessage={data.pauseMessage ?? ""}
         initialOpeningTime={data.openingTime ?? ""}
         initialClosingTime={data.closingTime ?? ""}
+        initialMenuOnlyMode={data.menuOnlyMode ?? false}
       />
       <WifiSettingsSection />
       <PrintAgentSection restaurantSlug={data.slug} />

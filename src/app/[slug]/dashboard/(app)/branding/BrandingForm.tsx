@@ -55,6 +55,7 @@ export function BrandingForm({
   initialPauseMessage?: string;
   initialOpeningTime?: string;
   initialClosingTime?: string;
+  initialMenuOnlyMode?: boolean;
 }) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,6 +89,7 @@ export function BrandingForm({
   const [pauseMessage, setPauseMessage] = useState(initialPauseMessage ?? "");
   const [openingTime, setOpeningTime] = useState(initialOpeningTime ?? "");
   const [closingTime, setClosingTime] = useState(initialClosingTime ?? "");
+  const [menuOnlyMode, setMenuOnlyMode] = useState(Boolean(initialMenuOnlyMode));
   const [showCustomColor, setShowCustomColor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -116,6 +118,7 @@ export function BrandingForm({
     setPauseMessage(initialPauseMessage ?? "");
     setOpeningTime(initialOpeningTime ?? "");
     setClosingTime(initialClosingTime ?? "");
+    setMenuOnlyMode(Boolean(initialMenuOnlyMode));
   }, [
     initialName,
     initialLogoUrl,
@@ -133,6 +136,7 @@ export function BrandingForm({
     initialPauseMessage,
     initialOpeningTime,
     initialClosingTime,
+    initialMenuOnlyMode,
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -188,6 +192,7 @@ export function BrandingForm({
           pauseMessage: pauseMessage.trim() || null,
           openingTime: openingTime && closingTime ? openingTime : null,
           closingTime: openingTime && closingTime ? closingTime : null,
+          menuOnlyMode,
         }),
       });
       const text = await res.text();
@@ -517,6 +522,27 @@ export function BrandingForm({
             {closingTime < openingTime ? " (overnight)" : ""}.
           </p>
         ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-ink mb-1">Menu-only mode</h2>
+        <p className="text-ink-muted mb-4 text-sm">
+          When enabled, guests can browse the full menu but all ordering buttons are hidden. Staff ordering from the dashboard is unaffected.
+        </p>
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface/40 px-4 py-3.5">
+          <input
+            type="checkbox"
+            checked={menuOnlyMode}
+            onChange={(e) => setMenuOnlyMode(e.target.checked)}
+            className="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+          />
+          <span className="text-sm text-ink">
+            <span className="font-semibold">Browse-only — hide ordering for guests</span>
+            <span className="mt-1 block text-ink-muted">
+              No &ldquo;Add to cart&rdquo; or order buttons will appear on the guest menu.
+            </span>
+          </span>
+        </label>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">

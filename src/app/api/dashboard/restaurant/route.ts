@@ -39,6 +39,7 @@ export async function GET() {
         pauseMessage: true,
         openingTime: true,
         closingTime: true,
+        menuOnlyMode: true,
       },
     });
 
@@ -79,6 +80,7 @@ export async function PATCH(req: NextRequest) {
     pauseMessage?: string | null;
     openingTime?: string | null;
     closingTime?: string | null;
+    menuOnlyMode?: boolean;
   };
   try {
     body = await req.json();
@@ -116,6 +118,7 @@ export async function PATCH(req: NextRequest) {
       pauseMessage?: string | null;
       openingTime?: string | null;
       closingTime?: string | null;
+      menuOnlyMode?: boolean;
     } = {};
 
     if (body.logoUrl !== undefined) {
@@ -213,6 +216,10 @@ export async function PATCH(req: NextRequest) {
         ? null
         : String(body.pauseMessage).trim().slice(0, 200) || null;
       data.pauseMessage = msg;
+    }
+
+    if (body.menuOnlyMode !== undefined) {
+      data.menuOnlyMode = Boolean(body.menuOnlyMode);
     }
 
     const timeRe = /^\d{2}:\d{2}$/;

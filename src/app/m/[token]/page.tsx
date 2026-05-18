@@ -154,6 +154,7 @@ export default async function TableMenuPage({
         payAtTableCardEnabled={table.restaurant.payAtTableCardEnabled === true}
         payAtTableCashEnabled={table.restaurant.payAtTableCashEnabled === true}
         pauseMessage={table.restaurant.pauseMessage ?? undefined}
+        menuOnlyMode={table.restaurant.menuOnlyMode === true}
         guestOrderingPaused={isGuestQrOrderingBlocked({
           restaurantPaused: table.restaurant.guestQrOrderingPaused === true,
           sectionPaused: table.tableSection?.guestQrOrderingPaused === true,

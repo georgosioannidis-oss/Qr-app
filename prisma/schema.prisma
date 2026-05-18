@@ -34,6 +34,8 @@ model Restaurant {
   prepTimeEstimateMinutes Int?
   /// When true, guest QR menus cannot place new orders (kitchen overload). Staff dashboard unchanged.
   guestQrOrderingPaused Boolean @default(false)
+  /// When true, the guest menu is browse-only: all add-to-cart / order UI is hidden. Staff ordering unchanged.
+  menuOnlyMode Boolean @default(false)
   /// Custom message shown to guests when ordering is paused. Null = show generic built-in screen.
   pauseMessage          String?
   /// When true, guests must be on the restaurant's registered WiFi IP to start a QR ordering session.
